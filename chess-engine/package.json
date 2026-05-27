@@ -1,0 +1,12 @@
+{
+  "name": "@chesstopia/chess-engine",
+  "version": "0.0.1",
+  "description": "Chesstopia chess rules engine — Kotlin Multiplatform, compiled to JS",
+  "main": "build/dist/js/productionLibrary/chess-engine.js",
+  "types": "build/dist/js/productionLibrary/chess-engine.d.ts",
+  "files": [
+    "build/dist/js/productionLibrary"
+  ],
+  "license": "UNLICENSED",
+  "private": true
+}
