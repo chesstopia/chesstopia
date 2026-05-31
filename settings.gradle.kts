@@ -18,5 +18,7 @@ dependencyResolutionManagement {
 }
 
 // chess-engine is a standalone Gradle project included as a composite build.
-// Spring Boot backend will also declare: includeBuild("../chess-engine")
+// The backend subproject inherits this substitution — no separate includeBuild needed there.
 includeBuild("chess-engine")
+
+include(":chesstopia-backend")

@@ -1,5 +1,13 @@
 [versions]
 node-gradle = "7.1.0"
+spring-boot = "4.0.6"
+spring-dependency-management = "1.1.7"
+logstash-logback-encoder = "8.0"
+
+[libraries]
+logstash-logback-encoder = { group = "net.logstash.logback", name = "logstash-logback-encoder", version.ref = "logstash-logback-encoder" }
 
 [plugins]
 node-gradle = { id = "com.github.node-gradle.node", version.ref = "node-gradle" }
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
