@@ -10,10 +10,12 @@ Zwei Implementierungen (Java + TypeScript) würden bei Regeländerungen (z.B. ne
 
 ## Decision
 Die Schach-Validierungslogik wird als eigenständiges **Kotlin Multiplatform**-Subprojekt (`chess-engine`) implementiert. Es kompiliert zu zwei Artefakten:
-- **JVM-Jar**: eingebunden als Dependency in das Spring Boot Backend (Java).
-- **ES-Modul (Kotlin/JS)**: eingebunden als lokale npm-Dependency in das React/Vite Frontend.
+- **JVM-Jar**: eingebunden über einen **Gradle Composite Build** (`includeBuild("chess-engine")`) direkt als Source-Dependency in das Spring Boot Backend — kein lokales Maven-Publish nötig.
+- **ES-Modul + TypeScript Declarations (Kotlin/JS IR)**: eingebunden als **pnpm Workspace Package** (`@chesstopia/chess-engine`) in das React/Vite Frontend. Alle öffentlichen API-Typen sind mit `@JsExport` annotiert; `.d.ts`-Dateien werden automatisch generiert.
 
-Das Subprojekt ist in das Gradle-Monorepo eingebunden. Das Backend bleibt in Java; Kotlin wird ausschließlich für das `chess-engine`-Modul verwendet.
+Das Subprojekt lebt flach im Monorepo-Root (`chesstopia/chess-engine/`) und hat eine eigene `settings.gradle.kts` (standalone buildbar). Die Build-Orchestrierung ist in ADR-0006 beschrieben.
+
+Das Backend bleibt in Java; Kotlin wird ausschließlich für das `chess-engine`-Modul verwendet.
 
 ## Consequences
 - Regellogik wird nur einmal implementiert und getestet — kein Divergenz-Risiko.
