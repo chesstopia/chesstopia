@@ -1,5 +1,5 @@
 packages:
   # KMP chess rules engine — built by Gradle, linked as @chesstopia/chess-engine
   - 'chess-engine'
-  # React/Vite frontend — will be added in CHESS-3
-  # - 'frontend'
+  # React/Vite frontend — consumes @chesstopia/chess-engine via workspace link
+  - 'chesstopia-frontend'
