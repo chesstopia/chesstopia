@@ -28,6 +28,8 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
 
     developmentOnly("org.springframework.boot:spring-boot-devtools")
+    // H2 für bootRun mit test-Profil (kein PostgreSQL nötig); landet nicht im Produktions-Artefakt.
+    developmentOnly("com.h2database:h2")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
