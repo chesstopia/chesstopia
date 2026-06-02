@@ -1,0 +1,27 @@
+# Normalize all text files to LF in the repository.
+# Windows checkout: git converts LF→CRLF if core.autocrlf=true.
+# WSL/Linux checkout: LF is kept as-is.
+* text=auto eol=lf
+
+# Explicitly binary — never touch line endings
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.svg   binary
+*.jar   binary
+*.class binary
+*.zip   binary
+*.gz    binary
+*.tar   binary
+*.pdf   binary
+*.wasm  binary
+
+# Gradle wrapper jar must stay binary
+gradle/wrapper/gradle-wrapper.jar binary
+chess-engine/gradle/wrapper/gradle-wrapper.jar binary
+
+# Windows batch files should keep CRLF (they break otherwise)
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
