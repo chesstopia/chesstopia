@@ -5,3 +5,7 @@ packages:
   - 'openapi-client'
   # React/Vite frontend — consumes @chesstopia/chess-engine and @chesstopia/openapi-client
   - 'chesstopia-frontend'
+allowBuilds:
+  '@nestjs/core': true
+  '@openapitools/openapi-generator-cli': true
+  msw: true
