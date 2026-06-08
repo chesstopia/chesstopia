@@ -30,21 +30,33 @@ tasks.register<PnpmTask>("pnpmFrontendBuild") {
     outputs.dir("chesstopia-frontend/dist")
 }
 
+// Generate the TypeScript Axios client from docs/api/openapi.yaml
+tasks.register<PnpmTask>("generateOpenApiClient") {
+    group = "openapi"
+    description = "Generates TypeScript Axios client from docs/api/openapi.yaml"
+    args.set(listOf("--filter", "@chesstopia/openapi-client", "run", "generate"))
+    dependsOn("pnpmInstall")
+    inputs.file("docs/api/openapi.yaml")
+    outputs.dir("openapi-client/src")
+}
+
 /**
  * Full monorepo build:
  *   1. chess-engine → JVM jar (consumed by Spring Boot via composite build)
  *   2. chess-engine → JS library + .d.ts (consumed by React via pnpm workspace)
- *   3. pnpm install → links @chesstopia/chess-engine in node_modules
- *   4. chesstopia-backend → Spring Boot jar
- *   5. Vite → React frontend bundle (chesstopia-frontend/dist/)
+ *   3. pnpm install → links workspace packages in node_modules
+ *   4. openapi-client → TypeScript Axios client (from docs/api/openapi.yaml)
+ *   5. chesstopia-backend → Spring Boot jar (incl. generated Spring interfaces)
+ *   6. Vite → React frontend bundle (chesstopia-frontend/dist/)
  *
  * Usage: ./gradlew buildAll
  */
 tasks.register("buildAll") {
     group = "build"
-    description = "Builds chess-engine (JVM + JS), Spring Boot backend, links the pnpm workspace, and builds the React frontend"
+    description = "Builds chess-engine (JVM + JS), generates OpenAPI clients, builds Spring Boot backend and React frontend"
     dependsOn(
         gradle.includedBuild("chess-engine").task(":build"),
+        "generateOpenApiClient",
         ":chesstopia-backend:build",
         "pnpmFrontendBuild"
     )

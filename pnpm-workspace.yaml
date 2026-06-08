@@ -1,5 +1,7 @@
 packages:
   # KMP chess rules engine — built by Gradle, linked as @chesstopia/chess-engine
   - 'chess-engine'
-  # React/Vite frontend — consumes @chesstopia/chess-engine via workspace link
+  # Generated TypeScript Axios client — produced from docs/api/openapi.yaml
+  - 'openapi-client'
+  # React/Vite frontend — consumes @chesstopia/chess-engine and @chesstopia/openapi-client
   - 'chesstopia-frontend'
