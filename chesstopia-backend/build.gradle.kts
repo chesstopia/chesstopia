@@ -65,6 +65,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("io.chesstopia:chess-engine")
@@ -73,12 +74,15 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
 
     developmentOnly("org.springframework.boot:spring-boot-devtools")
-    // H2 für bootRun mit test-Profil (kein PostgreSQL nötig); landet nicht im Produktions-Artefakt.
-    developmentOnly("com.h2database:h2")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
-    testRuntimeOnly("com.h2database:h2")
+    // Required for WebTestClient to bind to the live RANDOM_PORT server in this Spring MVC app:
+    // starter-webflux supplies the reactive HTTP client (reactor-netty), spring-boot-webtestclient
+    // the @AutoConfigureWebTestClient slice (extracted into its own module in Spring Boot 4).
+    testImplementation("org.springframework.boot:spring-boot-starter-webflux")
+    testImplementation("org.springframework.boot:spring-boot-webtestclient")
+    testImplementation("io.zonky.test:embedded-database-spring-test:2.8.0")
 }
 
 tasks.withType<JavaCompile> {

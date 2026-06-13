@@ -7,10 +7,24 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/chesstopia_dev
+    username: chesstopia
+    password: chesstopia
   jpa:
     open-in-view: false
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
   jackson:
     default-property-inclusion: non_null
+
+logging:
+  level:
+    io.chesstopia: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
 
 management:
   endpoints:
