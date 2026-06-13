@@ -4,10 +4,12 @@ spring-boot = "4.0.6"
 spring-dependency-management = "1.1.7"
 logstash-logback-encoder = "8.0"
 openapi-generator = "7.22.0"
+zonky-embedded-database = "2.5.1"
 
 [libraries]
 logstash-logback-encoder = { group = "net.logstash.logback", name = "logstash-logback-encoder", version.ref = "logstash-logback-encoder" }
 openapi-generator-cli = { group = "org.openapitools", name = "openapi-generator-cli", version.ref = "openapi-generator" }
+zonky-embedded-database-spring-test = { group = "io.zonky.test.databases", name = "embedded-database-spring-test", version.ref = "zonky-embedded-database" }
 
 [plugins]
 node-gradle = { id = "com.github.node-gradle.node", version.ref = "node-gradle" }

@@ -17,12 +17,12 @@ paths:
       tags:
         - game
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BoardStateResponse'
+                $ref: "#/components/schemas/BoardStateResponse"
 
   /api/v1/hello:
     get:
@@ -32,12 +32,12 @@ paths:
       tags:
         - hello
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HelloResponse'
+                $ref: "#/components/schemas/HelloResponse"
 
 components:
   schemas:
