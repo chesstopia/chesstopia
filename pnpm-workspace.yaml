@@ -5,6 +5,14 @@ packages:
   - 'openapi-client'
   # React/Vite frontend — consumes @chesstopia/chess-engine and @chesstopia/openapi-client
   - 'chesstopia-frontend'
+# Disable pnpm's auto-install before "pnpm run"/"pnpm exec". The workspace packages
+# @chesstopia/chess-engine and @chesstopia/openapi-client are produced by Gradle
+# (KMP build / OpenAPI codegen), not by pnpm. Auto-installing at script-run time
+# fights the Gradle-orchestrated build order and breaks standalone "pnpm build" from
+# a subdir (ERR_PNPM_WORKSPACE_PKG_NOT_FOUND). Run "pnpm install" / "./gradlew
+# buildAll" explicitly when dependencies change.
+verifyDepsBeforeRun: false
+
 allowBuilds:
   '@nestjs/core': true
   '@openapitools/openapi-generator-cli': true

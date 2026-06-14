@@ -18,7 +18,9 @@
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
+    // erasableSyntaxOnly intentionally omitted: the generated @chesstopia/openapi-client
+    // is consumed as raw TypeScript source and uses constructor parameter properties
+    // (non-erasable syntax). Re-enabling this would break the build (TS1294).
     "noFallthroughCasesInSwitch": true,
 
     /* Path aliases */
