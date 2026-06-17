@@ -1,0 +1,83 @@
+# Chesstopia CI — build & test health check.
+#
+# Structure (see docs/adr/0009-ci-pipeline-build-test.md):
+#   Stage 1: chess-engine (build + test) — warms the Gradle build cache
+#   Stage 2 (parallel): backend + frontend — get cache hits on the chess-engine tasks
+#
+# JDK 25 is mandatory and Gradle toolchain auto-download is disabled (foojay is
+# incompatible with Gradle 9.5.1), so the image must ship JDK 25. Node.js and pnpm
+# are downloaded by the node-gradle plugin — they are NOT needed in the image.
+image: eclipse-temurin:25-jdk
+
+definitions:
+  caches:
+    # Gradle dependencies + build cache (~/.gradle/caches/build-cache-1).
+    # File-keyed: the cache is rebuilt when build inputs change, avoiding the
+    # "stale named cache re-downloads every run" trap.
+    gradlecache:
+      key:
+        files:
+          - gradle/libs.versions.toml
+          - "**/*.gradle.kts"
+          - gradle.properties
+      path: ~/.gradle/caches
+    # Gradle 9.5.1 distribution downloaded by the wrapper (~120 MB).
+    gradlewrapper:
+      path: ~/.gradle/wrapper
+    # Node.js + pnpm binaries downloaded by the node-gradle plugin (project-local).
+    gradlenode:
+      path: .gradle/nodejs
+    gradlepnpm:
+      path: .gradle/pnpm
+    # pnpm content-addressable store. File-keyed on the lockfile.
+    pnpmstore:
+      key:
+        files:
+          - pnpm-lock.yaml
+      path: ~/.local/share/pnpm/store
+
+  steps:
+    - step: &chess-engine
+        name: chess-engine (build + test)
+        caches:
+          - gradlecache
+          - gradlewrapper
+        script:
+          - ./gradlew chessEngineBuild
+
+    - step: &backend
+        name: backend (build + test)
+        caches:
+          - gradlecache
+          - gradlewrapper
+        script:
+          # Pulls chess-engine JVM jar via composite build (cache hit), then
+          # builds + tests the backend (tests use embedded Postgres, no DB service).
+          - ./gradlew :chesstopia-backend:build
+
+    - step: &frontend
+        name: frontend (lint + test + build)
+        caches:
+          - gradlecache
+          - gradlewrapper
+          - gradlenode
+          - gradlepnpm
+          - pnpmstore
+        script:
+          # chess-engine JS library is built via the pnpmInstall task dependency (cache hit).
+          - ./gradlew pnpmFrontendLint pnpmFrontendTest pnpmFrontendBuild
+
+pipelines:
+  pull-requests:
+    "**":
+      - step: *chess-engine
+      - parallel:
+          - step: *backend
+          - step: *frontend
+
+  branches:
+    main:
+      - step: *chess-engine
+      - parallel:
+          - step: *backend
+          - step: *frontend
