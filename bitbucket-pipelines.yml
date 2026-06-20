@@ -39,6 +39,9 @@ definitions:
   steps:
     - step: &chess-engine
         name: chess-engine (build + test)
+        runs-on:
+          - self.hosted
+          - linux
         caches:
           - gradlecache
           - gradlewrapper
@@ -47,6 +50,9 @@ definitions:
 
     - step: &backend
         name: backend (build + test)
+        runs-on:
+          - self.hosted
+          - linux
         caches:
           - gradlecache
           - gradlewrapper
@@ -57,6 +63,9 @@ definitions:
 
     - step: &frontend
         name: frontend (lint + test + build)
+        runs-on:
+          - self.hosted
+          - linux
         caches:
           - gradlecache
           - gradlewrapper
@@ -76,7 +85,7 @@ pipelines:
           - step: *frontend
 
   branches:
-    main:
+    "**":
       - step: *chess-engine
       - parallel:
           - step: *backend
