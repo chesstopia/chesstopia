@@ -1,0 +1,31 @@
+---
+# 4 GB box.
+swap_size_mb: 4096
+
+# Public app ports (Caddy terminates TLS); SSH stays from all.yml.
+firewall_allow_tcp:
+  - "{{ ssh_port }}"
+  - 80
+  - 443
+
+# Prod pulls images from the infra registry over the private network (plain HTTP).
+insecure_registries:
+  - "{{ registry_host }}"
+
+# Deploy target: where the pipeline ships docker-compose.prod.yml and runs compose.
+app_dir: /opt/chesstopia
+
+# Ansible-managed persistent stacks (NOT touched by the pipeline).
+db_compose_dir: /opt/chesstopia-db
+edge_compose_dir: /opt/chesstopia-edge
+
+# Rendered into {{ app_dir }}/.env by the deploy_target role.
+# Secret values come from group_vars/prod/vault.yml (Ansible Vault).
+app_env:
+  POSTGRES_DB: chesstopia
+  POSTGRES_USER: chesstopia
+  POSTGRES_PASSWORD: "{{ vault_postgres_password }}"
+  JWT_SECRET: "{{ vault_jwt_secret }}"
+  CHESSCOACH_API_KEY: "{{ vault_chesscoach_api_key }}"
+  IMAGE_REGISTRY: "{{ registry_host }}"
+  SITE_HOSTNAME: "46.225.235.229.sslip.io"

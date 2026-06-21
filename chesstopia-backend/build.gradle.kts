@@ -101,3 +101,7 @@ tasks.withType<JavaCompile> {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+// Deterministic artifact name for the artifact-copy Dockerfile; disable the plain jar.
+tasks.bootJar { archiveFileName.set("app.jar") }
+tasks.named<Jar>("jar") { enabled = false }

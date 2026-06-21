@@ -1,0 +1,37 @@
+---
+# Prepare the prod box to receive deployments. Ansible owns the app dir and the
+# secret .env; the pipeline ships docker-compose.prod.yml and runs compose here.
+
+# Shared external network for the three compose stacks (db, edge, app). Created
+# once, before any stack references it; all containers reach each other over the
+# built-in docker DNS (postgres:5432, backend:8080, frontend:80).
+- name: Create the shared app docker network
+  community.docker.docker_network:
+    name: chesstopia
+    state: present
+
+- name: Create app directory
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0750"
+
+- name: Render .env from vaulted secrets
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ app_dir }}/.env"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0600"
+
+# Authorise the runner's auto-generated key (set as a fact by the infra play) so
+# the pipeline can `ssh deploy@prod`. Requires the infra play to have run in the
+# same invocation -> run the full site.yml (not `--limit prod` alone).
+- name: Authorize the pipeline runner's deploy key
+  ansible.posix.authorized_key:
+    user: "{{ deploy_user }}"
+    key: "{{ hostvars['infra-build'].deploy_runner_pubkey }}"
+    state: present
+  when: hostvars['infra-build'].deploy_runner_pubkey is defined

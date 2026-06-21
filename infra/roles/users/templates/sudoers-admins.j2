@@ -1,0 +1,5 @@
+# Managed by Ansible (chesstopia users role) - do not edit by hand.
+# Passwordless sudo for admin accounts (key-only login is the credential).
+{% for admin in admin_accounts %}
+{{ admin.name }} ALL=(ALL) NOPASSWD:ALL
+{% endfor %}

@@ -1,0 +1,32 @@
+---
+# Ongoing convergence, connecting as the admin user (sudo with password).
+#
+#   ansible-galaxy collection install -r requirements.yml   # once
+#   ansible-playbook site.yml --ask-become-pass --ask-vault-pass
+#
+# --ask-vault-pass is required because the prod deploy_target role renders the
+# .env from vaulted secrets (group_vars/prod/vault.yml).
+- name: Baseline (all hosts)
+  hosts: all
+  become: true
+  roles:
+    - common
+    - users
+    - ssh_hardening
+    - docker
+
+- name: Container registry + deploy key + infra stack (infra box)
+  hosts: infra
+  become: true
+  roles:
+    - deploy_key
+    - registry
+    - infra_compose
+
+- name: Deploy target + persistent stacks (prod box)
+  hosts: prod
+  become: true
+  roles:
+    - deploy_target   # creates the shared `chesstopia` network
+    - db              # persistent Postgres stack
+    - edge            # Caddy edge stack (TLS + reverse proxy)

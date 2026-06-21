@@ -1,0 +1,25 @@
+# Managed by Ansible (chesstopia infra_compose role) - do not edit by hand.
+# Infrastructure stack on the infra box. Secret values come from .env (rendered
+# from Ansible Vault). For now: the self-hosted Bitbucket Pipelines runner.
+services:
+  bitbucket-runner:
+    image: docker-public.packages.atlassian.com/sox/atlassian/bitbucket-pipelines-runner
+    restart: unless-stopped
+    environment:
+      ACCOUNT_UUID: "${RUNNER_ACCOUNT_UUID}"
+      REPOSITORY_UUID: "${RUNNER_REPOSITORY_UUID}"
+      RUNNER_UUID: "${RUNNER_UUID}"
+      OAUTH_CLIENT_ID: "${RUNNER_OAUTH_CLIENT_ID}"
+      OAUTH_CLIENT_SECRET: "${RUNNER_OAUTH_CLIENT_SECRET}"
+      WORKING_DIRECTORY: "/tmp"
+    volumes:
+      # Pipeline steps run as sibling containers on the host docker daemon
+      # (this is how the runner builds images and pushes to the local registry).
+      - /var/run/docker.sock:/var/run/docker.sock
+      # The Linux docker runtime needs access to the host's container dir,
+      # otherwise it crashes at startup with NoSuchFileException.
+      - /var/lib/docker/containers:/var/lib/docker/containers
+      - /tmp:/tmp
+      # Deploy key + pinned known_hosts for the pipeline's `ssh deploy@prod` step.
+      - {{ deploy_key_path }}:/opt/atlassian/pipelines/agent/data/deploy_key:ro
+      - {{ deploy_key_path | dirname }}/known_hosts:/opt/atlassian/pipelines/agent/data/known_hosts:ro

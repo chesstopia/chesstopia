@@ -1,0 +1,117 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name:
+      - ufw
+      - fail2ban
+      - unattended-upgrades
+      - rsync
+      - acl
+      - systemd-timesyncd   # not present on all minimal Hetzner images
+    state: present
+
+# --- Swap (safety net; mandatory on the 4 GB prod box) ---
+- name: Create swapfile
+  ansible.builtin.command:
+    cmd: "fallocate -l {{ swap_size_mb }}M {{ swap_file }}"
+    creates: "{{ swap_file }}"
+  register: swapfile_created
+
+- name: Set swapfile permissions
+  ansible.builtin.file:
+    path: "{{ swap_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Format swapfile
+  ansible.builtin.command: "mkswap {{ swap_file }}"
+  when: swapfile_created.changed
+
+- name: Enable swapfile
+  ansible.builtin.command: "swapon {{ swap_file }}"
+  when: swapfile_created.changed
+
+- name: Persist swapfile in fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "{{ swap_file }} none swap sw 0 0"
+    state: present
+
+- name: Set vm.swappiness
+  ansible.posix.sysctl:
+    name: vm.swappiness
+    value: "{{ swappiness }}"
+    state: present
+    sysctl_file: /etc/sysctl.d/99-chesstopia.conf
+    reload: true
+
+# --- Automatic security updates ---
+- name: Enable unattended-upgrades
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+    owner: root
+    group: root
+    mode: "0644"
+
+# --- fail2ban (default sshd jail) ---
+- name: Enable fail2ban
+  ansible.builtin.service:
+    name: fail2ban
+    enabled: true
+    state: started
+
+# --- Time sync (relevant for TLS / JWT validity) ---
+- name: Enable systemd-timesyncd
+  ansible.builtin.service:
+    name: systemd-timesyncd
+    enabled: true
+    state: started
+
+# --- Firewall ---
+- name: UFW default policies
+  community.general.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - { direction: incoming, policy: deny }
+    - { direction: outgoing, policy: allow }
+
+- name: UFW allow public TCP ports
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop: "{{ firewall_allow_tcp }}"
+
+- name: UFW allow sources from the private network
+  community.general.ufw:
+    rule: allow
+    src: "{{ item.src }}"
+    port: "{{ item.port }}"
+    proto: tcp
+  loop: "{{ firewall_allow_from | default([]) }}"
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
+
+# --- SSH host-key pinning (no TOFU) ---
+# Each host exposes its own ed25519 host key as a fact so the infra play can
+# render a pinned known_hosts for the runner's `ssh deploy@prod` step.
+- name: Read host SSH ed25519 public key (for runner known_hosts pinning)
+  ansible.builtin.slurp:
+    src: /etc/ssh/ssh_host_ed25519_key.pub
+  register: host_ed25519_keyfile
+
+- name: Expose host ed25519 public key as a fact
+  ansible.builtin.set_fact:
+    host_ed25519_pubkey: "{{ host_ed25519_keyfile.content | b64decode | trim }}"

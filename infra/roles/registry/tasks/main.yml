@@ -1,0 +1,23 @@
+---
+# Container registry on the infra box. Bound to the PRIVATE interface only;
+# prod pulls over the private network (plain HTTP via insecure-registries).
+# The self-hosted runner pushes to localhost:{{ registry_port }}.
+# (The python docker SDK needed by community.docker is installed by the docker role.)
+- name: Create registry data directory
+  ansible.builtin.file:
+    path: "{{ registry_data_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Run registry container
+  community.docker.docker_container:
+    name: registry
+    image: registry:2
+    restart_policy: unless-stopped
+    published_ports:
+      - "{{ infra_private_ip }}:{{ registry_port }}:5000"
+    volumes:
+      - "{{ registry_data_dir }}:/var/lib/registry"
+    state: started

@@ -1,0 +1,23 @@
+---
+# 8 GB box: larger swap as a buffer for the up-to-8 GB build spikes (ADR-0009).
+swap_size_mb: 8192
+
+# Allow prod to reach the registry over the private network only.
+firewall_allow_from:
+  - src: "{{ hostvars['prod-app'].prod_private_ip }}"
+    port: "{{ registry_port }}"
+
+registry_data_dir: /opt/registry/data
+
+# Deploy keypair generated on the infra box (roles/deploy_key). The private key
+# stays here and is mounted into the runner later; the public key is authorised
+# on prod automatically.
+deploy_key_path: /opt/chesstopia-runner/ssh/deploy_ed25519
+
+# Infrastructure compose stack (Bitbucket runner; later also the registry).
+infra_compose_dir: /opt/chesstopia-infra
+
+# The infra daemon must allow plain-HTTP PUSH to its own registry (the runner
+# pushes images here as a sibling container over the private network).
+insecure_registries:
+  - "{{ registry_host }}"

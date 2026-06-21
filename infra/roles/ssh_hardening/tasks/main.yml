@@ -1,0 +1,15 @@
+---
+# Drop a fragment into sshd_config.d/ rather than rewriting the main config.
+# This re-asserts the same settings the prod box was hardened with manually.
+- name: Install SSH hardening drop-in
+  ansible.builtin.template:
+    src: 10-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/10-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload ssh
+
+- name: Validate full sshd configuration
+  ansible.builtin.command: sshd -t
+  changed_when: false

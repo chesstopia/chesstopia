@@ -1,0 +1,4 @@
+# Vault passphrase must never be committed (we use --ask-vault-pass anyway).
+.vault_pass
+vault-password*
+*.retry

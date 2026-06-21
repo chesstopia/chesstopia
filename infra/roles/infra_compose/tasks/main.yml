@@ -1,0 +1,51 @@
+---
+# Deploy the infrastructure compose stack (Bitbucket runner) on the infra box.
+- name: Create infra compose directory
+  ansible.builtin.file:
+    path: "{{ infra_compose_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Render infra .env (runner secrets from vault)
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ infra_compose_dir }}/.env"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Render infra docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.infra.yml.j2
+    dest: "{{ infra_compose_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0640"
+
+# Host-key pinning (no TOFU): render prod's pinned host key next to the deploy
+# key, mounted into the runner so its `ssh deploy@prod` uses StrictHostKeyChecking.
+# Depends on prod's fact (set by the common role) -> requires the prod play to
+# have run in the same invocation; guarded below otherwise.
+- name: Create runner ssh directory
+  ansible.builtin.file:
+    path: "{{ deploy_key_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Render pinned known_hosts for the runner
+  ansible.builtin.template:
+    src: known_hosts.j2
+    dest: "{{ deploy_key_path | dirname }}/known_hosts"
+    owner: root
+    group: root
+    mode: "0644"
+  when: hostvars['prod-app'].host_ed25519_pubkey is defined
+
+- name: Bring up the infra stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ infra_compose_dir }}"
+    state: present

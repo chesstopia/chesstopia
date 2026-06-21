@@ -60,6 +60,10 @@ definitions:
           # Pulls chess-engine JVM jar via composite build (cache hit), then
           # builds + tests the backend (tests use embedded Postgres, no DB service).
           - ./gradlew :chesstopia-backend:build
+        # Hand the bootJar to the later package-and-push step (main only; harmless
+        # on PR/branch runs). bootJar is named app.jar; the plain jar is disabled.
+        artifacts:
+          - chesstopia-backend/build/libs/app.jar
 
     - step: &frontend
         name: frontend (lint + test + build)
@@ -75,6 +79,59 @@ definitions:
         script:
           # chess-engine JS library is built via the pnpmInstall task dependency (cache hit).
           - ./gradlew pnpmFrontendLint pnpmFrontendTest pnpmFrontendBuild
+        # Hand the built SPA bundle to the package-and-push step.
+        artifacts:
+          - chesstopia-frontend/dist/**
+
+    # ── Deploy-only steps (main branch) ───────────────────────────────────────
+    # Both the registry host and the prod host are hardcoded here: they live on
+    # the Hetzner private network, are not secret, and already appear in the
+    # Ansible inventory (see docs/adr/0010-deployment-cicd-infrastruktur.md).
+
+    - step: &package-and-push
+        name: package & push images
+        runs-on:
+          - self.hosted
+          - linux
+        # `services: docker` exposes the host docker daemon (socket mounted into
+        # the self-hosted runner). That daemon carries the insecure-registries
+        # entry for 10.0.0.3:5000 (infra role), so the plain-HTTP push works.
+        services:
+          - docker
+        script:
+          - export TAG=${BITBUCKET_COMMIT:0:7}
+          - export IMAGE_REGISTRY=10.0.0.3:5000
+          # Artefact-copy Dockerfiles: no Gradle/pnpm here, just COPY the artifacts
+          # produced by the backend/frontend steps above.
+          - docker build -t $IMAGE_REGISTRY/chesstopia-backend:$TAG chesstopia-backend
+          - docker build -t $IMAGE_REGISTRY/chesstopia-frontend:$TAG chesstopia-frontend
+          - docker push $IMAGE_REGISTRY/chesstopia-backend:$TAG
+          - docker push $IMAGE_REGISTRY/chesstopia-frontend:$TAG
+
+    - step: &deploy
+        name: deploy to prod
+        # Manual gate: a human triggers the only production environment by hand.
+        trigger: manual
+        runs-on:
+          - self.hosted
+          - linux
+        # Small image with an ssh client (the default temurin image has none).
+        image: alpine:3.20
+        script:
+          - apk add --no-cache openssh-client
+          - export TAG=${BITBUCKET_COMMIT:0:7}
+          - export DEPLOY_HOST=10.0.0.2
+          # Deploy key + Ansible-pinned known_hosts are mounted into the runner's
+          # agent data dir; copy the key out so ssh accepts its permissions.
+          - cp /opt/atlassian/pipelines/agent/data/deploy_key /tmp/deploy_key
+          - chmod 600 /tmp/deploy_key
+          - export KNOWN=/opt/atlassian/pipelines/agent/data/known_hosts
+          - export SSHOPTS="-i /tmp/deploy_key -o UserKnownHostsFile=$KNOWN -o StrictHostKeyChecking=yes"
+          # Ship the app-stack compose file (keeps prod == repo), then pull + up.
+          # IMAGE_TAG pins both images to this commit; .env (secrets, IMAGE_REGISTRY)
+          # is already on the box, rendered by Ansible.
+          - scp $SSHOPTS docker-compose.prod.yml deploy@$DEPLOY_HOST:/opt/chesstopia/
+          - ssh $SSHOPTS deploy@$DEPLOY_HOST "cd /opt/chesstopia && IMAGE_TAG=$TAG docker compose pull && IMAGE_TAG=$TAG docker compose up -d"
 
 pipelines:
   pull-requests:
@@ -85,8 +142,18 @@ pipelines:
           - step: *frontend
 
   branches:
+    # main also builds + pushes images and offers a manual deploy. The image
+    # build/push runs ONLY here, never on feature branches or PRs (no throwaway
+    # images in the registry).
     "**":
       - step: *chess-engine
       - parallel:
           - step: *backend
           - step: *frontend
+      - step: *package-and-push
+      - step: *deploy
+    # "**":
+    #   - step: *chess-engine
+    #   - parallel:
+    #       - step: *backend
+    #       - step: *frontend

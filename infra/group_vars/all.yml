@@ -1,0 +1,44 @@
+---
+# Admin login account Ansible uses after bootstrap.
+admin_user: eyota
+
+# Personalised admin accounts (sudo group). eyota MUST stay listed: it already
+# exists on the prod box, and a declarative user role would otherwise ignore it.
+admin_accounts:
+  - name: eyota
+    ssh_keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM0+B+GXKqNw05Oar8ED4jpy9hFy6NuEHSyQo7+QbRm7 WSL"
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGgDaXti4Ooy1oonGhMepGJYA8Or1yGLZOMf/kUvuU92 Windows"
+
+# Unprivileged deploy account (docker group, NO sudo). Used by local devs and the
+# Bitbucket pipeline to run `docker compose pull && up -d` over SSH.
+deploy_user: deploy
+
+# Public keys authorised for the deploy account FOR MANUAL deploys from laptops.
+# The pipeline runner's key is NOT listed here: it is generated automatically on
+# the infra box (roles/deploy_key) and authorised on prod dynamically.
+# Leave empty if only the pipeline should deploy; uncomment your admin pubkeys to
+# also deploy by hand via `ssh deploy@prod ...`.
+deploy_ssh_keys: []
+  # - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM0+B+GXKqNw05Oar8ED4jpy9hFy6NuEHSyQo7+QbRm7 WSL"
+  # - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGgDaXti4Ooy1oonGhMepGJYA8Or1yGLZOMf/kUvuU92 Windows"
+
+# SSH hardening
+ssh_port: 22
+
+# Swap (overridden per group). swappiness=10 -> swap only as a safety net.
+swap_file: /swapfile
+swap_size_mb: 4096
+swappiness: 10
+
+# Firewall: public TCP ports allowed inbound (extended per group).
+firewall_allow_tcp:
+  - "{{ ssh_port }}"
+
+# Container registry (runs on the infra box, reached by prod over the private net).
+registry_port: 5000
+registry_host: "{{ hostvars['infra-build'].infra_private_ip }}:{{ registry_port }}"
+
+# Docker daemon insecure-registries (set on prod so it can pull over plain HTTP
+# on the private network). Empty by default.
+insecure_registries: []

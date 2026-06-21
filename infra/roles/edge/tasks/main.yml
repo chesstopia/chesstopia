@@ -1,0 +1,41 @@
+---
+# Edge stack (Caddy: TLS termination + reverse proxy) on the prod box. Owned by
+# Ansible, never touched by the pipeline. Routes /api/* -> backend:8080 and
+# everything else -> frontend:80 over the shared `chesstopia` network. The
+# caddy_data volume holds ACME certs and MUST persist across redeploys.
+- name: Create edge compose directory
+  ansible.builtin.file:
+    path: "{{ edge_compose_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Render edge .env
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ edge_compose_dir }}/.env"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Render the Caddyfile
+  ansible.builtin.template:
+    src: Caddyfile
+    dest: "{{ edge_compose_dir }}/Caddyfile"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Render edge docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ edge_compose_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Bring up the edge stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ edge_compose_dir }}"
+    state: present
