@@ -1,0 +1,15 @@
+# Production Spring profile, activated via SPRING_PROFILES_ACTIVE=prod from compose.
+# Overrides the dev-flavoured defaults in application.yml: points the datasource at
+# the in-network postgres service, silences SQL logging, and tightens log levels.
+# Flyway stays enabled and migrates against this datasource on startup.
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    show-sql: false
+logging:
+  level:
+    io.chesstopia: INFO
+    org.springframework: WARN

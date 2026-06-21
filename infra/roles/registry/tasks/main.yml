@@ -1,7 +1,7 @@
 ---
 # Container registry on the infra box. Bound to the PRIVATE interface only;
-# prod pulls over the private network (plain HTTP via insecure-registries).
-# The self-hosted runner pushes to localhost:{{ registry_port }}.
+# both prod and the self-hosted runner reach it at {{ registry_host }} over the
+# private network (plain HTTP via insecure-registries).
 # (The python docker SDK needed by community.docker is installed by the docker role.)
 - name: Create registry data directory
   ansible.builtin.file:
@@ -21,3 +21,37 @@
     volumes:
       - "{{ registry_data_dir }}:/var/lib/registry"
     state: started
+
+# ── Custom dind image for the Bitbucket Pipelines `docker` service ────────────
+# The pipeline's package-and-push step runs its docker commands inside a
+# Docker-in-Docker service. Stock dind probes the registry over HTTPS and hangs
+# against our plain-HTTP registry, so we ship a dind that trusts it via
+# --insecure-registry. Chicken-and-egg: every pipeline docker command runs
+# *through* this dind, so the pipeline cannot build it — we build + push it here
+# on the host daemon (which already trusts {{ registry_host }}).
+- name: Create build context dir for the custom dind image
+  ansible.builtin.file:
+    path: "{{ dind_build_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Copy custom dind Dockerfile to the host
+  ansible.builtin.copy:
+    src: insecure-dind/Dockerfile
+    dest: "{{ dind_build_dir }}/Dockerfile"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Build + push the custom insecure-registry-aware dind image
+  community.docker.docker_image:
+    name: "{{ registry_host }}/chesstopia-dind"
+    tag: latest
+    source: build
+    build:
+      path: "{{ dind_build_dir }}"
+      pull: true
+    force_source: true
+    push: true

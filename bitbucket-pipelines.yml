@@ -36,6 +36,16 @@ definitions:
           - pnpm-lock.yaml
       path: ~/.local/share/pnpm/store
 
+  services:
+    # Override the built-in `docker` service with our custom dind that trusts the
+    # plain-HTTP private registry (--insecure-registry). The image is prebuilt
+    # onto the infra host and pushed to the local registry by the `registry`
+    # Ansible role; the host daemon (which trusts 10.0.0.3:5000) pulls it here.
+    docker:
+      image: 10.0.0.3:5000/chesstopia-dind:latest
+      variables:
+        DOCKER_OPTS: "--insecure-registry=10.0.0.3:5000"
+
   steps:
     - step: &chess-engine
         name: chess-engine (build + test)
@@ -57,9 +67,20 @@ definitions:
           - gradlecache
           - gradlewrapper
         script:
+          # The tests start an embedded Postgres from native binaries (Zonky). Its
+          # initdb/postgres binaries refuse to run as root, but the temurin image
+          # runs as root — so the whole build must run as an unprivileged user.
+          # Create one, hand it the sources and the (root-owned) restored Gradle
+          # caches, and keep GRADLE_USER_HOME pinned to /root/.gradle so the
+          # ~/.gradle cache mounts still hit.
+          - useradd -m -u 1001 builder
+          # /root is mode 700, so builder cannot traverse into /root/.gradle even
+          # once it owns it — grant the execute (traverse) bit, not read.
+          - chmod 711 /root
+          - chown -R builder:builder "$BITBUCKET_CLONE_DIR" /root/.gradle
           # Pulls chess-engine JVM jar via composite build (cache hit), then
           # builds + tests the backend (tests use embedded Postgres, no DB service).
-          - ./gradlew :chesstopia-backend:build
+          - su builder -c "cd '$BITBUCKET_CLONE_DIR' && GRADLE_USER_HOME=/root/.gradle ./gradlew :chesstopia-backend:build"
         # Hand the bootJar to the later package-and-push step (main only; harmless
         # on PR/branch runs). bootJar is named app.jar; the plain jar is disabled.
         artifacts:
@@ -93,9 +114,11 @@ definitions:
         runs-on:
           - self.hosted
           - linux
-        # `services: docker` exposes the host docker daemon (socket mounted into
-        # the self-hosted runner). That daemon carries the insecure-registries
-        # entry for 10.0.0.3:5000 (infra role), so the plain-HTTP push works.
+        # `services: docker` provides the docker CLI in this step plus a
+        # Docker-in-Docker daemon to build/push with. We override the stock dind
+        # (see the custom `docker` service in `definitions` below) so dockerd
+        # trusts the plain-HTTP private registry via --insecure-registry; stock
+        # dind probes it over HTTPS and hangs (connection timeout on push).
         services:
           - docker
         script:
@@ -115,23 +138,21 @@ definitions:
         runs-on:
           - self.hosted
           - linux
-        # Small image with an ssh client (the default temurin image has none).
-        image: alpine:3.20
+        # Custom image (built by the infra_compose role, pulled from the local
+        # registry) with openssh-client plus the deploy key + pinned known_hosts
+        # baked in — sibling step containers can't see the runner's host mounts.
+        image: 10.0.0.3:5000/chesstopia-deploy:latest
         script:
-          - apk add --no-cache openssh-client
           - export TAG=${BITBUCKET_COMMIT:0:7}
           - export DEPLOY_HOST=10.0.0.2
-          # Deploy key + Ansible-pinned known_hosts are mounted into the runner's
-          # agent data dir; copy the key out so ssh accepts its permissions.
-          - cp /opt/atlassian/pipelines/agent/data/deploy_key /tmp/deploy_key
-          - chmod 600 /tmp/deploy_key
-          - export KNOWN=/opt/atlassian/pipelines/agent/data/known_hosts
-          - export SSHOPTS="-i /tmp/deploy_key -o UserKnownHostsFile=$KNOWN -o StrictHostKeyChecking=yes"
+          - export SSHOPTS="-i /root/.ssh/deploy_key -o UserKnownHostsFile=/root/.ssh/known_hosts -o StrictHostKeyChecking=yes"
           # Ship the app-stack compose file (keeps prod == repo), then pull + up.
           # IMAGE_TAG pins both images to this commit; .env (secrets, IMAGE_REGISTRY)
           # is already on the box, rendered by Ansible.
           - scp $SSHOPTS docker-compose.prod.yml deploy@$DEPLOY_HOST:/opt/chesstopia/
-          - ssh $SSHOPTS deploy@$DEPLOY_HOST "cd /opt/chesstopia && IMAGE_TAG=$TAG docker compose pull && IMAGE_TAG=$TAG docker compose up -d"
+          # -f: the file keeps its repo name on the box, so it is not a compose
+          # default name; .env is still auto-loaded from the project dir (cwd).
+          - ssh $SSHOPTS deploy@$DEPLOY_HOST "cd /opt/chesstopia && IMAGE_TAG=$TAG docker compose -f docker-compose.prod.yml pull && IMAGE_TAG=$TAG docker compose -f docker-compose.prod.yml up -d"
 
 pipelines:
   pull-requests:

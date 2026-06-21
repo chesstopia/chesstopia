@@ -20,6 +20,6 @@ services:
       # otherwise it crashes at startup with NoSuchFileException.
       - /var/lib/docker/containers:/var/lib/docker/containers
       - /tmp:/tmp
-      # Deploy key + pinned known_hosts for the pipeline's `ssh deploy@prod` step.
-      - {{ deploy_key_path }}:/opt/atlassian/pipelines/agent/data/deploy_key:ro
-      - {{ deploy_key_path | dirname }}/known_hosts:/opt/atlassian/pipelines/agent/data/known_hosts:ro
+      # NOTE: the deploy key is NOT mounted here — sibling step containers can't
+      # see runner mounts. It is baked into the chesstopia-deploy image instead
+      # (built + pushed by this role); the deploy step pulls that image.

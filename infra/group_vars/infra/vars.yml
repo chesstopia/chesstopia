@@ -2,9 +2,16 @@
 # 8 GB box: larger swap as a buffer for the up-to-8 GB build spikes (ADR-0009).
 swap_size_mb: 8192
 
-# Allow prod to reach the registry over the private network only.
+# Registry reachability through UFW (default incoming = deny):
+#  - prod pulls images over the private network;
+#  - the pipeline's dind pushes from a Docker bridge network. That push targets
+#    the host's private IP, so the docker-proxy hands it to the INPUT chain where
+#    UFW filters it; without this rule it silently times out. 172.16.0.0/12 is
+#    Docker's default address pool (covers docker0 + the per-build bridges).
 firewall_allow_from:
   - src: "{{ hostvars['prod-app'].prod_private_ip }}"
+    port: "{{ registry_port }}"
+  - src: "172.16.0.0/12"
     port: "{{ registry_port }}"
 
 registry_data_dir: /opt/registry/data
@@ -16,6 +23,14 @@ deploy_key_path: /opt/chesstopia-runner/ssh/deploy_ed25519
 
 # Infrastructure compose stack (Bitbucket runner; later also the registry).
 infra_compose_dir: /opt/chesstopia-infra
+
+# Build context for the custom Docker-in-Docker image (registry role) that the
+# pipeline's `docker` service uses to trust the plain-HTTP private registry.
+dind_build_dir: /opt/chesstopia-runner/dind
+
+# Build context for the deploy image (infra_compose role): openssh-client + the
+# baked-in deploy key + pinned known_hosts for the pipeline's deploy step.
+deploy_image_build_dir: /opt/chesstopia-runner/deploy-image
 
 # The infra daemon must allow plain-HTTP PUSH to its own registry (the runner
 # pushes images here as a sibling container over the private network).
