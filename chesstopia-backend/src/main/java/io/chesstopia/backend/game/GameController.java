@@ -8,11 +8,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class GameController implements GameApi {
 
-    private static final String INITIAL_FEN =
-            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    private final GameService gameService;
+
+    public GameController(GameService gameService) {
+        this.gameService = gameService;
+    }
 
     @Override
     public ResponseEntity<BoardStateResponse> getBoard() {
-        return ResponseEntity.ok(new BoardStateResponse(INITIAL_FEN));
+        return ResponseEntity.ok(new BoardStateResponse(gameService.getInitialFen()));
     }
 }
