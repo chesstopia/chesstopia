@@ -56,10 +56,7 @@ jobs:
       # `runner` user, so the useradd dance the Bitbucket pipeline needed is gone.
       - run: ./gradlew :chesstopia-backend:build
       - name: Upload bootJar
-        # TEMP(migration): CHESS-8-Initial-pipeline is allowed to publish so the
-        # image build + deploy can be tested before the merge. Remove the second
-        # clause (here, in `frontend` and in `images`) once main is live.
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/CHESS-8-Initial-pipeline'
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: backend-jar
@@ -92,8 +89,7 @@ jobs:
       # have gone red the moment the frontend actually imports @chesstopia/openapi-client.
       - run: ./gradlew generateOpenApiClient pnpmFrontendLint pnpmFrontendTest pnpmFrontendBuild
       - name: Upload SPA bundle
-        # TEMP(migration): see the note in the backend job.
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/CHESS-8-Initial-pipeline'
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
@@ -103,9 +99,7 @@ jobs:
   images:
     name: package & push images
     # Images are built ONLY on main — no throwaway images from feature branches or PRs.
-    # TEMP(migration): see the note in the backend job. Revert to the main-only
-    # condition after the merge, otherwise every feature branch fills up GHCR.
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/CHESS-8-Initial-pipeline'
+    if: github.ref == 'refs/heads/main'
     needs: [chess-engine, backend, frontend]
     runs-on: ubuntu-latest
     permissions:
