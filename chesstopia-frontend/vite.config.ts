@@ -13,4 +13,7 @@ export default defineConfig({
   optimizeDeps: {
     include: ["@chesstopia/chess-engine"],
   },
+  test: {
+    environment: "node",
+  },
 });

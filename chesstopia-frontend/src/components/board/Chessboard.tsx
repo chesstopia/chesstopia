@@ -1,12 +1,11 @@
-import { parseFenBoard } from '@/lib/fen';
+import type { Board } from '@/lib/fen';
 import { Square } from './Square';
 
 type ChessboardProps = {
-  fen: string;
+  board: Board;
 };
 
-export function Chessboard({ fen }: ChessboardProps) {
-  const board = parseFenBoard(fen);
+export function Chessboard({ board }: ChessboardProps) {
 
   return (
     <div className="grid grid-cols-8 w-[min(90vw,560px)] aspect-square border-2 border-stone-700 shadow-xl">
