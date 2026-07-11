@@ -1,6 +1,7 @@
 # ── Gradle ────────────────────────────────────────────────────────────────────
 .gradle/
 build/
+bin/
 !gradle/wrapper/gradle-wrapper.jar   # wrapper jar must be committed
 
 # ── Node / pnpm ───────────────────────────────────────────────────────────────
@@ -33,3 +34,6 @@ Thumbs.db
 
 # ── Test reports ──────────────────────────────────────────────────────────────
 TEST*.xml
+
+# ── Local planning docs (not for version control) ─────────────────────────────
+docs/local/

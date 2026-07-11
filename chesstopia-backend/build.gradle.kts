@@ -90,6 +90,11 @@ tasks.withType<JavaCompile> {
     options.compilerArgs.addAll(listOf("-Xlint:-deprecation"))
 }
 
+tasks.withType<JavaCompile> {
+    // Suppress deprecation warnings from generated OpenAPI sources (e.g. @Nullable migration in Spring 7)
+    options.compilerArgs.addAll(listOf("-Xlint:-deprecation"))
+}
+
 tasks.withType<Test> {
     useJUnitPlatform()
 }
