@@ -105,8 +105,9 @@
     state: enabled
 
 # --- SSH host-key pinning (no TOFU) ---
-# Each host exposes its own ed25519 host key as a fact so the infra play can
-# render a pinned known_hosts for the runner's `ssh deploy@prod` step.
+# The host exposes its own ed25519 host key as a fact. deploy_target turns it into
+# a local known_hosts file, which is pasted into the GitHub Actions variable the
+# deploy workflow pins against (ADR-0011).
 - name: Read host SSH ed25519 public key (for runner known_hosts pinning)
   ansible.builtin.slurp:
     src: /etc/ssh/ssh_host_ed25519_key.pub

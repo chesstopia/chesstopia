@@ -1,18 +1,23 @@
 # Chesstopia Infrastructure (Ansible)
 
-Provisioning for the two Hetzner VPS. Runs **locally** from a laptop (Ansible is
+Provisioning for the Hetzner VPS. Runs **locally** from a laptop (Ansible is
 agentless — no Ansible server). See `docs/adr/0010-deployment-cicd-infrastruktur.md`
-for the rationale behind every choice here.
+for the topology and `docs/adr/0011-migration-nach-github-actions.md` for what the
+move to GitHub changed.
 
 ## Topology
 
-| Host          | Spec          | Role                                          |
-|---------------|---------------|-----------------------------------------------|
-| `prod-app`    | 4 GB / 2 CPU  | App: Caddy, backend, frontend, Postgres       |
-| `infra-build` | 8 GB / 4 CPU  | Self-hosted Bitbucket runner + registry       |
+| Host       | Spec         | Role                                     |
+|------------|--------------|------------------------------------------|
+| `prod-app` | 4 GB / 2 CPU | App: Caddy, backend, frontend, Postgres  |
 
-Ansible **provisions** the boxes. The Bitbucket pipeline **deploys** the app
-(build → push image → `ssh deploy@prod 'docker compose pull && up -d'`).
+One box. CI runs on GitHub-hosted runners, images live in **GHCR**
+(`ghcr.io/chesstopia/…`, public packages, pulled anonymously over HTTPS). The former
+infra box — self-hosted runner plus a plain-HTTP `registry:2` on the Hetzner private
+network — is gone, and with it the `registry`, `deploy_key` and `infra_compose` roles.
+
+Ansible **provisions** the box and owns the persistent stacks (`db`, `edge`).
+GitHub Actions **deploys** the stateless app stack (`.github/workflows/deploy.yml`).
 
 ## Layout
 
@@ -22,12 +27,11 @@ infra/
 ├── requirements.yml          # galaxy collections
 ├── bootstrap.yml             # first contact with a FRESH box (as root)
 ├── site.yml                  # ongoing convergence (as admin user)
-├── inventory/hosts.yml       # <- fill in the CHANGE_ME IPs
+├── inventory/hosts.yml
 ├── group_vars/
-│   ├── all.yml               # admins, deploy user, swap, firewall, registry
-│   ├── prod/{vars.yml,vault.yml.example}
-│   └── infra/vars.yml
-└── roles/{common,users,ssh_hardening,docker,registry,deploy_key,deploy_target}
+│   ├── all.yml               # admins, deploy user + keys, swap, firewall, registry
+│   └── prod/{vars.yml,vault.yml}
+└── roles/{common,users,ssh_hardening,docker,deploy_target,db,edge}
 ```
 
 ## One-time setup
@@ -35,97 +39,59 @@ infra/
 ```bash
 cd infra
 ansible-galaxy collection install -r requirements.yml
-
-# Fill in inventory/hosts.yml (public + private IPs) and the SSH public keys /
-# second admin in group_vars/all.yml.
-
-# Create the encrypted secrets file:
-cp group_vars/prod/vault.yml.example group_vars/prod/vault.yml
-ansible-vault encrypt group_vars/prod/vault.yml   # then `ansible-vault edit` to fill in
 ```
 
-## Bootstrapping
+`group_vars/prod/vault.yml` is committed **encrypted** (Ansible Vault, AES256). The
+passphrase lives in your password manager and nowhere else. Edit with
+`ansible-vault edit group_vars/prod/vault.yml`.
 
-`infra-build` is fresh (root login open) → bootstrap it as root first. This creates
-the admin + deploy accounts and then locks down root/password login:
-
-```bash
-ansible-playbook bootstrap.yml --limit infra -e ansible_user=root
-```
-
-`prod-app` was already bootstrapped manually (user `eyota`, root locked) → **skip
-bootstrap**, just run `site.yml`. Ansible will re-assert the same SSH hardening.
-
-## Converging (every run after bootstrap)
-
-Admins get **passwordless sudo** (the `users` role installs a `/etc/sudoers.d`
-drop-in), so no become password is needed:
+## Converging
 
 ```bash
 ansible-playbook site.yml --ask-vault-pass
 ```
 
-**First prod run only:** prod's `eyota` was created manually and still requires a
-sudo password until this run installs the NOPASSWD drop-in. So the *first* time:
+`--ask-vault-pass` is needed because `deploy_target` renders the app `.env` from
+`vault.yml`. Admins have passwordless sudo, so no become password is required.
+
+## Wiring up the GitHub deploy workflow
+
+The deploy workflow SSHes into prod as the unprivileged `deploy` user. Three things
+have to line up — do this **before** the first deploy, or `compose pull` will fail.
+
+**1. Deploy keypair** — generate it once, locally:
 
 ```bash
-ansible-playbook site.yml --ask-vault-pass --ask-become-pass   # type prod eyota's password
+ssh-keygen -t ed25519 -C "deploy@github-actions" -f ~/.ssh/chesstopia_deploy -N ""
 ```
 
-After that, drop `--ask-become-pass`. The infra box never needs it (bootstrap
-already set NOPASSWD there).
+- Public half → `deploy_ssh_keys` in `group_vars/all.yml` (replaces the `CHANGE_ME`
+  entry). The `users` role authorises it on prod.
+- Private half → GitHub → repo Settings → Environments → **`production`** →
+  *Environment secrets* → `DEPLOY_SSH_KEY`.
 
-- `--ask-vault-pass`: needed to render the prod `.env` from `vault.yml`.
+Put it on the **environment**, not on the repository: an environment secret with a
+`main` deployment-branch rule cannot be read by a workflow on a feature branch, and
+never by a fork PR. Note what this key is worth — `deploy` is in the `docker` group,
+which is root-equivalent on this box. **Repo write access ≈ prod root.**
 
-Scope to one host with `--limit prod` / `--limit infra`.
+**2. Host-key pin** — a `site.yml` run writes `infra/prod_known_hosts` (gitignored)
+by reading prod's own host key over the already-trusted Ansible connection. Paste its
+contents into GitHub → Settings → *Variables* → `PROD_SSH_KNOWN_HOSTS`. Not a secret;
+host keys are public by design. The workflow pins against it with
+`StrictHostKeyChecking=yes` — no TOFU.
 
-## Self-hosted Bitbucket runner (infra box)
-
-The runner runs as a compose service (`roles/infra_compose`), deployed by Ansible.
-Infra services are deployed **from local via Ansible**; only the app is deployed
-from the pipeline.
-
-1. In Bitbucket: **Repository settings → Runners → Add runner → Linux / Docker**.
-   Bitbucket shows a `docker run` command — copy the values from its `-e` flags.
-2. Put them into the infra vault:
-   ```bash
-   cp group_vars/infra/vault.yml.example group_vars/infra/vault.yml
-   ansible-vault encrypt group_vars/infra/vault.yml   # then `ansible-vault edit`
-   ```
-3. Apply:
-   ```bash
-   ansible-playbook site.yml --ask-vault-pass
-   ```
-
-The compose mounts the host docker socket so pipeline steps run as sibling
-containers (how the runner builds + pushes images). Note: socket access ≈ root on
-the infra host — inherent to self-hosted docker runners.
-
-Still TODO for the runner: mount the deploy key (commented in the compose) and add
-`runs-on: [self.hosted, linux]` in `bitbucket-pipelines.yml`.
+**3. Host** — GitHub → Settings → *Variables* → `PROD_HOST` = prod's public IP.
 
 ## What this does NOT do
 
-- It does **not** deploy the app — that's the pipeline's job.
-- The registry runs **insecure over the private network** (deliberate; harden with
-  TLS + auth later).
-- Backups (`pg_dump` + rsync to the infra box) are not wired here yet.
+- It does **not** deploy the app — that's `.github/workflows/deploy.yml`.
+- **There is no backup.** ADR-0010 planned `pg_dump` + rsync to the infra box; that
+  box no longer exists and no replacement target has been chosen. The prod database
+  lives on exactly one disk. Known and accepted, defensible only while there is no
+  real user data. Candidate: Hetzner Storage Box + restic.
 
-## Deploy key (auto-generated)
+## Notes
 
-The deploy account's keypair is **not** entered by hand. The `deploy_key` role
-generates it on the infra box (`deploy_key_path`), and `deploy_target` authorises
-the public key on prod automatically via a cross-host fact. So:
-
-- The runner key flows infra → prod during a **full `site.yml` run** (the infra
-  play must run before the prod play; `--limit prod` alone skips authorising it).
-- `deploy_ssh_keys` in `group_vars/all.yml` is only for **manual** deploys from
-  laptops and is empty by default.
-- Wiring the private key (`deploy_key_path`) into the runner is a later step.
-
-## Notes / TODO markers
-
-- Replace every `CHANGE_ME` in `inventory/hosts.yml` and `group_vars/`.
-- `arch=amd64` is hardcoded in the docker repo (Hetzner x86).
-- `community.docker` needs the python docker SDK on the target — installed by the
-  `registry` role (`python3-docker`).
+- `arch=amd64` is hardcoded in the docker apt repo (Hetzner x86).
+- The Hetzner private network has no second participant left and can be torn down.

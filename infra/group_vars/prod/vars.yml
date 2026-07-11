@@ -8,11 +8,7 @@ firewall_allow_tcp:
   - 80
   - 443
 
-# Prod pulls images from the infra registry over the private network (plain HTTP).
-insecure_registries:
-  - "{{ registry_host }}"
-
-# Deploy target: where the pipeline ships docker-compose.prod.yml and runs compose.
+# Deploy target: where the deploy workflow ships docker-compose.prod.yml and runs compose.
 app_dir: /opt/chesstopia
 
 # Ansible-managed persistent stacks (NOT touched by the pipeline).
@@ -27,5 +23,5 @@ app_env:
   POSTGRES_PASSWORD: "{{ vault_postgres_password }}"
   JWT_SECRET: "{{ vault_jwt_secret }}"
   CHESSCOACH_API_KEY: "{{ vault_chesscoach_api_key }}"
-  IMAGE_REGISTRY: "{{ registry_host }}"
+  IMAGE_REGISTRY: "{{ image_registry }}"
   SITE_HOSTNAME: "46.225.235.229.sslip.io"

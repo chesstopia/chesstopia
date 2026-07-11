@@ -10,16 +10,25 @@ admin_accounts:
       - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM0+B+GXKqNw05Oar8ED4jpy9hFy6NuEHSyQo7+QbRm7 WSL"
       - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGgDaXti4Ooy1oonGhMepGJYA8Or1yGLZOMf/kUvuU92 Windows"
 
-# Unprivileged deploy account (docker group, NO sudo). Used by local devs and the
-# Bitbucket pipeline to run `docker compose pull && up -d` over SSH.
+# Unprivileged deploy account (docker group, NO sudo). Used by the GitHub Actions
+# deploy workflow (and optionally by local devs) to run `docker compose pull && up -d`.
 deploy_user: deploy
 
-# Public keys authorised for the deploy account FOR MANUAL deploys from laptops.
-# The pipeline runner's key is NOT listed here: it is generated automatically on
-# the infra box (roles/deploy_key) and authorised on prod dynamically.
-# Leave empty if only the pipeline should deploy; uncomment your admin pubkeys to
-# also deploy by hand via `ssh deploy@prod ...`.
-deploy_ssh_keys: []
+# Public keys authorised for the deploy account.
+#
+# The FIRST entry is the deploy workflow's key. Its private half lives in the
+# GitHub environment `production` as the secret DEPLOY_SSH_KEY — nowhere else.
+# Generate it once, locally:
+#
+#   ssh-keygen -t ed25519 -C "deploy@github-actions" -f ~/.ssh/chesstopia_deploy -N ""
+#
+# then paste the .pub here and the private key into the GitHub environment secret.
+# (Before ADR-0011 this key was generated on the infra box and authorised via a
+# cross-host fact; that box and the deploy_key role are gone.)
+#
+# Further entries authorise MANUAL deploys from a laptop (`ssh deploy@prod ...`).
+deploy_ssh_keys:
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOc7I6cAAPWVo5VQynN4MPtv37cMe8BIUqNVpXOn5Xvk deploy@github-actions"
   # - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM0+B+GXKqNw05Oar8ED4jpy9hFy6NuEHSyQo7+QbRm7 WSL"
   # - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGgDaXti4Ooy1oonGhMepGJYA8Or1yGLZOMf/kUvuU92 Windows"
 
@@ -35,10 +44,11 @@ swappiness: 10
 firewall_allow_tcp:
   - "{{ ssh_port }}"
 
-# Container registry (runs on the infra box, reached by prod over the private net).
-registry_port: 5000
-registry_host: "{{ hostvars['infra-build'].infra_private_ip }}:{{ registry_port }}"
+# Container registry: GitHub Container Registry, public packages (ADR-0011).
+# Images are pushed by GitHub Actions with the automatic GITHUB_TOKEN; prod pulls
+# them anonymously over HTTPS — no `docker login`, no credential to rotate.
+image_registry: ghcr.io/chesstopia
 
-# Docker daemon insecure-registries (set on prod so it can pull over plain HTTP
-# on the private network). Empty by default.
+# Docker daemon insecure-registries. Empty since ADR-0011: GHCR speaks HTTPS, so
+# the plain-HTTP private registry (and its --insecure-registry hole) is gone.
 insecure_registries: []

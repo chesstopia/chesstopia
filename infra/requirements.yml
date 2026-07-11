@@ -3,4 +3,4 @@
 collections:
   - name: community.general   # ufw
   - name: ansible.posix       # sysctl, authorized_key
-  - name: community.docker    # docker_container (registry)
+  - name: community.docker    # docker_network, compose stacks (db, edge)

@@ -1,7 +1,7 @@
 # ADR-0009: CI-Pipeline — Build- & Test-Health-Check (Bitbucket)
 
 ## Status
-Accepted
+Accepted — teilweise überholt durch [ADR-0011](0011-migration-nach-github-actions.md). Die Plattform (Bitbucket) und die Job-Reihenfolge (chess-engine als Cache-Warmup-Stage vor backend/frontend) gelten nicht mehr; die Komponenten-Trennung der Steps, der Build-Cache statt Artefakt-Passing und die Rahmenbedingungen aus dem Code gelten weiter.
 
 ## Context
 Das Monorepo braucht eine erste CI-Pipeline, die ausschließlich prüft, dass **Builds und Tests gesund sind** — Build-Artefakte werden (noch) nicht weiterverarbeitet (kein Deploy, kein Publish). Mehrere harte Rahmenbedingungen aus dem bestehenden Code prägen das Design:

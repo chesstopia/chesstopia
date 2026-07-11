@@ -1,7 +1,7 @@
 # ADR-0010: Deployment- & CI/CD-Infrastruktur
 
 ## Status
-Accepted
+Accepted — teilweise überholt durch [ADR-0011](0011-migration-nach-github-actions.md). Die Zwei-Box-Topologie (Infra-Box mit self-hosted Runner + private Registry) und die Bitbucket-Deploy-Mechanik gelten nicht mehr — die Infra-Box ist gelöscht. Weiter gültig: die drei Compose-Stacks nach Eigentümergrenze, das externe Netz, Caddy/Same-Origin, Hash-Pinning ohne `latest`, das `prod`-Spring-Profil und Ansible als rein lokales Provisioning-Werkzeug.
 
 ## Context
 ADR-0009 etablierte eine reine Build-/Test-Pipeline (Bitbucket Cloud) ohne Deploy/Publish. Jetzt soll Chesstopia tatsächlich auf eigener Hardware laufen. Vorhanden sind **zwei Hetzner-VPS**: eine mit **4 GB RAM / 2 CPU** (Prod) und eine mit **8 GB RAM / 4 CPU** (Infra). Mehrere harte Randbedingungen prägen das Design:
