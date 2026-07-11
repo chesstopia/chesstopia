@@ -38,9 +38,9 @@ jobs:
       name: production
       url: https://46.225.235.229.sslip.io
     steps:
+      # Checks out the ref you dispatched from (main by default). That ref supplies
+      # docker-compose.prod.yml and, unless `tag` is given, the image tag.
       - uses: actions/checkout@v4
-        with:
-          ref: main
 
       - name: Resolve image tag
         id: meta
