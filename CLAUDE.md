@@ -71,7 +71,7 @@ pnpm --filter chesstopia-frontend test
 - Die Konvertierung erfolgt mit `.toList()` **direkt am Engine-Aufruf**. Das `Array`-Format dringt nicht bis in die REST-Schicht.
 
 **Tests**
-- Kontext-Tests gegen die Datenbank brauchen `@AutoConfigureEmbeddedDatabase` ([ADR-0008-embedded-postgres](docs/adr/0008-embedded-postgres-fuer-tests.md)) — ohne die Annotation läuft der Test gegen die echte Datenbank.
+- Kontext-Tests gegen die Datenbank brauchen `@AutoConfigureEmbeddedDatabase` ([ADR-0009](docs/adr/0009-embedded-postgres-fuer-tests.md)) — ohne die Annotation läuft der Test gegen die echte Datenbank.
 - Frontend-Tests laufen unter Vitest. `defineConfig` kommt in der Vitest-Konfiguration aus `vitest/config`, nicht aus `vite`.
 
 ---
