@@ -98,6 +98,8 @@ Trifft keines zu, wird es **nicht** aufgeschrieben. Jedes Dokument erzeugt dauer
 
 **Verworfene Alternativen gehören ins ADR**, nicht in eine Notiz. Eine zweite Entscheidungsablage neben `docs/adr/` untergräbt die Konvention.
 
+**Vor einer Änderung an einem Modul: `docs/modules/<modul>.md` lesen**, falls es existiert. Ändert die Arbeit Zweck, Grenzen oder Wellenwirkung des Moduls — nicht bloß seinen Inhalt —, wird das Dokument im selben Commit angepasst. Die Einschränkung trägt die Regel: Eine neue Datei im Modul ändert die Beschreibung nicht, eine neue Abhängigkeit nach außen schon.
+
 **Obsidian ist eine Linse, kein Speicher.** `docs/` ist als Obsidian-Vault nutzbar, aber kein Plugin darf tragend werden: Jede Datei muss ohne Obsidian vollständig lesbar sein. Keine Dataview-Blöcke in versionierten Dokumenten.
 
 ---
@@ -108,6 +110,7 @@ Trifft keines zu, wird es **nicht** aufgeschrieben. Jedes Dokument erzeugt dauer
 |---|---|
 | Was ist das hier für ein System? | [docs/index.md](docs/index.md) |
 | Warum ist es so entschieden? | [docs/adr/index.md](docs/adr/index.md) |
+| Was darf ich in diesem Modul nicht tun? | [docs/modules/](docs/modules/) |
 | Was heißt dieser Domänenbegriff? | [docs/context.md](docs/context.md) |
 | Wie sieht die API aus? | [docs/api/openapi.yaml](docs/api/openapi.yaml) |
 | Woran wird gerade geplant? | `docs/local/` — gitignored, nie referenzieren |

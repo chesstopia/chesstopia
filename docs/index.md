@@ -24,9 +24,10 @@ Alles andere ordnet sich dem unter. `buildAll` ist der kanonische Einstiegspunkt
 | `chesstopia-backend` | Spring Boot, REST + WebSocket | — |
 | `chesstopia-frontend` | React/Vite | — |
 | `openapi-client` | generierter TS-Client, gitignored | — |
-| `docs/api/openapi.yaml` | API-Kontrakt | — |
+| `docs/api/openapi.yaml` | API-Kontrakt | [api-kontrakt.md](modules/api-kontrakt.md) |
+| Root-Build | Reihenfolge über vier Build-Systeme | [build-orchestrierung.md](modules/build-orchestrierung.md) |
 
-Die Spalte *Beschreibung* verweist später auf `modules/<modul>.md`. Die Dokumente entstehen noch.
+Zwei Modulbeschreibungen existieren, vier fehlen. Die beiden vorhandenen sind bewusst zuerst entstanden: Sie beschreiben die Nahtstellen, an denen eine Änderung mehrere Module gleichzeitig bewegt — das Wissen, das bisher nur in Sessionverläufen existierte. Die übrigen vier folgen; bis dahin ist der Code die Auskunft.
 
 ## Stand der Umsetzung
 
