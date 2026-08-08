@@ -183,12 +183,10 @@ tasks.register("checkDocs") {
         // Bewusst Regex, kein Java-Parser: Die Annotation steht immer am
         // Zeilenanfang; ein Parser wäre hundertmal teurer als der Befund.
         //
-        // Bewusst Warnung, noch nicht Fehler: Es gibt genau einen Verstoß —
-        // /api/v1/counter — und der ist in ADR-0008, im ADR-Register und in
-        // modules/api-kontrakt.md als bekannte Abweichung ausgewiesen. Die
-        // richtige Behebung ist der Kontrakt, nicht ein Unterdrückungs-
-        // mechanismus. Sobald counter in openapi.yaml steht, wird aus
-        // `warnings +=` ein `errors +=`.
+        // Fehler, nicht Warnung: Die Regel lief zunächst als Warnung, weil es
+        // genau einen ausgewiesenen Verstoß gab — /api/v1/counter. Seit der
+        // Endpunkt im Kontrakt steht, ist der Bestand sauber; jeder neue Treffer
+        // ist eine echte Umgehung von Verbot 2 und darf den Build brechen.
         val mappingAnnotation = Regex("""^\s*@(RequestMapping|(Get|Post|Put|Patch|Delete)Mapping)\b""", RegexOption.MULTILINE)
         file("chesstopia-backend/src/main").walkTopDown()
             .filter { it.isFile && it.extension == "java" }
@@ -197,7 +195,7 @@ tasks.register("checkDocs") {
                 if (!text.contains("@RestController")) return@forEach
                 val found = mappingAnnotation.findAll(text).map { it.groupValues[1] }.toSet()
                 if (found.isNotEmpty()) {
-                    warnings += "${f.relativeTo(rootDir).invariantSeparatorsPath}: " +
+                    errors += "${f.relativeTo(rootDir).invariantSeparatorsPath}: " +
                         "@RestController mit eigener Mapping-Annotation (${found.joinToString()}) — " +
                         "der Pfad gehört in docs/api/openapi.yaml"
                 }

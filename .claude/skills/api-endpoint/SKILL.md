@@ -83,8 +83,8 @@ Verbindung, nicht an der Annotation.
 Zum Schluss `./gradlew buildAll`: Nur der Gesamtlauf beweist, dass Kontrakt,
 Backend und Frontend-Client wieder zueinander passen.
 
-## Bekannte Abweichung
+## Keine Abweichung mehr
 
-`/api/v1/counter` steht **nicht** in `openapi.yaml`; `CounterController`
-implementiert kein generiertes Interface. Das ist Altbestand und keine
-Vorlage — wer daneben einen Endpunkt baut, kopiert den Fehler.
+Jeder Endpunkt des Backends steht im Kontrakt; kein Controller trägt eine
+eigene Mapping-Annotation. `checkDocs` erzwingt das als Fehler — wer den
+Pfad in den Controller schreibt statt in die YAML, bricht den Build.

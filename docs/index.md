@@ -37,7 +37,7 @@ Ehrlich und knapp, weil hier der größte Abstand zwischen Absicht und Realität
 - **Engine:** drei Quelldateien in `commonMain` — `ChessEngine`, `Move`, `RuleSet`. Das Gerüst steht, die Regellogik nicht.
 - **Backend:** drei Controller. `hello` und `counter` sind Durchstiche durch die Codegen-Kette; `game` liefert eine konstante Start-FEN.
 - **Frontend:** Brett-Darstellung mit FEN-Parsing.
-- **API:** zwei Pfade — `/api/v1/game/board` und `/api/v1/hello`.
+- **API:** drei Pfade — `/api/v1/counter`, `/api/v1/game/board` und `/api/v1/hello`.
 
 Der Wert des bisher Gebauten liegt nicht in den Features, sondern in der durchgestochenen Kette: Eine Änderung an `openapi.yaml` bewegt nachweislich vier Artefakte in drei Sprachen.
 
