@@ -82,12 +82,7 @@ dependencies {
     // the @AutoConfigureWebTestClient slice (extracted into its own module in Spring Boot 4).
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("org.springframework.boot:spring-boot-webtestclient")
-    testImplementation("io.zonky.test:embedded-database-spring-test:2.8.0")
-}
-
-tasks.withType<JavaCompile> {
-    // Suppress deprecation warnings from generated OpenAPI sources (e.g. @Nullable migration in Spring 7)
-    options.compilerArgs.addAll(listOf("-Xlint:-deprecation"))
+    testImplementation(libs.zonky.embedded.database.spring.test)
 }
 
 tasks.withType<JavaCompile> {

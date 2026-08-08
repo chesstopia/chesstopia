@@ -62,7 +62,7 @@ fun collectDocs(): List<Doc> {
 
 tasks.register("checkDocs") {
     group = "verification"
-    description = "Prüft die Dokumentation auf doppelte ADR-Nummern, tote Links, Frontmatter und verifies-Drift"
+    description = "Prüft Dokumentation und Kontraktgrenzen: ADR-Nummern, tote Links, Frontmatter, verifies-Drift, Controller-Mappings, Versionskatalog"
 
     doLast {
         val errors = mutableListOf<String>()
@@ -172,6 +172,82 @@ tasks.register("checkDocs") {
         }
         docs.filterNot { it.path in reachable }.forEach {
             warnings += "${it.path}: von $entry aus nicht erreichbar"
+        }
+
+        // ── Regel 7: Mapping-Annotation im Controller (Warnung) ───────────────
+        // Verbot 2: Ein Endpunkt entsteht nie im Controller. Wer das generierte
+        // Interface implementiert, erbt Pfad und Methode daraus und trägt selbst
+        // keine Mapping-Annotation. Eine eigene ist der übliche Weg, den
+        // Kontrakt unbemerkt zu umgehen.
+        //
+        // Bewusst Regex, kein Java-Parser: Die Annotation steht immer am
+        // Zeilenanfang; ein Parser wäre hundertmal teurer als der Befund.
+        //
+        // Bewusst Warnung, noch nicht Fehler: Es gibt genau einen Verstoß —
+        // /api/v1/counter — und der ist in ADR-0008, im ADR-Register und in
+        // modules/api-kontrakt.md als bekannte Abweichung ausgewiesen. Die
+        // richtige Behebung ist der Kontrakt, nicht ein Unterdrückungs-
+        // mechanismus. Sobald counter in openapi.yaml steht, wird aus
+        // `warnings +=` ein `errors +=`.
+        val mappingAnnotation = Regex("""^\s*@(RequestMapping|(Get|Post|Put|Patch|Delete)Mapping)\b""", RegexOption.MULTILINE)
+        file("chesstopia-backend/src/main").walkTopDown()
+            .filter { it.isFile && it.extension == "java" }
+            .forEach { f ->
+                val text = f.readText()
+                if (!text.contains("@RestController")) return@forEach
+                val found = mappingAnnotation.findAll(text).map { it.groupValues[1] }.toSet()
+                if (found.isNotEmpty()) {
+                    warnings += "${f.relativeTo(rootDir).invariantSeparatorsPath}: " +
+                        "@RestController mit eigener Mapping-Annotation (${found.joinToString()}) — " +
+                        "der Pfad gehört in docs/api/openapi.yaml"
+                }
+            }
+
+        // ── Regel 8: toter Eintrag im Versionskatalog ─────────────────────────
+        // Ein Katalogeintrag, den kein Build-Skript referenziert, sieht aus wie
+        // die wirksame Angabe und ist keine. Wer die Version dort ändert,
+        // ändert nichts.
+        //
+        // chess-engine ist ein eigener Build mit eigenem Katalog und bleibt
+        // deshalb außen vor.
+        val catalog = file("gradle/libs.versions.toml")
+        if (catalog.isFile) {
+            val buildScripts = listOf(
+                file("build.gradle.kts"),
+                file("settings.gradle.kts"),
+                file("chesstopia-backend/build.gradle.kts")
+            ).filter { it.isFile }.joinToString("\n") { it.readText() }
+
+            var section: String? = null
+            catalog.readLines().forEach { line ->
+                val trimmed = line.trim()
+                Regex("""^\[(\w+)]$""").find(trimmed)?.let { section = it.groupValues[1]; return@forEach }
+                if (section != "libraries" && section != "plugins") return@forEach
+                val alias = Regex("""^([A-Za-z][A-Za-z0-9_-]*)\s*=""").find(trimmed)?.groupValues?.get(1)
+                    ?: return@forEach
+                val accessor = "libs." + (if (section == "plugins") "plugins." else "") +
+                    alias.replace('-', '.')
+                if (!buildScripts.contains(accessor)) {
+                    errors += "gradle/libs.versions.toml: '$alias' wird von keinem Build-Skript " +
+                        "referenziert ($accessor)"
+                }
+            }
+        }
+
+        // ── Regel 9: generierter Code unter Versionskontrolle ─────────────────
+        // Verbot 1. Beide Verzeichnisse sind gitignored und entstehen bei jedem
+        // Build neu — was hier eincheckt, ist beim nächsten buildAll weg und
+        // erzeugt bis dahin falsches Vertrauen.
+        //
+        // Heute kein Befund. Die Regel ist eine Sperre, kein Fund: Sie kostet
+        // einen git-Aufruf und verhindert einen Fehler, der sich nur schwer
+        // wieder einfangen lässt.
+        val tracked = providers.exec {
+            commandLine("git", "ls-files", "openapi-client/src", "chesstopia-backend/build")
+        }.standardOutput.asText.get().trim()
+        if (tracked.isNotEmpty()) {
+            errors += "generierter Code ist versioniert: " +
+                tracked.lines().joinToString().take(300)
         }
 
         // ── Ausgabe ───────────────────────────────────────────────────────────

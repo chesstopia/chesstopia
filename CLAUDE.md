@@ -36,7 +36,7 @@ Was bereits gebaut ist und wie es zusammenhängt, steht in [docs/index.md](docs/
 
 ```
 ./gradlew buildAll                    # kanonischer Einstiegspunkt: alles
-./gradlew checkDocs                   # Doku-Konsistenz — nach jeder Doku-Änderung
+./gradlew checkDocs                   # Doku-Konsistenz und Kontraktgrenzen — nach jeder Doku-Änderung
 ./gradlew :chesstopia-backend:build   # Backend allein (baut chess-engine mit)
 ./gradlew :chesstopia-backend:bootRun # Backend starten
 pnpm --filter chesstopia-frontend dev # Frontend-Devserver

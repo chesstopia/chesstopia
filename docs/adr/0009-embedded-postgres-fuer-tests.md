@@ -5,7 +5,8 @@ implementation: complete
 updated: 2026-08-08
 supersedes: []
 verifies:
-  - 'chesstopia-backend/build.gradle.kts :: io.zonky.test:embedded-database-spring-test'
+  - 'gradle/libs.versions.toml :: io.zonky.test'
+  - 'chesstopia-backend/build.gradle.kts :: libs.zonky.embedded.database.spring.test'
 ---
 
 # ADR-0009: Zonky Embedded PostgreSQL für Tests statt H2 oder Testcontainers
