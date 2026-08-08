@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /home/floriansteinmann/Dokumente/chesstopia ls-files docs/plan-*.md)",
+      "Bash(git -C /home/floriansteinmann/Dokumente/chesstopia rm --cached docs/plan-openapi-codegen.md docs/plan-board-display.md)",
+      "Bash(git -C /home/floriansteinmann/Dokumente/chesstopia commit -m ' *)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm config *)",
+      "Bash(pnpm --version)",
+      "Bash(pnpm --filter chesstopia-frontend add -D vitest @vitest/ui)",
+      "Bash(pnpm --filter chesstopia-frontend run test)"
+    ]
+  }
+}

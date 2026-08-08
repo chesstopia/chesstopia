@@ -38,6 +38,11 @@ TEST*.xml
 # ── Local planning docs (not for version control) ─────────────────────────────
 docs/local/
 
+# ── Claude Code ───────────────────────────────────────────────────────────────
+# Agenten und Skills sind versioniert — sie tragen Projektwissen.
+# Persönliche Berechtigungen sind es nicht.
+.claude/settings.local.json
+
 # ── Obsidian-Vault (docs/) ────────────────────────────────────────────────────
 # Allowlist statt Denylist: alles ignorieren, die vier Konventionsdateien
 # ausnehmen. Obsidian legt laufend neue Dateien hier an; eine Denylist würde
