@@ -1,0 +1,12 @@
+{
+  "useMarkdownLinks": true,
+  "newLinkFormat": "relative",
+  "alwaysUpdateLinks": true,
+  "attachmentFolderPath": "_assets",
+  "userIgnoreFilters": [
+    "local/",
+    "_templates/"
+  ],
+  "showFrontmatter": true,
+  "strictLineBreaks": false
+}

@@ -37,3 +37,13 @@ TEST*.xml
 
 # ── Local planning docs (not for version control) ─────────────────────────────
 docs/local/
+
+# ── Obsidian-Vault (docs/) ────────────────────────────────────────────────────
+# Allowlist statt Denylist: alles ignorieren, die vier Konventionsdateien
+# ausnehmen. Obsidian legt laufend neue Dateien hier an; eine Denylist würde
+# jede davon durchlassen.
+docs/.obsidian/*
+!docs/.obsidian/app.json
+!docs/.obsidian/core-plugins.json
+!docs/.obsidian/templates.json
+!docs/.obsidian/types.json
