@@ -1,3 +1,13 @@
+---
+type: adr
+status: accepted
+implementation: partial
+updated: 2026-08-08
+supersedes: []
+verifies:
+  - 'chesstopia-backend/build.gradle.kts :: interfaceOnly=true'
+---
+
 # ADR-0008: OpenAPI-First + Code Generation — Backend Stubs und Frontend Axios Client
 
 ## Status

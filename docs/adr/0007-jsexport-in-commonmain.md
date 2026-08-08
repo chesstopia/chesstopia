@@ -1,3 +1,13 @@
+---
+type: adr
+status: accepted
+implementation: complete
+updated: 2026-08-08
+supersedes: []
+verifies:
+  - 'chess-engine/src/commonMain/kotlin/io/chesstopia/engine/ChessEngine.kt :: @JsExport'
+---
+
 # ADR-0007: @JsExport in commonMain — keine jsMain-Fassade
 
 ## Status
