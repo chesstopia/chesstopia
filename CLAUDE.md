@@ -36,6 +36,7 @@ Was bereits gebaut ist und wie es zusammenhängt, steht in [docs/index.md](docs/
 
 ```
 ./gradlew buildAll                    # kanonischer Einstiegspunkt: alles
+./gradlew checkDocs                   # Doku-Konsistenz — nach jeder Doku-Änderung
 ./gradlew :chesstopia-backend:build   # Backend allein (baut chess-engine mit)
 ./gradlew :chesstopia-backend:bootRun # Backend starten
 pnpm --filter chesstopia-frontend dev # Frontend-Devserver
@@ -93,6 +94,12 @@ Trifft keines zu, wird es **nicht** aufgeschrieben. Jedes Dokument erzeugt dauer
 **Nicht persistiert wird**, was aus dem Code ablesbar ist (Namen, Signaturen, Paketstruktur), was `git log` beantwortet, was in den Build-Dateien steht (siehe Verbot 7) und jede Zustandsbeschreibung, die sich durch Hinzufügen einer Datei ändert.
 
 **Die Weiche:** Wurde etwas **entschieden** → ADR unter `docs/adr/`. Wurde etwas **herausgefunden** → Notiz unter `docs/notes/`. Vorlagen für ADR, Notiz und Modulbeschreibung liegen in [docs/_templates/](docs/_templates/); ein neues ADR trägt sich in [docs/adr/index.md](docs/adr/index.md) ein.
+
+**Jedes Dokument in `docs/` trägt Frontmatter** mit `type` und `status`. Erlaubt sind für `adr` die Werte `accepted` · `superseded` · `draft`, für `note` `current` · `draft` · `deprecated`, für `module` `active` · `deprecated`. Ein ADR trägt zusätzlich `implementation` (`planned` · `partial` · `complete`) — das Feld trennt „noch nicht gebaut" von „nicht mehr gültig".
+
+**Wer eine Zahl oder einen Bezeichner aus dem Code in ein Dokument schreibt, schreibt dazu, woher sie stammt** — als `verifies: ['pfad :: erwarteter wert']` im Frontmatter. `checkDocs` sucht den Wert in der Datei und schlägt fehl, wenn er verschwindet. Genau so wäre die „Gradle 8.x"-Falschaussage am Tag des Wrapper-Upgrades aufgefallen. Nur die Substring-Form ist implementiert; ein `#`-Selektor im Pfad ist ein Fehler, kein stiller Durchlauf.
+
+**Links sind relative Markdown-Links, keine Wikilinks.** `[[0003-move-event-log]]` rendert auf GitHub als Literaltext.
 
 **ADRs sind append-only.** Der Körper eines ADR — die Begründung, die zum Entscheidungszeitpunkt galt — wird nie editiert. Überholte ADRs bekommen `Superseded by`. Änderbar ist nur das Frontmatter, weil es Zustand ist.
 

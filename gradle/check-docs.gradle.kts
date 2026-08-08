@@ -1,0 +1,189 @@
+/*
+ * checkDocs — deterministische Doku-Prüfung (Stufe 1).
+ *
+ * Bewusst eigenständig und NICHT an `check` gehängt: Ein toter Doku-Link darf
+ * den Java-Build nicht brechen. Verbindlich wird der Task über CI.
+ *
+ * Geprüft wird ausschließlich, was ohne Urteilsvermögen entscheidbar ist.
+ * Alles Semantische — beschreibt das Dokument noch das, was der Code tut? —
+ * ist Sache der Drift-Agenten, nicht dieses Skripts.
+ */
+
+val docsRoot = file("docs")
+
+// _templates/ enthält Formulare mit {{platzhaltern}}, keine Dokumente.
+// local/ ist gitignored. .obsidian/ ist Werkzeugkonfiguration.
+val excludedDirs = listOf("local", "_templates", ".obsidian")
+
+data class Doc(
+    val file: File,
+    val path: String,
+    val text: String,
+    val frontmatter: Map<String, List<String>>
+)
+
+fun parseFrontmatter(text: String): Map<String, List<String>>? {
+    val lines = text.lines()
+    if (lines.firstOrNull()?.trim() != "---") return null
+    val end = lines.drop(1).indexOfFirst { it.trim() == "---" }
+    if (end < 0) return null
+
+    val result = linkedMapOf<String, MutableList<String>>()
+    var current: String? = null
+    for (line in lines.subList(1, end + 1)) {
+        val listItem = Regex("""^\s+-\s+(.*)$""").find(line)
+        if (listItem != null && current != null) {
+            result.getValue(current!!).add(listItem.groupValues[1].trim().trim('"', '\''))
+            continue
+        }
+        val entry = Regex("""^([A-Za-z][A-Za-z0-9_-]*):\s*(.*)$""").find(line) ?: continue
+        val (key, rawValue) = entry.destructured
+        current = key
+        val value = rawValue.trim()
+        result[key] = when {
+            value.isEmpty() || value == "[]" -> mutableListOf()
+            else -> mutableListOf(value.trim('"', '\''))
+        }
+    }
+    return result
+}
+
+fun collectDocs(): List<Doc> {
+    val docs = docsRoot.walkTopDown()
+        .onEnter { it.name !in excludedDirs }
+        .filter { it.isFile && it.extension == "md" }
+        .toMutableList()
+    docs.add(file("CLAUDE.md"))
+    return docs.map { f ->
+        val text = f.readText()
+        Doc(f, f.relativeTo(rootDir).invariantSeparatorsPath, text, parseFrontmatter(text) ?: emptyMap())
+    }.sortedBy { it.path }
+}
+
+tasks.register("checkDocs") {
+    group = "verification"
+    description = "Prüft die Dokumentation auf doppelte ADR-Nummern, tote Links, Frontmatter und verifies-Drift"
+
+    doLast {
+        val errors = mutableListOf<String>()
+        val warnings = mutableListOf<String>()
+        val docs = collectDocs()
+
+        // ── Regel 1: doppelte ADR-Nummer ──────────────────────────────────────
+        // Der reale Fall: zwei Dokumente trugen gleichzeitig die Nummer 0008.
+        docs.filter { it.path.startsWith("docs/adr/") && it.file.name != "index.md" }
+            .groupBy { it.file.name.take(4) }
+            .filterValues { it.size > 1 }
+            .forEach { (number, group) ->
+                errors += "ADR-Nummer $number ist doppelt vergeben: ${group.joinToString { it.path }}"
+            }
+
+        // ── Regel 2: toter relativer Link ─────────────────────────────────────
+        val linkPattern = Regex("""\[[^\]]*\]\(([^)\s]+)\)""")
+        val outgoing = mutableMapOf<String, MutableSet<String>>()
+        docs.forEach { doc ->
+            val targets = outgoing.getOrPut(doc.path) { mutableSetOf() }
+            linkPattern.findAll(doc.text).forEach { match ->
+                val raw = match.groupValues[1]
+                if (raw.startsWith("http") || raw.startsWith("#") || raw.startsWith("mailto:")) return@forEach
+                val relative = raw.substringBefore('#')
+                if (relative.isEmpty()) return@forEach
+                val target = doc.file.parentFile.resolve(relative).normalize()
+                if (!target.exists()) {
+                    errors += "${doc.path}: toter Link → $raw"
+                } else if (target.extension == "md") {
+                    targets.add(target.relativeTo(rootDir).invariantSeparatorsPath)
+                }
+            }
+        }
+
+        // ── Regel 3: Frontmatter ──────────────────────────────────────────────
+        // CLAUDE.md liegt außerhalb des Vaults und trägt bewusst keines.
+        val statusByType = mapOf(
+            "adr" to setOf("accepted", "superseded", "draft"),
+            "note" to setOf("current", "draft", "deprecated"),
+            "runbook" to setOf("current", "draft", "deprecated"),
+            "module" to setOf("active", "deprecated")
+        )
+        docs.filter { it.path.startsWith("docs/") }.forEach { doc ->
+            val type = doc.frontmatter["type"]?.firstOrNull()
+            val status = doc.frontmatter["status"]?.firstOrNull()
+            when {
+                type == null -> errors += "${doc.path}: Frontmatter ohne 'type'"
+                type !in statusByType -> errors += "${doc.path}: unbekannter type '$type'"
+                status == null -> errors += "${doc.path}: Frontmatter ohne 'status'"
+                status.lowercase() !in statusByType.getValue(type) ->
+                    errors += "${doc.path}: status '$status' ist für type '$type' nicht zulässig " +
+                        "(erlaubt: ${statusByType.getValue(type).joinToString(" · ")})"
+            }
+        }
+
+        // ── Regel 4: ADR-Pflichtabschnitte ────────────────────────────────────
+        val requiredSections = listOf("## Status", "## Context", "## Decision", "## Consequences")
+        docs.filter { it.path.startsWith("docs/adr/") && it.file.name != "index.md" }.forEach { doc ->
+            val missing = requiredSections.filterNot { doc.text.contains(it) }
+            if (missing.isNotEmpty()) {
+                errors += "${doc.path}: fehlende Pflichtabschnitte ${missing.joinToString()}"
+            }
+        }
+
+        // ── Regel 5: Drift in verifies ────────────────────────────────────────
+        // 'pfad :: erwarteter wert' — links die Quelle, rechts der Wert, der
+        // darin vorkommen muss. Wer eine Zahl in ein Dokument schreibt,
+        // schreibt dazu, woher sie stammt.
+        var verifiedCount = 0
+        docs.forEach { doc ->
+            doc.frontmatter["verifies"].orEmpty().forEach { entry ->
+                val parts = entry.split("::").map { it.trim() }
+                if (parts.size != 2 || parts.any { it.isEmpty() }) {
+                    errors += "${doc.path}: verifies-Eintrag nicht im Format 'pfad :: wert': $entry"
+                    return@forEach
+                }
+                val (source, expected) = parts
+                if (source.contains('#')) {
+                    errors += "${doc.path}: Struktur-Selektoren sind nicht implementiert, " +
+                        "nur Substring-Suche: $entry"
+                    return@forEach
+                }
+                val sourceFile = rootDir.resolve(source)
+                when {
+                    !sourceFile.isFile -> errors += "${doc.path}: verifies zeigt auf fehlende Datei $source"
+                    !sourceFile.readText().contains(expected) ->
+                        errors += "${doc.path}: '$expected' steht nicht mehr in $source"
+                    else -> verifiedCount++
+                }
+            }
+            if (doc.frontmatter.containsKey("drift-accepted")) {
+                warnings += "${doc.path}: 'drift-accepted' wird noch nicht geprüft — " +
+                    "Eingangsregel und Obergrenze fehlen"
+            }
+        }
+
+        // ── Regel 6: Erreichbarkeit von docs/index.md (Warnung) ───────────────
+        // Ein Dokument, auf das keine Kette von Links führt, ist unsichtbar.
+        // Warnung statt Fehler: Ein frisch angelegtes Dokument darf das kurz sein.
+        val entry = "docs/index.md"
+        val reachable = mutableSetOf(entry)
+        val queue = ArrayDeque(listOf(entry))
+        while (queue.isNotEmpty()) {
+            outgoing[queue.removeFirst()].orEmpty().forEach { next ->
+                if (reachable.add(next)) queue.add(next)
+            }
+        }
+        docs.filterNot { it.path in reachable }.forEach {
+            warnings += "${it.path}: von $entry aus nicht erreichbar"
+        }
+
+        // ── Ausgabe ───────────────────────────────────────────────────────────
+        warnings.forEach { logger.warn("checkDocs WARNUNG  $it") }
+        logger.lifecycle(
+            "checkDocs: ${docs.size} Dokumente, $verifiedCount belegte verifies-Einträge, " +
+                "${warnings.size} Warnungen, ${errors.size} Fehler"
+        )
+        if (errors.isNotEmpty()) {
+            throw GradleException(
+                "checkDocs: ${errors.size} Fehler\n" + errors.joinToString("\n") { "  - $it" }
+            )
+        }
+    }
+}
