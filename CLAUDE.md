@@ -26,7 +26,9 @@ Chesstopia ist ein Gradle-Monorepo mit vier Modulen und einem geteilten API-Kont
 
 `docs/api/openapi.yaml` ist die Single Source of Truth der API. Aus ihr entstehen die Spring-Interfaces im Backend und der TypeScript-Client im Frontend ([ADR-0008](docs/adr/0008-openapi-first-codegen.md)).
 
-Die Domänensprache — 25 Begriffe, verbindlich für Bezeichner und Gespräche — steht in [CONTEXT.md](CONTEXT.md).
+Die Domänensprache — 25 Begriffe, verbindlich für Bezeichner und Gespräche — steht in [docs/context.md](docs/context.md).
+
+Was bereits gebaut ist und wie es zusammenhängt, steht in [docs/index.md](docs/index.md). Diese beiden Dateien — `CLAUDE.md` und `docs/index.md` — reichen für den Kaltstart; alles Weitere ist von dort verlinkt.
 
 ---
 
@@ -90,7 +92,7 @@ Trifft keines zu, wird es **nicht** aufgeschrieben. Jedes Dokument erzeugt dauer
 
 **Nicht persistiert wird**, was aus dem Code ablesbar ist (Namen, Signaturen, Paketstruktur), was `git log` beantwortet, was in den Build-Dateien steht (siehe Verbot 7) und jede Zustandsbeschreibung, die sich durch Hinzufügen einer Datei ändert.
 
-**Die Weiche:** Wurde etwas **entschieden** → ADR unter `docs/adr/`. Wurde etwas **herausgefunden** → Notiz. Ein Ordner für Notizen existiert noch nicht; bis dahin gilt die Türschwelle oben und im Zweifel: fragen statt anlegen.
+**Die Weiche:** Wurde etwas **entschieden** → ADR unter `docs/adr/`. Wurde etwas **herausgefunden** → Notiz unter `docs/notes/`. Vorlagen für beides liegen in [docs/_templates/](docs/_templates/); ein neues ADR trägt sich in [docs/adr/index.md](docs/adr/index.md) ein.
 
 **ADRs sind append-only.** Der Körper eines ADR — die Begründung, die zum Entscheidungszeitpunkt galt — wird nie editiert. Überholte ADRs bekommen `Superseded by`. Änderbar ist nur das Frontmatter, weil es Zustand ist.
 
@@ -104,7 +106,8 @@ Trifft keines zu, wird es **nicht** aufgeschrieben. Jedes Dokument erzeugt dauer
 
 | Frage | Ort |
 |---|---|
-| Warum ist es so entschieden? | [docs/adr/](docs/adr/) |
-| Was heißt dieser Domänenbegriff? | [CONTEXT.md](CONTEXT.md) |
+| Was ist das hier für ein System? | [docs/index.md](docs/index.md) |
+| Warum ist es so entschieden? | [docs/adr/index.md](docs/adr/index.md) |
+| Was heißt dieser Domänenbegriff? | [docs/context.md](docs/context.md) |
 | Wie sieht die API aus? | [docs/api/openapi.yaml](docs/api/openapi.yaml) |
 | Woran wird gerade geplant? | `docs/local/` — gitignored, nie referenzieren |

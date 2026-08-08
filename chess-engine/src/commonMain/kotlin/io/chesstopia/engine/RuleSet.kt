@@ -7,7 +7,7 @@ import kotlin.js.JsExport
 
 /**
  * Named, well-known chess rule configurations used as the base of a RuleSet.
- * Corresponds to the Variant domain term in CONTEXT.md.
+ * Corresponds to the Variant domain term in docs/context.md.
  */
 @JsExport
 enum class Variant {
@@ -22,7 +22,7 @@ enum class Variant {
  * Configuration object attached to a Partie that defines which chess rules are active.
  * Consists of a base Variant plus optional rule Toggles.
  *
- * Arbitrary scripted or free-form rules are out of scope (see CONTEXT.md: RuleSet).
+ * Arbitrary scripted or free-form rules are out of scope (see docs/context.md: RuleSet).
  */
 @JsExport
 data class RuleSet(
