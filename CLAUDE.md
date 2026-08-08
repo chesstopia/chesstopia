@@ -111,6 +111,7 @@ Trifft keines zu, wird es **nicht** aufgeschrieben. Jedes Dokument erzeugt dauer
 | Was ist das hier für ein System? | [docs/index.md](docs/index.md) |
 | Warum ist es so entschieden? | [docs/adr/index.md](docs/adr/index.md) |
 | Was darf ich in diesem Modul nicht tun? | [docs/modules/](docs/modules/) |
+| Wie ist etwas konkret eingerichtet? | [docs/notes/](docs/notes/) |
 | Was heißt dieser Domänenbegriff? | [docs/context.md](docs/context.md) |
 | Wie sieht die API aus? | [docs/api/openapi.yaml](docs/api/openapi.yaml) |
 | Woran wird gerade geplant? | `docs/local/` — gitignored, nie referenzieren |

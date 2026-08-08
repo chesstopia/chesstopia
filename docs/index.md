@@ -48,4 +48,6 @@ Der Wert des bisher Gebauten liegt nicht in den Features, sondern in der durchge
 | Was darf ich als Agent hier nicht tun? | [CLAUDE.md](../CLAUDE.md) |
 | Warum ist etwas so entschieden? | [adr/index.md](adr/index.md) |
 | Was bedeutet dieser Domänenbegriff? | [context.md](context.md) |
+| Was darf ich in diesem Modul nicht tun? | [modules/](modules/) |
+| Wie ist etwas konkret eingerichtet? | [notes/](notes/) |
 | Wie sieht die API aus? | [api/openapi.yaml](api/openapi.yaml) |

@@ -19,8 +19,15 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 | [0007](0007-jsexport-in-commonmain.md) | @JsExport in commonMain — keine jsMain-Fassade | Accepted | complete |
 | [0008](0008-openapi-first-codegen.md) | OpenAPI-First + Code Generation — Backend Stubs und Frontend Axios Client | Accepted | partial ¹ |
 | [0009](0009-embedded-postgres-fuer-tests.md) | Zonky Embedded PostgreSQL für Tests statt H2 oder Testcontainers | Accepted | complete |
+| [0010](0010-package-by-feature-backend.md) | Package-by-Feature im Backend — kein Hexagonal, keine Backend-Submodule | Accepted | complete |
+| [0011](0011-minimaler-dependency-kern.md) | Minimaler, erklärter Dependency-Kern — kein Lombok, kein MapStruct | Accepted | complete |
+| [0012](0012-security-von-tag-eins.md) | Spring Security von Tag 1, initial explizit auf permit-all | Accepted | partial ² |
 
 ¹ Die Codegen-Kette steht vollständig, aber `/api/v1/counter` läuft daran vorbei — siehe [modules/api-kontrakt.md](../modules/api-kontrakt.md), Abschnitt *Bekannte Abweichung*.
+
+² Die `SecurityFilterChain`-Bean existiert, das vorgesehene JWT-Filter-Skelett nicht — dort steht ein `TODO`.
+
+**0010 bis 0012 sind nachträglich verschriftlicht.** Die Entscheidungen wurden beim Aufsetzen des Backends getroffen und lagen bis dahin in einem einzelnen Dokument (`chesstopia-backend/SpringDesign.MD`), das keine ADR-Form hatte und neben diesem Register eine zweite Entscheidungsablage bildete. Begründungen und verworfene Alternativen stammen von dort; das Dokument ist aufgelöst.
 
 **`Status` und `Umsetzung` sind zwei verschiedene Fragen.** `Status` sagt, ob die Entscheidung gilt; `Umsetzung` (`planned` · `partial` · `complete`), ob sie gebaut ist. Vier ADRs beschreiben Absicht, nicht Bestand — ohne diese Spalte liest man sie als Beschreibung des Systems.
 
