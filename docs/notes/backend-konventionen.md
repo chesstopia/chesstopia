@@ -11,7 +11,7 @@ verifies:
 
 Wie das Backend jenseits der Architekturentscheidungen eingerichtet ist. Die **Regeln** stehen kurz in [CLAUDE.md](../../CLAUDE.md); hier steht, warum sie so lauten und wie der heutige Aufbau tatsächlich aussieht.
 
-Entschieden wurde anderswo: [ADR-0010](../adr/0010-package-by-feature-backend.md) (Schnitt), [ADR-0011](../adr/0011-minimaler-dependency-kern.md) (Abhängigkeiten), [ADR-0012](../adr/0012-security-von-tag-eins.md) (Security), [ADR-0009](../adr/0009-embedded-postgres-fuer-tests.md) (Testdatenbank).
+Entschieden wurde anderswo: [ADR-0013](../adr/0013-package-by-feature-backend.md) (Schnitt), [ADR-0014](../adr/0014-minimaler-dependency-kern.md) (Abhängigkeiten), [ADR-0015](../adr/0015-security-von-tag-eins.md) (Security), [ADR-0012](../adr/0012-embedded-postgres-fuer-tests.md) (Testdatenbank).
 
 ## Laufzeit
 

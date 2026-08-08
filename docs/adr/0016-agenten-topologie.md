@@ -12,7 +12,7 @@ verifies:
   - '.gitignore :: .claude/settings.local.json'
 ---
 
-# ADR-0013: Agenten-Topologie — zwei Subagenten, zwei Skills, drei Schwellen
+# ADR-0016: Agenten-Topologie — zwei Subagenten, zwei Skills, drei Schwellen
 
 ## Status
 Accepted

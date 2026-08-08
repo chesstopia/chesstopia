@@ -76,7 +76,7 @@ Fehler als RFC-7807-`ProblemDetail` über den globalen `GlobalExceptionHandler`.
 ## 4. Absichern
 
 Kontexttests gegen die Datenbank brauchen `@AutoConfigureEmbeddedDatabase`
-([ADR-0009](../../../docs/adr/0009-embedded-postgres-fuer-tests.md)) — ohne die
+([ADR-0012](../../../docs/adr/0012-embedded-postgres-fuer-tests.md)) — ohne die
 Annotation läuft der Test gegen die echte Datenbank und scheitert an der
 Verbindung, nicht an der Annotation.
 

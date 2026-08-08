@@ -9,7 +9,7 @@ verifies:
   - 'chesstopia-backend/build.gradle.kts :: libs.zonky.embedded.database.spring.test'
 ---
 
-# ADR-0009: Zonky Embedded PostgreSQL für Tests statt H2 oder Testcontainers
+# ADR-0012: Zonky Embedded PostgreSQL für Tests statt H2 oder Testcontainers
 
 ## Status
 Accepted

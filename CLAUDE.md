@@ -74,7 +74,7 @@ pnpm --filter chesstopia-frontend test
 - Die Konvertierung erfolgt mit `.toList()` **direkt am Engine-Aufruf**. Das `Array`-Format dringt nicht bis in die REST-Schicht.
 
 **Tests**
-- Kontext-Tests gegen die Datenbank brauchen `@AutoConfigureEmbeddedDatabase` ([ADR-0009](docs/adr/0009-embedded-postgres-fuer-tests.md)) — ohne die Annotation läuft der Test gegen die echte Datenbank.
+- Kontext-Tests gegen die Datenbank brauchen `@AutoConfigureEmbeddedDatabase` ([ADR-0012](docs/adr/0012-embedded-postgres-fuer-tests.md)) — ohne die Annotation läuft der Test gegen die echte Datenbank.
 - Frontend-Tests laufen unter Vitest. `defineConfig` kommt in der Vitest-Konfiguration aus `vitest/config`, nicht aus `vite`.
 
 ---
@@ -122,7 +122,7 @@ Vier davon liegen unter `.claude/` und sind versioniert, weil sie Projektwissen 
 | `build-doctor` | Roter Build, rote Pipeline, roter Test, wenn die Ursache nicht in der ersten Fehlerzeile steht |
 | `session-harvester` | Wissen aus Sessionverläufen ernten; schlägt Absätze für `docs/` vor und schreibt nie selbst |
 
-**Welche Agenten es bewusst nicht gibt und warum, steht in [ADR-0013](docs/adr/0013-agenten-topologie.md)** — mitsamt den vier Bedingungen, die ein Kandidat erfüllen muss. Vor jedem Vorschlag für einen neuen Agenten wird diese Liste gelesen. Es gibt keinen Agenten für Code-Review, Testautorenschaft oder Repo-Suche; dafür existieren `/code-review` und `Explore`.
+**Welche Agenten es bewusst nicht gibt und warum, steht in [ADR-0016](docs/adr/0016-agenten-topologie.md)** — mitsamt den vier Bedingungen, die ein Kandidat erfüllen muss. Vor jedem Vorschlag für einen neuen Agenten wird diese Liste gelesen. Es gibt keinen Agenten für Code-Review, Testautorenschaft oder Repo-Suche; dafür existieren `/code-review` und `Explore`.
 
 **Was ein Skript entscheiden kann, bekommt keinen Agenten.** Ist eine wiederkehrende Prüfung deterministisch, ist die richtige Antwort eine weitere Regel in `gradle/check-docs.gradle.kts` — nicht eine Agentendatei.
 
@@ -133,7 +133,7 @@ Vier davon liegen unter `.claude/` und sind versioniert, weil sie Projektwissen 
 | Frage | Ort |
 |---|---|
 | Was ist das hier für ein System? | [docs/index.md](docs/index.md) |
-| Welche Agenten und Skills gibt es? | Abschnitt *Werkzeuge*, Begründung in [ADR-0013](docs/adr/0013-agenten-topologie.md) |
+| Welche Agenten und Skills gibt es? | Abschnitt *Werkzeuge*, Begründung in [ADR-0016](docs/adr/0016-agenten-topologie.md) |
 | Warum ist es so entschieden? | [docs/adr/index.md](docs/adr/index.md) |
 | Was darf ich in diesem Modul nicht tun? | [docs/modules/](docs/modules/) |
 | Wie ist etwas konkret eingerichtet? | [docs/notes/](docs/notes/) |

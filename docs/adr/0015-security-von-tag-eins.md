@@ -8,7 +8,7 @@ verifies:
   - 'chesstopia-backend/src/main/java/io/chesstopia/backend/config/SecurityConfig.java :: anyRequest().permitAll()'
 ---
 
-# ADR-0012: Spring Security von Tag 1, initial explizit auf permit-all
+# ADR-0015: Spring Security von Tag 1, initial explizit auf permit-all
 
 ## Status
 Accepted

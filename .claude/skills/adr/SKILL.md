@@ -30,6 +30,13 @@ Doppelte Nummern sind in diesem Repo schon zweimal entstanden — einmal
 innerhalb eines Branches, einmal zwischen zweien. `checkDocs` fängt den ersten
 Fall sofort, den zweiten erst beim Merge.
 
+**Eine Lücke in der Nummernfolge ist kein freier Platz.** `docs/adr/` springt
+derzeit von 0008 auf 0012; 0009–0011 sind für `CHESS-8-Initial-pipeline`
+reserviert und in [docs/adr/index.md](../../../docs/adr/index.md) begründet.
+Wer eine Lücke füllt, ohne sie geprüft zu haben, erzeugt genau die Kollision,
+die der Branch-Durchlauf oben verhindern soll. Die nächste Nummer ist immer die
+höchste vergebene **plus eins** — über alle Branches, nie die kleinste freie.
+
 ## Anlegen
 
 Dateiname `NNNN-kurzer-titel-in-kebab-case.md`, Vorlage
@@ -59,7 +66,7 @@ Unangenehme und was künftige Arbeit dadurch nicht mehr tun darf.
 ## Danach
 
 1. Zeile in `docs/adr/index.md` eintragen — Nummer, Titel, Status, Umsetzung.
-   Bei einer Einschränkung eine Fußnote, wie es 0008 und 0012 vormachen.
+   Bei einer Einschränkung eine Fußnote, wie es 0015 und 0016 vormachen.
 2. Wenn das ADR ein bestehendes ablöst: im alten ADR unter `## Status` eine
    Zeile `Superseded by [ADR-NNNN](NNNN-….md)` ergänzen und dessen
    Frontmatter auf `status: superseded` setzen. **Der Körper des alten ADR

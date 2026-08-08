@@ -8,7 +8,7 @@ verifies:
   - 'settings.gradle.kts :: include(":chesstopia-backend")'
 ---
 
-# ADR-0010: Package-by-Feature im Backend — kein Hexagonal, keine Backend-Submodule
+# ADR-0013: Package-by-Feature im Backend — kein Hexagonal, keine Backend-Submodule
 
 ## Status
 Accepted

@@ -8,7 +8,7 @@ verifies:
   - 'chesstopia-backend/build.gradle.kts :: spring-boot-starter-websocket'
 ---
 
-# ADR-0011: Minimaler, erklärter Dependency-Kern — kein Lombok, kein MapStruct
+# ADR-0014: Minimaler, erklärter Dependency-Kern — kein Lombok, kein MapStruct
 
 ## Status
 Accepted
@@ -31,7 +31,7 @@ Die Gegenbewegung — nur das Nötigste und alles später — hat den umgekehrte
 
 Ein kleiner Kern, jede Abhängigkeit mit Begründung: Web, Data JPA, Security, WebSocket, Validation, Actuator, Flyway, der PostgreSQL-Treiber und `chess-engine`.
 
-WebSocket und Security sind bewusst von Anfang an dabei, obwohl sie noch nichts tun — Echtzeit ist ein Kernfeature und kein Nachtrag, und für Security gilt [ADR-0012](0012-security-von-tag-eins.md).
+WebSocket und Security sind bewusst von Anfang an dabei, obwohl sie noch nichts tun — Echtzeit ist ein Kernfeature und kein Nachtrag, und für Security gilt [ADR-0015](0015-security-von-tag-eins.md).
 
 Flyway ebenfalls ab Tag 1: kein `ddl-auto=create-drop`, kein Schema, das nur im Kopf der JPA-Entities existiert.
 
