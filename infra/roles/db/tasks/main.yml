@@ -1,0 +1,32 @@
+---
+# Persistent database stack (Postgres + pgdata volume) on the prod box. Owned by
+# Ansible, never touched by the pipeline. The app stack reaches it via the shared
+# `chesstopia` network as `postgres:5432`.
+- name: Create db compose directory
+  ansible.builtin.file:
+    path: "{{ db_compose_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Render db .env from vaulted secrets
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ db_compose_dir }}/.env"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Render db docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ db_compose_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Bring up the db stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ db_compose_dir }}"
+    state: present

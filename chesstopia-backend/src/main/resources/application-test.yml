@@ -5,3 +5,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+
+# Run the embedded Postgres from native binaries instead of Docker (no daemon required).
+zonky:
+  test:
+    database:
+      provider: zonky

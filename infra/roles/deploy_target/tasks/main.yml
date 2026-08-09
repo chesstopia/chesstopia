@@ -1,0 +1,45 @@
+---
+# Prepare the prod box to receive deployments. Ansible owns the app dir and the
+# secret .env; the GitHub Actions deploy workflow ships docker-compose.prod.yml
+# and runs compose here.
+
+# Shared external network for the three compose stacks (db, edge, app). Created
+# once, before any stack references it; all containers reach each other over the
+# built-in docker DNS (postgres:5432, backend:8080, frontend:80).
+- name: Create the shared app docker network
+  community.docker.docker_network:
+    name: chesstopia
+    state: present
+
+- name: Create app directory
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0750"
+
+- name: Render .env from vaulted secrets
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ app_dir }}/.env"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0600"
+
+# The deploy workflow's public key is authorised by the `users` role via
+# `deploy_ssh_keys` — no cross-host fact any more (the infra box that used to
+# generate the keypair is gone, see ADR-0011).
+
+# Host-key pinning without TOFU: read prod's host key over the already-trusted
+# Ansible connection and write it out locally in known_hosts format. Paste the
+# result into the GitHub Actions repository variable PROD_SSH_KNOWN_HOSTS; the
+# deploy workflow uses it with StrictHostKeyChecking=yes.
+# Same trust path as before (Ansible → prod), just a different consumer.
+- name: Render the pinned known_hosts line for the GitHub deploy workflow
+  ansible.builtin.copy:
+    content: "{{ ansible_host }} {{ host_ed25519_pubkey.split()[0] }} {{ host_ed25519_pubkey.split()[1] }}\n"
+    dest: "{{ playbook_dir }}/prod_known_hosts"
+    mode: "0644"
+  delegate_to: localhost
+  become: false

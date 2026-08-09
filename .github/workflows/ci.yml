@@ -1,0 +1,148 @@
+# Chesstopia CI — build, test, and (on main) publish the container images.
+# See docs/adr/0011-migration-nach-github-actions.md.
+#
+# Topology: the three component jobs run FAN-OUT (no `needs:`). Each of them builds
+# the chess-engine transitively — backend through the composite build, frontend
+# through the pnpmInstall → jsBrowserProductionLibraryDistribution chain (ADR-0006).
+# That redundancy is deliberate: on a public repo the minutes are free and the jobs
+# run on separate VMs, so three parallel builds finish sooner than a serial
+# cache-warming stage would, and there is no cross-job cache key that can silently
+# miss. ADR-0009 sequenced them the other way because Bitbucket billed per minute.
+name: CI
+
+on:
+  pull_request:
+  push:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # JDK 25 is mandatory and Gradle toolchain auto-download is disabled (foojay is
+  # incompatible with Gradle 9.5.1), so the runner must provide the JDK itself.
+  JAVA_VERSION: "25"
+
+jobs:
+  chess-engine:
+    name: chess-engine (build + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: gradle/actions/setup-gradle@v4
+      # The engine's own tests run ONLY here: the backend build merely consumes the
+      # engine's jar task, it does not run the engine's test suite.
+      - run: ./gradlew chessEngineBuild
+
+  backend:
+    name: backend (build + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: gradle/actions/setup-gradle@v4
+      # Tests boot an embedded Postgres from native binaries (Zonky, ADR-0012), whose
+      # initdb refuses to run as root. GitHub runners are already the unprivileged
+      # `runner` user, so the useradd dance the Bitbucket pipeline needed is gone.
+      - run: ./gradlew :chesstopia-backend:build
+      - name: Upload bootJar
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: chesstopia-backend/build/libs/app.jar
+          retention-days: 1
+
+  frontend:
+    name: frontend (lint + test + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: gradle/actions/setup-gradle@v4
+      # Node and pnpm are downloaded by the node-gradle plugin into the PROJECT dir,
+      # so setup-gradle's ~/.gradle cache does not cover them. Same for the pnpm store.
+      - name: Cache node/pnpm toolchain + pnpm store
+        uses: actions/cache@v4
+        with:
+          path: |
+            .gradle/nodejs
+            .gradle/pnpm
+            ~/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'build.gradle.kts') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      # generateOpenApiClient runs here from the start. ADR-0009 flagged it as a
+      # latent dependency: the task lived only in `buildAll`, so the pipeline would
+      # have gone red the moment the frontend actually imports @chesstopia/openapi-client.
+      - run: ./gradlew generateOpenApiClient pnpmFrontendLint pnpmFrontendTest pnpmFrontendBuild
+      - name: Upload SPA bundle
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: chesstopia-frontend/dist
+          retention-days: 1
+
+  images:
+    name: package & push images
+    # Images are built ONLY on main — no throwaway images from feature branches or PRs.
+    if: github.ref == 'refs/heads/main'
+    needs: [chess-engine, backend, frontend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # Both Dockerfiles are artefact-copy only (COPY the finished jar / dist —
+      # no Gradle, no pnpm inside the Docker layer), so the build context needs
+      # the artefacts from the jobs above.
+      - uses: actions/download-artifact@v4
+        with:
+          name: backend-jar
+          path: chesstopia-backend/build/libs
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: chesstopia-frontend/dist
+
+      # Image tag is the git short hash and nothing else — no moving `latest`, so
+      # every deploy and rollback pins exactly one commit (ADR-0010).
+      - name: Resolve image tag
+        id: meta
+        run: echo "tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          # The automatic per-run token is enough to push to GHCR — no PAT anywhere.
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: chesstopia-backend
+          push: true
+          tags: ghcr.io/chesstopia/chesstopia-backend:${{ steps.meta.outputs.tag }}
+
+      - name: Build & push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: chesstopia-frontend
+          push: true
+          tags: ghcr.io/chesstopia/chesstopia-frontend:${{ steps.meta.outputs.tag }}

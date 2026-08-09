@@ -18,6 +18,9 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 | [0006](0006-build-orchestration.md) | Build-Orchestrierung — Gradle Composite Build + pnpm Workspaces + node-gradle Plugin | Accepted | complete |
 | [0007](0007-jsexport-in-commonmain.md) | @JsExport in commonMain — keine jsMain-Fassade | Accepted | complete |
 | [0008](0008-openapi-first-codegen.md) | OpenAPI-First + Code Generation — Backend Stubs und Frontend Axios Client | Accepted | complete |
+| [0009](0009-ci-pipeline-build-test.md) | CI-Pipeline — Build- & Test-Health-Check (Bitbucket) | Partially superseded ⁴ | partial |
+| [0010](0010-deployment-cicd-infrastruktur.md) | Deployment- & CI/CD-Infrastruktur | Partially superseded ⁴ | partial |
+| [0011](0011-migration-nach-github-actions.md) | Migration nach GitHub Actions & GHCR | Accepted | complete |
 | [0012](0012-embedded-postgres-fuer-tests.md) | Zonky Embedded PostgreSQL für Tests statt H2 oder Testcontainers | Accepted | complete |
 | [0013](0013-package-by-feature-backend.md) | Package-by-Feature im Backend — kein Hexagonal, keine Backend-Submodule | Accepted | complete |
 | [0014](0014-minimaler-dependency-kern.md) | Minimaler, erklärter Dependency-Kern — kein Lombok, kein MapStruct | Accepted | complete |
@@ -33,9 +36,11 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 
 ³ Ebene 1 und 3 stehen. Ebene 2 wird nachgerüstet, Ebene 4 wartet auf ihren benannten Auslöser — auch hier heißt `partial` „planmäßig unvollständig".
 
-**0009 bis 0011 sind reserviert und fehlen hier absichtlich.** Sie gehören den drei ADRs zu CI-Pipeline, Deployment-Infrastruktur und der Migration nach GitHub Actions, die auf dem Branch `CHESS-8-Initial-pipeline` liegen (PR #2, offen seit dem 11. Juli 2026). Dieser Branch vergab seine Nummern zuerst; er wird nicht umnummeriert, weil seine drei ADRs sich gegenseitig unter genau diesen Nummern verlinken. Die Lücke schließt sich beim Merge. **Wer sie vorher füllt, erzeugt die Kollision, die diese Zeile verhindert.**
+⁴ Die Plattform ist weg, die Begründung nicht. Welcher Teil weiterhin gilt, steht im `## Status`-Abschnitt des jeweiligen ADR ([ADR-0018](0018-status-partially-superseded.md)); [ADR-0011](0011-migration-nach-github-actions.md) benennt die entfallenen Prämissen einzeln.
 
-Genau hier ist die Nummernvergabe zweimal fehlgeschlagen: Ein Blick in `docs/adr/` zeigt nur den eigenen Branch. Die nächste freie Nummer wird deshalb über **alle** Branches ermittelt, nicht über das Arbeitsverzeichnis — das Skill `/adr` tut das.
+**0009 bis 0011 waren reserviert; die Lücke ist mit dem Merge von PR #2 am 9. August 2026 geschlossen.** Die drei ADRs lagen auf `CHESS-8-Initial-pipeline` und vergaben ihre Nummern zuerst — sie wurden nicht umnummeriert, weil sie sich gegenseitig unter genau diesen Nummern verlinken. Ihr Frontmatter ist beim Zusammenführen nachgetragen worden; die Körper sind unangetastet.
+
+Genau hier ist die Nummernvergabe zweimal fehlgeschlagen: Ein Blick in `docs/adr/` zeigt nur den eigenen Branch. Die nächste freie Nummer wird deshalb über **alle** Branches ermittelt, nicht über das Arbeitsverzeichnis — das Skill `/adr` tut das. **Die nächste freie Nummer ist 0020.**
 
 **0013 bis 0015 sind nachträglich verschriftlicht.** Die Entscheidungen wurden beim Aufsetzen des Backends getroffen und lagen bis dahin in einem einzelnen Dokument (`chesstopia-backend/SpringDesign.MD`), das keine ADR-Form hatte und neben diesem Register eine zweite Entscheidungsablage bildete. Begründungen und verworfene Alternativen stammen von dort; das Dokument ist aufgelöst.
 

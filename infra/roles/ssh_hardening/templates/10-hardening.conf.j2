@@ -1,0 +1,8 @@
+# Managed by Ansible (chesstopia ssh_hardening role) - do not edit by hand.
+Port {{ ssh_port }}
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PubkeyAuthentication yes
+X11Forwarding no
+MaxAuthTries 3
