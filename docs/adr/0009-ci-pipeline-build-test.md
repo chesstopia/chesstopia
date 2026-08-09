@@ -1,8 +1,9 @@
 ---
 type: adr
 status: partially-superseded
-implementation: partial
-supersedes: []
+implementation: complete
+updated: 2026-08-09
+superseded-by: ['0011-migration-nach-github-actions.md']
 ---
 
 # ADR-0009: CI-Pipeline — Build- & Test-Health-Check (Bitbucket)

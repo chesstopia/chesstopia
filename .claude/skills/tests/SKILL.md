@@ -21,12 +21,17 @@ und ein Gedächtnis, keine Vollständigkeitsgarantie.
 | 1 Unit | neben die Datei: `foo.test.ts`, `commonTest/`, `src/test/java/` | Vitest · `kotlin.test` · JUnit |
 | 2 Komponente | neben die Komponente: `Chessboard.test.tsx` | Vitest (jsdom) + Testing Library |
 | 3 Integration | `chesstopia-backend/src/test/java/…` | `WebTestClient` + Zonky |
-| 4 E2E · Smoke | **noch nicht gebaut** — Auslöser ist der Merge von PR #2 | Playwright |
+| 4 E2E · Smoke | **noch nicht gebaut, aber fällig** — der Auslöser ist eingetreten | Playwright |
 
-Ein Feature, das Frontend und Backend zugleich berührt, braucht Ebene 4. Bis
-der Auslöser eintritt, wird das **benannt und nicht ersatzweise auf Ebene 3
-nachgestellt** — ein Integrationstest, der so tut, als sei er ein Durchstich,
-verdeckt genau die Naht, um die es geht.
+Ein Feature, das Frontend und Backend zugleich berührt, braucht Ebene 4. Solange
+sie fehlt, wird das **benannt und nicht ersatzweise auf Ebene 3 nachgestellt** —
+ein Integrationstest, der so tut, als sei er ein Durchstich, verdeckt genau die
+Naht, um die es geht.
+
+**Der Auslöser aus [ADR-0019](../../../docs/adr/0019-teststrategie.md) ist am
+9. August 2026 mit dem Merge von PR #2 eingetreten**; `.github/workflows/ci.yml`
+und die Compose-Dateien liegen auf `main`. Playwright ist damit kein Wartestand
+mehr, sondern Rückstand — hier ist nicht länger zu warten, sondern zu bauen.
 
 **Nicht getestet wird:** generierter Code (`openapi-client/src/`,
 `build/generated/openapi/` — Verbot 1), Framework-Verhalten, und Zusicherungen,

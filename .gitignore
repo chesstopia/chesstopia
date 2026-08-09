@@ -7,6 +7,10 @@ bin/
 # ── Node / pnpm ───────────────────────────────────────────────────────────────
 node_modules/
 .pnpm-store/
+# Der Workspace hat genau eine Sperrdatei: pnpm-lock.yaml im Wurzelverzeichnis.
+# Ein package-lock.json daneben wird von niemandem gelesen und driftet still ab.
+package-lock.json
+yarn.lock
 
 # ── Compiled output ───────────────────────────────────────────────────────────
 dist/

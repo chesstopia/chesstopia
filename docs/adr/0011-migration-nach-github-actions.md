@@ -2,6 +2,7 @@
 type: adr
 status: accepted
 implementation: complete
+updated: 2026-08-09
 supersedes: ['0009-ci-pipeline-build-test.md', '0010-deployment-cicd-infrastruktur.md']
 ---
 
