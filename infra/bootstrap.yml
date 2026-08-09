@@ -1,0 +1,15 @@
+---
+# Bootstrap a FRESH box (root login still open, key-based).
+# Creates the admin + deploy accounts and then locks down root/password login.
+# Run as root, scoped to the un-bootstrapped host(s):
+#
+#   ansible-playbook bootstrap.yml --limit infra -e ansible_user=root
+#
+# After this, only ever use site.yml (connecting as the admin user).
+# The prod box is already bootstrapped manually (eyota, root locked) -> skip it here.
+- name: Bootstrap (connect as root)
+  hosts: all
+  become: false        # already root; no sudo needed
+  roles:
+    - users
+    - ssh_hardening

@@ -14,6 +14,7 @@ export default defineConfig({
     include: ["@chesstopia/chess-engine"],
   },
   test: {
-    environment: "node",
+    environment: "jsdom",
+    include: ["src/**/*.test.{ts,tsx}"],
   },
 });

@@ -83,6 +83,9 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("org.springframework.boot:spring-boot-webtestclient")
     testImplementation("io.zonky.test:embedded-database-spring-test:2.8.0")
+    // Non-Docker provider: runs Postgres from downloaded native binaries (no Docker daemon
+    // needed, in CI or locally). Selected via zonky.test.database.provider=zonky (application-test.yml).
+    testImplementation("io.zonky.test:embedded-postgres:2.2.2")
 }
 
 tasks.withType<JavaCompile> {
@@ -98,3 +101,7 @@ tasks.withType<JavaCompile> {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+// Deterministic artifact name for the artifact-copy Dockerfile; disable the plain jar.
+tasks.bootJar { archiveFileName.set("app.jar") }
+tasks.named<Jar>("jar") { enabled = false }
