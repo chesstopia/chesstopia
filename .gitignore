@@ -8,9 +8,11 @@ bin/
 node_modules/
 .pnpm-store/
 # Der Workspace hat genau eine Sperrdatei: pnpm-lock.yaml im Wurzelverzeichnis.
-# Ein package-lock.json daneben wird von niemandem gelesen und driftet still ab.
+# Jede weitere wird von niemandem gelesen und driftet still ab. Das Muster mit
+# Schraegstrich trifft nur Paketverzeichnisse, nicht die Datei in der Wurzel.
 package-lock.json
 yarn.lock
+*/pnpm-lock.yaml
 
 # ── Compiled output ───────────────────────────────────────────────────────────
 dist/

@@ -1,10 +1,11 @@
 ---
 type: note
 status: current
-updated: 2026-08-08
+updated: 2026-08-09
 verifies:
   - 'chesstopia-backend/src/main/resources/application.yml :: virtual'
   - 'chesstopia-backend/src/main/resources/logback-spring.xml :: LogstashEncoder'
+  - 'chesstopia-backend/src/main/resources/application-prod.yml :: ${POSTGRES_PASSWORD}'
 ---
 
 # Backend-Konventionen
@@ -46,7 +47,7 @@ Hier weicht der Ist-Zustand vom ursprünglichen Entwurf ab — der sah drei Prof
 | `application.yml` | ja | Default-Profil: lokale PostgreSQL, SQL-Logging, DEBUG für `io.chesstopia` |
 | `application-test.yml` | ja | `spring.test.database.replace: any`, `ddl-auto: validate` |
 | `application-dev.yml` | **nein** | ein eigenes dev-Profil existiert nicht; das Default-Profil ist das Entwicklungsprofil |
-| `application-prod.yml` | **nein, absichtlich** | Produktionswerte kommen ausschließlich aus Umgebungsvariablen |
+| `application-prod.yml` | ja | Datenquelle auf den `postgres`-Service, jeder Zugangsdatenwert aus `${…}` ([ADR-0017](../adr/0017-produktionskonfiguration-im-repo.md)) |
 
 `logback-spring.xml` kennt dagegen drei Profile — `prod`, `dev,default` und `test`. Die Profilnamen der Logging-Konfiguration und die vorhandenen Property-Dateien decken sich also nicht vollständig.
 
