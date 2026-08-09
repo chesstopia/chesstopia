@@ -4,6 +4,11 @@ status: partially-superseded
 implementation: complete
 updated: 2026-08-09
 superseded-by: ['0011-migration-nach-github-actions.md']
+verifies:
+  - 'gradle.properties :: org.gradle.caching=true'
+  - 'gradle.properties :: org.gradle.java.installations.auto-download=false'
+  - 'build.gradle.kts :: chessEngineBuild'
+  - 'build.gradle.kts :: pnpmFrontendTest'
 ---
 
 # ADR-0009: CI-Pipeline — Build- & Test-Health-Check (Bitbucket)
@@ -17,7 +22,7 @@ Das Monorepo braucht eine erste CI-Pipeline, die ausschließlich prüft, dass **
 1. **Composite Build (ADR-0006):** `backend` zieht `chess-engine` über `includeBuild` *aus dem Quellcode*; `pnpmInstall` hängt an `jsBrowserProductionLibraryDistribution`. Ein vorgebautes jar/dist lässt sich nicht einfach unterschieben — jeder Step, der backend oder frontend baut, baut chess-engine transitiv mit.
 2. **Bitbucket-Steps sind isolierte Container** ohne gemeinsames Dateisystem, und Build-Minuten werden pro Step abgerechnet (Free Tier: 50 min/Monat).
 3. **JDK 25 ist Pflicht, Toolchain-Auto-Download ist deaktiviert** (`org.gradle.java.installations.auto-download=false`, weil foojay-resolver 0.9.0 mit Gradle 9.5.1 inkompatibel ist). Das CI-Image muss JDK 25 mitbringen.
-4. **Backend-Tests nutzen embedded Postgres** (ADR-0012, `io.zonky`) — kein externer DB-Service nötig.
+4. **Backend-Tests nutzen embedded Postgres** ([ADR-0012](0012-embedded-postgres-fuer-tests.md), `io.zonky`) — kein externer DB-Service nötig.
 5. **Das Frontend hatte keinen Test-Runner.** Für diese Pipeline wurde Vitest eingeführt (`chesstopia-frontend`, `button.test.tsx`); der Frontend-Step prüft Lint + Test + Build (inkl. `tsc`-Typecheck).
 
 ## Decision

@@ -4,6 +4,10 @@ status: accepted
 implementation: complete
 updated: 2026-08-09
 supersedes: ['0009-ci-pipeline-build-test.md', '0010-deployment-cicd-infrastruktur.md']
+verifies:
+  - '.github/workflows/ci.yml :: ghcr.io/chesstopia/chesstopia-backend'
+  - '.github/workflows/deploy.yml :: StrictHostKeyChecking=yes'
+  - '.github/workflows/deploy.yml :: workflow_dispatch'
 ---
 
 # ADR-0011: Migration nach GitHub Actions & GHCR
@@ -53,7 +57,7 @@ Die Komponenten-Trennung im UI — das eigentliche Ziel von ADR-0009 — bleibt 
 
 **`generateOpenApiClient` läuft ab jetzt im Frontend-Job.** ADR-0009 hatte das als „latente Abhängigkeit" notiert: der Task steckte nur in `buildAll`, nicht in der Pipeline. Sobald das Frontend `@chesstopia/openapi-client` importiert, wäre die Pipeline rot geworden. Wird hier mitrepariert.
 
-**Der `useradd builder`-Hack entfällt.** Bitbuckets Container liefen als root, Zonkys Postgres-Binaries (ADR-0012) verweigern das — daher die Konstruktion mit unprivilegiertem Nutzer und umgebogenem `GRADLE_USER_HOME`. GitHub-hosted Runner laufen ohnehin als unprivilegierter `runner`. Ersatzlos gestrichen.
+**Der `useradd builder`-Hack entfällt.** Bitbuckets Container liefen als root, Zonkys Postgres-Binaries ([ADR-0012](0012-embedded-postgres-fuer-tests.md)) verweigern das — daher die Konstruktion mit unprivilegiertem Nutzer und umgebogenem `GRADLE_USER_HOME`. GitHub-hosted Runner laufen ohnehin als unprivilegierter `runner`. Ersatzlos gestrichen.
 
 ### Deployment: eigener Workflow, `workflow_dispatch` mit Tag-Input
 Das Deployment ist **kein Job der CI-Kette**, sondern eine eigene Workflow-Datei mit einem Eingabefeld für den Image-Tag (Default: aktueller `main`). Der Klick auf „Run workflow" ersetzt Bitbuckets `trigger: manual` — derselbe Aufwand wie ein Approval, aber **Rollback ist derselbe Knopf** (alten Hash eintragen). Redeploy ohne Rebuild wird dadurch überhaupt erst möglich.

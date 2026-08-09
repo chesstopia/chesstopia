@@ -4,6 +4,10 @@ status: partially-superseded
 implementation: complete
 updated: 2026-08-09
 superseded-by: ['0011-migration-nach-github-actions.md']
+verifies:
+  - 'chesstopia-backend/Dockerfile :: eclipse-temurin:25-jre'
+  - 'docker-compose.prod.yml :: external: true'
+  - 'infra/site.yml :: roles'
 ---
 
 # ADR-0010: Deployment- & CI/CD-Infrastruktur
