@@ -62,7 +62,7 @@ fun collectDocs(): List<Doc> {
 
 tasks.register("checkDocs") {
     group = "verification"
-    description = "Prüft Dokumentation und Kontraktgrenzen: ADR-Nummern, tote Links, Frontmatter, verifies-Drift, Controller-Mappings, Versionskatalog, Klartext-Secrets"
+    description = "Prüft Dokumentation und Kontraktgrenzen: ADR-Nummern, tote Links, Frontmatter, verifies-Drift, Controller-Mappings, Versionskatalog, Klartext-Secrets, fehlende Tests"
 
     doLast {
         val errors = mutableListOf<String>()
@@ -291,6 +291,48 @@ tasks.register("checkDocs") {
                         errors += "$rel:${index + 1}: '$key' trägt einen Literalwert — " +
                             "Produktionswerte kommen aus der Umgebung (Verbot 6)"
                     }
+                }
+            }
+
+        // ── Regel 11: Pflichtebene ohne Test ──────────────────────────────────
+        // ADR-0019. Ob ein Test etwas *prüft*, kann kein Skript entscheiden — ob
+        // zu einer Datei überhaupt einer existiert, sehr wohl. Genau diese Grenze
+        // trennt die Regel vom Skill `/tests`.
+        //
+        // Der Prüfbereich ist bewusst schmal: die zwei Stellen, an denen ADR-0019
+        // eine Ebene zur Pflicht macht *und* die Zuordnung Datei→Test eindeutig
+        // ist. Eine Regel über `src/main` als Ganzes verlangte für jede
+        // Konfigurations-, Entity- und Repository-Klasse eine eigene Testdatei
+        // und endete binnen einer Woche in einer Ausnahmeliste — und eine
+        // Ausnahmeliste verrottet (dasselbe Argument wie bei Regel 10).
+        val backendTests = file("chesstopia-backend/src/test")
+            .walkTopDown().filter { it.isFile }.map { it.name }.toSet()
+
+        file("chesstopia-backend/src/main/java")
+            .walkTopDown()
+            .filter { it.isFile && it.name.endsWith("Controller.java") }
+            .forEach { f ->
+                val base = f.name.removeSuffix(".java")
+                // `*IT` ist die Konvention für Integrationstests, `*Test` für die
+                // übrigen. Beide zählen; welcher passt, entscheidet der Autor.
+                if ("${base}IT.java" !in backendTests && "${base}Test.java" !in backendTests) {
+                    errors += "${f.relativeTo(rootDir).invariantSeparatorsPath}: kein Test — " +
+                        "Ebene 3 ist für jeden Endpunkt Pflicht (ADR-0019). " +
+                        "Erwartet: ${base}IT.java oder ${base}Test.java"
+                }
+            }
+
+        file("chesstopia-frontend/src/hooks")
+            .walkTopDown()
+            .filter { it.isFile && it.extension in setOf("ts", "tsx") }
+            .filter { !it.name.contains(".test.") }
+            .forEach { f ->
+                val base = f.name.removeSuffix(".${f.extension}")
+                val expected = File(f.parentFile, "$base.test.${f.extension}")
+                if (!expected.isFile) {
+                    errors += "${f.relativeTo(rootDir).invariantSeparatorsPath}: kein Test — " +
+                        "ein Hook hält Zustand und ist damit Ebene 2 Pflicht (ADR-0019). " +
+                        "Erwartet: ${expected.name}"
                 }
             }
 

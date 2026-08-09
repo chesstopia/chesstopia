@@ -11,6 +11,7 @@ verifies:
   - 'chess-engine/src/commonTest/kotlin/io/chesstopia/engine/ChessEngineTest.kt :: kotlin.test'
   - 'chesstopia-frontend/vite.config.ts :: jsdom'
   - '.claude/skills/tests/SKILL.md :: name: tests'
+  - 'gradle/check-docs.gradle.kts :: Regel 11'
 ---
 
 # ADR-0019: Teststrategie — vier Ebenen, zwei davon mit benanntem Auslöser
@@ -24,7 +25,7 @@ Tests sollen künftig nach jedem gebauten Feature entstehen, ausgeführt von ein
 
 Eine solche Entscheidung existiert bislang nicht. [ADR-0012](0012-embedded-postgres-fuer-tests.md) wählt ein Werkzeug für Datenbanktests, keine Strategie.
 
-Der Bestand zum Entscheidungszeitpunkt ist dünn und schief: 154 Zeilen Test in drei Dateien gegen 595 Zeilen Produktivcode in 23 Dateien. Entscheidender als die Menge ist, was sie behauptet. Drei der vier Engine-Tests prüfen, dass `getLegalMoves`, `validateMove` und `applyMove` einen `NotImplementedError` werfen — die Suite bestätigt, dass die Engine leer ist. Der Backend-Test lädt den Kontext. Im Frontend ist genau die reine Funktion in `fen.ts` geprüft; die vier Komponenten und der zustandstragende Hook `useBoardState` sind es nicht, denn Vitest läuft unter `environment: "node"`, es gibt kein DOM.
+Der Bestand zum Entscheidungszeitpunkt ist dünn und schief: 193 Zeilen Test in vier Dateien gegen 595 Zeilen Produktivcode in 23 Dateien. Entscheidender als die Menge ist, was sie behauptet. Drei der vier Engine-Tests prüfen, dass `getLegalMoves`, `validateMove` und `applyMove` einen `NotImplementedError` werfen — die Suite bestätigt, dass die Engine leer ist. Im Backend lädt ein Test den Kontext, ein zweiter prüft den Counter-Endpunkt gegen echte Datenbank und echten Port; von drei Controllern ist damit einer abgedeckt. Im Frontend ist genau die reine Funktion in `fen.ts` geprüft; die vier Komponenten und der zustandstragende Hook `useBoardState` sind es nicht, denn Vitest läuft unter `environment: "node"`, es gibt kein DOM.
 
 Das Muster ist erkennbar: Getestet wurde, was leicht zu testen war. Ohne benannte Ebenen entscheidet die Bequemlichkeit, wo geprüft wird.
 

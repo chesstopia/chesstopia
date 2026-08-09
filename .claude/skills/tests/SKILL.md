@@ -106,6 +106,13 @@ pnpm --filter chesstopia-frontend test
 ./gradlew buildAll
 ```
 
+## Was das Skript schon erzwingt
+
+`checkDocs` bricht als **Regel 11** ab, wenn zu einem `*Controller.java` keine
+`*IT.java`/`*Test.java` existiert oder zu einem Hook keine `*.test.ts`. Mehr
+kann ein Skript nicht: Dass die Datei existiert, ist prüfbar — dass sie etwas
+prüft, ist es nicht. Genau dafür gibt es die Gegenprobe in Schritt 4.
+
 ## Abbruch
 
 Es gilt das Kriterium aus ADR-0019: **Eine Ebene, die über drei Läufe hinweg
