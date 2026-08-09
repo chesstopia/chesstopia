@@ -51,7 +51,7 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
       - uses: gradle/actions/setup-gradle@v4
-      # Tests boot an embedded Postgres from native binaries (Zonky, ADR-0008), whose
+      # Tests boot an embedded Postgres from native binaries (Zonky, ADR-0012), whose
       # initdb refuses to run as root. GitHub runners are already the unprivileged
       # `runner` user, so the useradd dance the Bitbucket pipeline needed is gone.
       - run: ./gradlew :chesstopia-backend:build

@@ -14,7 +14,12 @@ export default defineConfig({
     include: ["@chesstopia/chess-engine"],
   },
   test: {
+    // Ebene 2 aus ADR-0019 braucht ein DOM. Reine Unit-Tests (fen.test.ts) laufen
+    // unter jsdom unverändert; der Aufpreis rechtfertigt keine zweite Projektdatei.
     environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}"],
+    // Ohne diese Zeile räumt die Testing Library nicht auf — Vitest läuft hier ohne
+    // `globals: true`, und ihr automatisches Cleanup hängt an einem globalen afterEach.
+    setupFiles: ["./src/test/setup.ts"],
   },
 });

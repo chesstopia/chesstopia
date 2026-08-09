@@ -1,24 +1,21 @@
 package io.chesstopia.backend.counter;
 
+import io.chesstopia.backend.api.CounterApi;
+import io.chesstopia.backend.api.model.CounterResponse;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/counter")
-class CounterController {
+public class CounterController implements CounterApi {
 
     private final CounterService counterService;
 
-    CounterController(CounterService counterService) {
+    public CounterController(CounterService counterService) {
         this.counterService = counterService;
     }
 
-    record CounterResponse(int value) {}
-
-    @GetMapping
-    ResponseEntity<CounterResponse> increment() {
+    @Override
+    public ResponseEntity<CounterResponse> incrementCounter() {
         return ResponseEntity.ok(new CounterResponse(counterService.increment()));
     }
 }

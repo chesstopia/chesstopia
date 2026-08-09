@@ -1,0 +1,54 @@
+---
+type: note
+status: current
+updated: 2026-08-08
+---
+
+# Chesstopia — Karte
+
+Der Einstiegspunkt in die Dokumentation. Diese Datei beantwortet **was hier gebaut ist und wie es zusammenhängt**. Die Regeln für die Arbeit im Repo stehen in [CLAUDE.md](../CLAUDE.md), das *Warum* der Architektur in den [ADRs](adr/index.md).
+
+## Der rote Faden
+
+Chesstopia ist eine Schachplattform. Die eine Entscheidung, aus der die Struktur folgt: **Schachregeln existieren genau einmal.** `chess-engine` ist Kotlin Multiplatform und wird zweimal ausgeliefert — als JVM-Jar ans Backend, als ES-Modul ans Frontend. Beide Seiten validieren gegen dieselbe Implementierung, ohne dass sie doppelt geschrieben wird ([ADR-0001](adr/0001-kotlin-multiplatform-chess-engine.md)).
+
+Die zweite tragende Entscheidung ist die Gegenrichtung: **die REST-API existiert auch genau einmal**, als `docs/api/openapi.yaml`. Aus ihr werden die Spring-Interfaces und der TypeScript-Client generiert ([ADR-0008](adr/0008-openapi-first-codegen.md)). Zusammen bedeutet das: Die beiden Nahtstellen zwischen Backend und Frontend — Schachlogik und Datenkontrakt — sind keine Absprachen, sondern generierte Artefakte.
+
+Alles andere ordnet sich dem unter. `buildAll` ist der kanonische Einstiegspunkt, weil beide Generatoren in der richtigen Reihenfolge laufen müssen ([ADR-0006](adr/0006-build-orchestration.md)).
+
+## Module
+
+| Modul | Rolle | Beschreibung |
+|---|---|---|
+| `chess-engine` | Schachregeln, KMP → JVM + JS | — |
+| `chesstopia-backend` | Spring Boot, REST + WebSocket | — |
+| `chesstopia-frontend` | React/Vite | — |
+| `openapi-client` | generierter TS-Client, gitignored | — |
+| `docs/api/openapi.yaml` | API-Kontrakt | [api-kontrakt.md](modules/api-kontrakt.md) |
+| Root-Build | Reihenfolge über vier Build-Systeme | [build-orchestrierung.md](modules/build-orchestrierung.md) |
+
+Zwei Modulbeschreibungen existieren, vier fehlen. Die beiden vorhandenen sind bewusst zuerst entstanden: Sie beschreiben die Nahtstellen, an denen eine Änderung mehrere Module gleichzeitig bewegt — das Wissen, das bisher nur in Sessionverläufen existierte. Die übrigen vier folgen; bis dahin ist der Code die Auskunft.
+
+## Stand der Umsetzung
+
+Ehrlich und knapp, weil hier der größte Abstand zwischen Absicht und Realität liegt:
+
+- **Domäne:** [context.md](context.md) beschreibt 25 Begriffe. Umgesetzt ist davon ein Bruchteil.
+- **Engine:** drei Quelldateien in `commonMain` — `ChessEngine`, `Move`, `RuleSet`. Das Gerüst steht, die Regellogik nicht.
+- **Backend:** drei Controller. `hello` und `counter` sind Durchstiche durch die Codegen-Kette; `game` liefert eine konstante Start-FEN.
+- **Frontend:** Brett-Darstellung mit FEN-Parsing.
+- **API:** drei Pfade — `/api/v1/counter`, `/api/v1/game/board` und `/api/v1/hello`.
+
+Der Wert des bisher Gebauten liegt nicht in den Features, sondern in der durchgestochenen Kette: Eine Änderung an `openapi.yaml` bewegt nachweislich vier Artefakte in drei Sprachen.
+
+## Wegweiser
+
+| Frage | Ort |
+|---|---|
+| Was darf ich als Agent hier nicht tun? | [CLAUDE.md](../CLAUDE.md) |
+| Warum ist etwas so entschieden? | [adr/index.md](adr/index.md) |
+| Was bedeutet dieser Domänenbegriff? | [context.md](context.md) |
+| Wie ist das Backend eingerichtet? | [notes/backend-konventionen.md](notes/backend-konventionen.md) |
+| Was darf ich in diesem Modul nicht tun? | [modules/](modules/) |
+| Wie ist etwas konkret eingerichtet? | [notes/](notes/) |
+| Wie sieht die API aus? | [api/openapi.yaml](api/openapi.yaml) |

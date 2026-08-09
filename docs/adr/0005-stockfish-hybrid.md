@@ -1,3 +1,12 @@
+---
+type: adr
+status: accepted
+implementation: planned
+updated: 2026-08-08
+supersedes: []
+verifies: []
+---
+
 # ADR-0005: Stockfish Hybrid — Server-Prozess für KI-Gegner, Stockfish.js für Evaluation Bar
 
 ## Status

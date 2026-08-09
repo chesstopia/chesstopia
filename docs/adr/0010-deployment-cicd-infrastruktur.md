@@ -1,3 +1,11 @@
+---
+type: adr
+status: partially-superseded
+implementation: complete
+updated: 2026-08-09
+superseded-by: ['0011-migration-nach-github-actions.md']
+---
+
 # ADR-0010: Deployment- & CI/CD-Infrastruktur
 
 ## Status

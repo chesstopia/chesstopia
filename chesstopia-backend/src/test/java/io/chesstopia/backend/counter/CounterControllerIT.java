@@ -1,8 +1,9 @@
 package io.chesstopia.backend.counter;
 
+import io.chesstopia.backend.api.model.CounterResponse;
+import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.test.context.ActiveProfiles;
@@ -21,18 +22,18 @@ class CounterControllerIT {
 
     @Test
     void post_incrementsCounterByOne() {
-        webTestClient.get()
+        webTestClient.post()
             .uri("/api/v1/counter")
             .exchange()
             .expectStatus().isOk()
-            .expectBody(CounterController.CounterResponse.class)
-            .value(response -> assertThat(response.value()).isEqualTo(1));
+            .expectBody(CounterResponse.class)
+            .value(response -> assertThat(response.getValue()).isEqualTo(1));
 
-        webTestClient.get()
+        webTestClient.post()
             .uri("/api/v1/counter")
             .exchange()
             .expectStatus().isOk()
-            .expectBody(CounterController.CounterResponse.class)
-            .value(response -> assertThat(response.value()).isEqualTo(2));
+            .expectBody(CounterResponse.class)
+            .value(response -> assertThat(response.getValue()).isEqualTo(2));
     }
 }

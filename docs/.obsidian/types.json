@@ -1,0 +1,12 @@
+{
+  "types": {
+    "type": "text",
+    "status": "text",
+    "implementation": "text",
+    "updated": "date",
+    "supersedes": "multitext",
+    "superseded-by": "multitext",
+    "verifies": "multitext",
+    "drift-accepted": "multitext"
+  }
+}

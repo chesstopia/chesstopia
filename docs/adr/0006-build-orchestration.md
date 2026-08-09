@@ -1,3 +1,14 @@
+---
+type: adr
+status: accepted
+implementation: complete
+updated: 2026-08-08
+supersedes: []
+verifies:
+  - 'build.gradle.kts :: tasks.register("buildAll")'
+  - 'pnpm-workspace.yaml :: verifyDepsBeforeRun: false'
+---
+
 # ADR-0006: Build-Orchestrierung — Gradle Composite Build + pnpm Workspaces + node-gradle Plugin
 
 ## Status
@@ -23,8 +34,8 @@ Vier unabhängige Build-Systeme müssen koordiniert werden:
 ### Orchestrierung: com.github.node-gradle.node Plugin
 Das Root-`build.gradle.kts` wendet das `com.github.node-gradle.node`-Plugin an. Es verwaltet Node.js- und pnpm-Versionen (Download falls nötig) und stellt einen `pnpmInstall`-Task bereit. Dieser Task hängt von `chess-engine:jsBrowserProductionLibraryDistribution` ab — das JS-Artefakt ist garantiert vorhanden bevor pnpm linkt.
 
-### OpenAPI Code Generation (ADR-0008)
-`docs/api/openapi.yaml` ist die Single Source of Truth für die REST-API. Der `openApiGenerate`-Task (Gradle `JavaExec`, openapi-generator-cli 7.22.0) generiert Spring-Interfaces ins Backend-Build-Verzeichnis; `compileJava` hängt davon ab. Der `generateOpenApiClient`-Task (Root-`PnpmTask`) generiert den TypeScript Axios Client via `@openapitools/openapi-generator-cli` ins `openapi-client/src/`-Verzeichnis (gitignored). Das Workspace-Paket `@chesstopia/openapi-client` wird von `pnpm-workspace.yaml` registriert und ist im Frontend via `"workspace:*"` einbindbar. Details siehe ADR-0008.
+### OpenAPI Code Generation ([ADR-0008](0008-openapi-first-codegen.md))
+`docs/api/openapi.yaml` ist die Single Source of Truth für die REST-API. Der `openApiGenerate`-Task (Gradle `JavaExec`, openapi-generator-cli 7.22.0) generiert Spring-Interfaces ins Backend-Build-Verzeichnis; `compileJava` hängt davon ab. Der `generateOpenApiClient`-Task (Root-`PnpmTask`) generiert den TypeScript Axios Client via `@openapitools/openapi-generator-cli` ins `openapi-client/src/`-Verzeichnis (gitignored). Das Workspace-Paket `@chesstopia/openapi-client` wird von `pnpm-workspace.yaml` registriert und ist im Frontend via `"workspace:*"` einbindbar. Details siehe [ADR-0008](0008-openapi-first-codegen.md).
 
 Der zentrale Build-Befehl ist:
 ```

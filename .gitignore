@@ -7,6 +7,12 @@ bin/
 # ── Node / pnpm ───────────────────────────────────────────────────────────────
 node_modules/
 .pnpm-store/
+# Der Workspace hat genau eine Sperrdatei: pnpm-lock.yaml im Wurzelverzeichnis.
+# Jede weitere wird von niemandem gelesen und driftet still ab. Das Muster mit
+# Schraegstrich trifft nur Paketverzeichnisse, nicht die Datei in der Wurzel.
+package-lock.json
+yarn.lock
+*/pnpm-lock.yaml
 
 # ── Compiled output ───────────────────────────────────────────────────────────
 dist/
@@ -34,3 +40,18 @@ TEST*.xml
 
 # ── Local planning docs (not for version control) ─────────────────────────────
 docs/local/
+
+# ── Claude Code ───────────────────────────────────────────────────────────────
+# Agenten und Skills sind versioniert — sie tragen Projektwissen.
+# Persönliche Berechtigungen sind es nicht.
+.claude/settings.local.json
+
+# ── Obsidian-Vault (docs/) ────────────────────────────────────────────────────
+# Allowlist statt Denylist: alles ignorieren, die vier Konventionsdateien
+# ausnehmen. Obsidian legt laufend neue Dateien hier an; eine Denylist würde
+# jede davon durchlassen.
+docs/.obsidian/*
+!docs/.obsidian/app.json
+!docs/.obsidian/core-plugins.json
+!docs/.obsidian/templates.json
+!docs/.obsidian/types.json

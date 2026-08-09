@@ -5,6 +5,10 @@ plugins {
     alias(libs.plugins.node.gradle)
 }
 
+// Documentation consistency checks — deliberately not wired into `check`,
+// see the header of the script for why.
+apply(from = "gradle/check-docs.gradle.kts")
+
 node {
     // Node.js version managed by the plugin — no manual install required
     version = "22.14.0"

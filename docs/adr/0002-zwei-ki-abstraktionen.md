@@ -1,3 +1,12 @@
+---
+type: adr
+status: accepted
+implementation: planned
+updated: 2026-08-08
+supersedes: []
+verifies: []
+---
+
 # ADR-0002: Zwei getrennte KI-Abstraktionen — MoveEngine und ChessCoach
 
 ## Status

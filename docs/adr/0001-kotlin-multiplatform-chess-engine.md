@@ -1,3 +1,13 @@
+---
+type: adr
+status: accepted
+implementation: complete
+updated: 2026-08-08
+supersedes: []
+verifies:
+  - 'settings.gradle.kts :: includeBuild("chess-engine")'
+---
+
 # ADR-0001: Kotlin Multiplatform für die geteilte Schach-Validierungslogik
 
 ## Status
@@ -13,7 +23,7 @@ Die Schach-Validierungslogik wird als eigenständiges **Kotlin Multiplatform**-S
 - **JVM-Jar**: eingebunden über einen **Gradle Composite Build** (`includeBuild("chess-engine")`) direkt als Source-Dependency in das Spring Boot Backend — kein lokales Maven-Publish nötig.
 - **ES-Modul + TypeScript Declarations (Kotlin/JS IR)**: eingebunden als **pnpm Workspace Package** (`@chesstopia/chess-engine`) in das React/Vite Frontend. Alle öffentlichen API-Typen sind mit `@JsExport` annotiert; `.d.ts`-Dateien werden automatisch generiert.
 
-Das Subprojekt lebt flach im Monorepo-Root (`chesstopia/chess-engine/`) und hat eine eigene `settings.gradle.kts` (standalone buildbar). Die Build-Orchestrierung ist in ADR-0006 beschrieben.
+Das Subprojekt lebt flach im Monorepo-Root (`chesstopia/chess-engine/`) und hat eine eigene `settings.gradle.kts` (standalone buildbar). Die Build-Orchestrierung ist in [ADR-0006](0006-build-orchestration.md) beschrieben.
 
 Das Backend bleibt in Java; Kotlin wird ausschließlich für das `chess-engine`-Modul verwendet.
 
