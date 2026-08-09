@@ -1,7 +1,7 @@
 ---
 type: note
 status: current
-updated: 2026-08-08
+updated: 2026-08-09
 ---
 
 # ADR-Register
@@ -25,10 +25,13 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 | [0016](0016-agenten-topologie.md) | Agenten-Topologie — zwei Subagenten, zwei Skills, drei Schwellen | Accepted | partial ² |
 | [0017](0017-produktionskonfiguration-im-repo.md) | Produktionskonfiguration im Repo — verboten ist der Wert, nicht die Datei | Accepted | complete |
 | [0018](0018-status-partially-superseded.md) | Vierter Statuswert `partially-superseded` für ADRs | Accepted | complete |
+| [0019](0019-teststrategie.md) | Teststrategie — vier Ebenen, zwei davon mit benanntem Auslöser | Accepted | partial ³ |
 
 ¹ Die `SecurityFilterChain`-Bean existiert, das vorgesehene JWT-Filter-Skelett nicht — dort steht ein `TODO`.
 
 ² Die vier Werkzeuge für *jetzt* stehen unter `.claude/`. Die drei Agenten mit benanntem Auslöser sind absichtlich nicht angelegt — `partial` heißt hier „planmäßig unvollständig", nicht „Rückstand".
+
+³ Ebene 1 und 3 stehen. Ebene 2 wird nachgerüstet, Ebene 4 wartet auf ihren benannten Auslöser — auch hier heißt `partial` „planmäßig unvollständig".
 
 **0009 bis 0011 sind reserviert und fehlen hier absichtlich.** Sie gehören den drei ADRs zu CI-Pipeline, Deployment-Infrastruktur und der Migration nach GitHub Actions, die auf dem Branch `CHESS-8-Initial-pipeline` liegen (PR #2, offen seit dem 11. Juli 2026). Dieser Branch vergab seine Nummern zuerst; er wird nicht umnummeriert, weil seine drei ADRs sich gegenseitig unter genau diesen Nummern verlinken. Die Lücke schließt sich beim Merge. **Wer sie vorher füllt, erzeugt die Kollision, die diese Zeile verhindert.**
 
