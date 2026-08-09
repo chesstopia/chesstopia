@@ -1,0 +1,54 @@
+---
+# Admin login account Ansible uses after bootstrap.
+admin_user: eyota
+
+# Personalised admin accounts (sudo group). eyota MUST stay listed: it already
+# exists on the prod box, and a declarative user role would otherwise ignore it.
+admin_accounts:
+  - name: eyota
+    ssh_keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM0+B+GXKqNw05Oar8ED4jpy9hFy6NuEHSyQo7+QbRm7 WSL"
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGgDaXti4Ooy1oonGhMepGJYA8Or1yGLZOMf/kUvuU92 Windows"
+
+# Unprivileged deploy account (docker group, NO sudo). Used by the GitHub Actions
+# deploy workflow (and optionally by local devs) to run `docker compose pull && up -d`.
+deploy_user: deploy
+
+# Public keys authorised for the deploy account.
+#
+# The FIRST entry is the deploy workflow's key. Its private half lives in the
+# GitHub environment `production` as the secret DEPLOY_SSH_KEY — nowhere else.
+# Generate it once, locally:
+#
+#   ssh-keygen -t ed25519 -C "deploy@github-actions" -f ~/.ssh/chesstopia_deploy -N ""
+#
+# then paste the .pub here and the private key into the GitHub environment secret.
+# (Before ADR-0011 this key was generated on the infra box and authorised via a
+# cross-host fact; that box and the deploy_key role are gone.)
+#
+# Further entries authorise MANUAL deploys from a laptop (`ssh deploy@prod ...`).
+deploy_ssh_keys:
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOc7I6cAAPWVo5VQynN4MPtv37cMe8BIUqNVpXOn5Xvk deploy@github-actions"
+  # - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM0+B+GXKqNw05Oar8ED4jpy9hFy6NuEHSyQo7+QbRm7 WSL"
+  # - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGgDaXti4Ooy1oonGhMepGJYA8Or1yGLZOMf/kUvuU92 Windows"
+
+# SSH hardening
+ssh_port: 22
+
+# Swap (overridden per group). swappiness=10 -> swap only as a safety net.
+swap_file: /swapfile
+swap_size_mb: 4096
+swappiness: 10
+
+# Firewall: public TCP ports allowed inbound (extended per group).
+firewall_allow_tcp:
+  - "{{ ssh_port }}"
+
+# Container registry: GitHub Container Registry, public packages (ADR-0011).
+# Images are pushed by GitHub Actions with the automatic GITHUB_TOKEN; prod pulls
+# them anonymously over HTTPS — no `docker login`, no credential to rotate.
+image_registry: ghcr.io/chesstopia
+
+# Docker daemon insecure-registries. Empty since ADR-0011: GHCR speaks HTTPS, so
+# the plain-HTTP private registry (and its --insecure-registry hole) is gone.
+insecure_registries: []

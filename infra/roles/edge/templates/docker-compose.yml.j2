@@ -1,0 +1,25 @@
+# Managed by Ansible (chesstopia edge role) - do not edit by hand.
+# Edge stack: TLS termination + reverse proxy. caddy_data holds ACME certs and
+# MUST persist across redeploys (Let's Encrypt rate limits otherwise).
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_HOSTNAME: "${SITE_HOSTNAME}"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - chesstopia
+volumes:
+  caddy_data:
+  caddy_config:
+networks:
+  chesstopia:
+    external: true

@@ -1,0 +1,56 @@
+---
+# Create the docker group up front so the deploy account can join it even before
+# the docker role runs (e.g. during bootstrap on a fresh box).
+- name: Ensure docker group exists
+  ansible.builtin.group:
+    name: docker
+    state: present
+
+- name: Create admin accounts (sudo + docker)
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    # docker group is harmless here: admins already have passwordless sudo.
+    groups:
+      - sudo
+      - docker
+    append: true
+    shell: /bin/bash
+    state: present
+  loop: "{{ admin_accounts }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Authorize admin SSH keys
+  ansible.posix.authorized_key:
+    user: "{{ item.0.name }}"
+    key: "{{ item.1 }}"
+    state: present
+  loop: "{{ admin_accounts | subelements('ssh_keys') }}"
+  loop_control:
+    label: "{{ item.0.name }}"
+
+# Passwordless sudo: admin accounts created by Ansible have no password, and SSH
+# login is key-only, so the SSH key is the credential. Validated with visudo.
+- name: Grant passwordless sudo to admins
+  ansible.builtin.template:
+    src: sudoers-admins.j2
+    dest: /etc/sudoers.d/chesstopia-admins
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+
+- name: Create deploy account (docker group, no sudo)
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    groups: docker
+    append: true
+    shell: /bin/bash
+    state: present
+
+- name: Authorize deploy SSH keys
+  ansible.posix.authorized_key:
+    user: "{{ deploy_user }}"
+    key: "{{ item }}"
+    state: present
+  loop: "{{ deploy_ssh_keys }}"

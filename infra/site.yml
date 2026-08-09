@@ -1,0 +1,28 @@
+---
+# Ongoing convergence, connecting as the admin user.
+#
+#   ansible-galaxy collection install -r requirements.yml   # once
+#   ansible-playbook site.yml --ask-vault-pass
+#
+# --ask-vault-pass is required because the deploy_target role renders the app .env
+# from vaulted secrets (group_vars/prod/vault.yml).
+#
+# Since ADR-0011 there is only ONE host: CI runs on GitHub-hosted runners and images
+# live in GHCR, so the infra box (self-hosted runner + private registry) is gone —
+# and with it the deploy_key, registry and infra_compose roles.
+- name: Baseline
+  hosts: all
+  become: true
+  roles:
+    - common
+    - users
+    - ssh_hardening
+    - docker
+
+- name: Deploy target + persistent stacks (prod box)
+  hosts: prod
+  become: true
+  roles:
+    - deploy_target   # app dir, secret .env, the shared `chesstopia` network
+    - db              # persistent Postgres stack
+    - edge            # Caddy edge stack (TLS + reverse proxy)

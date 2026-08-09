@@ -34,6 +34,18 @@ tasks.register<PnpmTask>("pnpmFrontendBuild") {
     outputs.dir("chesstopia-frontend/dist")
 }
 
+// ESLint check for the React frontend (CI gate)
+tasks.register<PnpmTask>("pnpmFrontendLint") {
+    dependsOn("pnpmInstall")
+    args.set(listOf("--filter", "chesstopia-frontend", "lint"))
+}
+
+// Vitest unit tests for the React frontend (CI gate)
+tasks.register<PnpmTask>("pnpmFrontendTest") {
+    dependsOn("pnpmInstall")
+    args.set(listOf("--filter", "chesstopia-frontend", "test"))
+}
+
 // Generate the TypeScript Axios client from docs/api/openapi.yaml
 tasks.register<PnpmTask>("generateOpenApiClient") {
     group = "openapi"
@@ -64,4 +76,16 @@ tasks.register("buildAll") {
         ":chesstopia-backend:build",
         "pnpmFrontendBuild"
     )
+}
+
+/**
+ * CI stage 1: build and test the chess-engine standalone (JVM jar + JS library, incl. tests).
+ * Runs first so its task outputs populate the Gradle build cache; the parallel backend and
+ * frontend stages then get cache hits for the same chess-engine tasks instead of rebuilding.
+ * chess-engine has no standalone wrapper, so it is driven through the composite build here.
+ */
+tasks.register("chessEngineBuild") {
+    group = "build"
+    description = "Builds and tests the chess-engine (JVM + JS) — CI stage 1, warms the build cache"
+    dependsOn(gradle.includedBuild("chess-engine").task(":build"))
 }

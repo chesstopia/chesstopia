@@ -82,7 +82,15 @@ dependencies {
     // the @AutoConfigureWebTestClient slice (extracted into its own module in Spring Boot 4).
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("org.springframework.boot:spring-boot-webtestclient")
-    testImplementation(libs.zonky.embedded.database.spring.test)
+    testImplementation("io.zonky.test:embedded-database-spring-test:2.8.0")
+    // Non-Docker provider: runs Postgres from downloaded native binaries (no Docker daemon
+    // needed, in CI or locally). Selected via zonky.test.database.provider=zonky (application-test.yml).
+    testImplementation("io.zonky.test:embedded-postgres:2.2.2")
+}
+
+tasks.withType<JavaCompile> {
+    // Suppress deprecation warnings from generated OpenAPI sources (e.g. @Nullable migration in Spring 7)
+    options.compilerArgs.addAll(listOf("-Xlint:-deprecation"))
 }
 
 tasks.withType<JavaCompile> {
@@ -93,3 +101,7 @@ tasks.withType<JavaCompile> {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+// Deterministic artifact name for the artifact-copy Dockerfile; disable the plain jar.
+tasks.bootJar { archiveFileName.set("app.jar") }
+tasks.named<Jar>("jar") { enabled = false }

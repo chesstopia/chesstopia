@@ -1,0 +1,27 @@
+# Pipeline-deployed application stack: ONLY the stateless backend + frontend images.
+# Postgres (db stack) and Caddy (edge stack) live in separate Ansible-managed compose
+# projects and share the external `chesstopia` docker network. This file is shipped by
+# the deploy step and references images by git short hash via ${IMAGE_TAG}.
+services:
+  backend:
+    image: ${IMAGE_REGISTRY}/chesstopia-backend:${IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
+      POSTGRES_DB: "${POSTGRES_DB}"
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      JWT_SECRET: "${JWT_SECRET}"
+      CHESSCOACH_API_KEY: "${CHESSCOACH_API_KEY}"
+    mem_limit: 1536m
+    networks:
+      - chesstopia
+  frontend:
+    image: ${IMAGE_REGISTRY}/chesstopia-frontend:${IMAGE_TAG}
+    restart: unless-stopped
+    networks:
+      - chesstopia
+networks:
+  chesstopia:
+    external: true
