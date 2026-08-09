@@ -23,6 +23,8 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 | [0014](0014-minimaler-dependency-kern.md) | Minimaler, erklärter Dependency-Kern — kein Lombok, kein MapStruct | Accepted | complete |
 | [0015](0015-security-von-tag-eins.md) | Spring Security von Tag 1, initial explizit auf permit-all | Accepted | partial ¹ |
 | [0016](0016-agenten-topologie.md) | Agenten-Topologie — zwei Subagenten, zwei Skills, drei Schwellen | Accepted | partial ² |
+| [0017](0017-produktionskonfiguration-im-repo.md) | Produktionskonfiguration im Repo — verboten ist der Wert, nicht die Datei | Accepted | complete |
+| [0018](0018-status-partially-superseded.md) | Vierter Statuswert `partially-superseded` für ADRs | Accepted | complete |
 
 ¹ Die `SecurityFilterChain`-Bean existiert, das vorgesehene JWT-Filter-Skelett nicht — dort steht ein `TODO`.
 

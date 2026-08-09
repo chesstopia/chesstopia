@@ -56,7 +56,7 @@ pnpm --filter chesstopia-frontend test
 3. **Schachregeln gehören nicht ins Backend.** Zuglogik, Legalitätsprüfung und Stellungsbewertung liegen ausschließlich in `chess-engine` ([ADR-0001](docs/adr/0001-kotlin-multiplatform-chess-engine.md)).
 4. **Kein Kotlin im Backend.** Kotlin ist ausschließlich für `chess-engine` ([ADR-0001](docs/adr/0001-kotlin-multiplatform-chess-engine.md)).
 5. **Kein Lombok, kein MapStruct.** Records und moderne Sprachfeatures ersetzen sie; Mapping wird zunächst von Hand geschrieben.
-6. **Keine Secrets im Repo.** `application-prod.yml` existiert hier nicht und wird nicht angelegt. Produktionswerte kommen ausschließlich aus Umgebungsvariablen.
+6. **Keine Secrets im Repo — verboten ist der Wert, nicht die Datei.** Produktionskonfiguration ist versioniert (`application-prod.yml`, `docker-compose.prod.yml`, `infra/`); jeder Zugangsdatenwert darin kommt aus der Umgebung (`${VAR}`), aus Ansible (`{{ var }}`) oder aus Ansible Vault. Ein Literal an einer Secret-Stelle bricht den Build ([ADR-0017](docs/adr/0017-produktionskonfiguration-im-repo.md)).
 7. **Versionsnummern nicht in Dokumente schreiben.** Toolchain- und Abhängigkeitsversionen stehen in `gradle/libs.versions.toml`, den `build.gradle.kts` und `openapi-client/openapitools.json`. Abgeschriebene Versionen driften unbemerkt — genau so ist die bestehende „Gradle 8.x"-Falschaussage entstanden.
 
 ---
@@ -95,7 +95,7 @@ Trifft keines zu, wird es **nicht** aufgeschrieben. Jedes Dokument erzeugt dauer
 
 **Die Weiche:** Wurde etwas **entschieden** → ADR unter `docs/adr/`. Wurde etwas **herausgefunden** → Notiz unter `docs/notes/`. Vorlagen für ADR, Notiz und Modulbeschreibung liegen in [docs/_templates/](docs/_templates/); ein neues ADR trägt sich in [docs/adr/index.md](docs/adr/index.md) ein.
 
-**Jedes Dokument in `docs/` trägt Frontmatter** mit `type` und `status`. Erlaubt sind für `adr` die Werte `accepted` · `superseded` · `draft`, für `note` `current` · `draft` · `deprecated`, für `module` `active` · `deprecated`. Ein ADR trägt zusätzlich `implementation` (`planned` · `partial` · `complete`) — das Feld trennt „noch nicht gebaut" von „nicht mehr gültig".
+**Jedes Dokument in `docs/` trägt Frontmatter** mit `type` und `status`. Erlaubt sind für `adr` die Werte `accepted` · `superseded` · `partially-superseded` · `draft`, für `note` `current` · `draft` · `deprecated`, für `module` `active` · `deprecated`. `partially-superseded` heißt: Ein Teil der Entscheidung gilt weiter, ein anderer nicht — welcher, steht im `## Status`-Abschnitt des ADR ([ADR-0018](docs/adr/0018-status-partially-superseded.md)). Ein ADR trägt zusätzlich `implementation` (`planned` · `partial` · `complete`) — das Feld trennt „noch nicht gebaut" von „nicht mehr gültig".
 
 **Wer eine Zahl oder einen Bezeichner aus dem Code in ein Dokument schreibt, schreibt dazu, woher sie stammt** — als `verifies: ['pfad :: erwarteter wert']` im Frontmatter. `checkDocs` sucht den Wert in der Datei und schlägt fehl, wenn er verschwindet. Genau so wäre die „Gradle 8.x"-Falschaussage am Tag des Wrapper-Upgrades aufgefallen. Nur die Substring-Form ist implementiert; ein `#`-Selektor im Pfad ist ein Fehler, kein stiller Durchlauf.
 

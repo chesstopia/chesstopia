@@ -62,7 +62,7 @@ fun collectDocs(): List<Doc> {
 
 tasks.register("checkDocs") {
     group = "verification"
-    description = "Prüft Dokumentation und Kontraktgrenzen: ADR-Nummern, tote Links, Frontmatter, verifies-Drift, Controller-Mappings, Versionskatalog"
+    description = "Prüft Dokumentation und Kontraktgrenzen: ADR-Nummern, tote Links, Frontmatter, verifies-Drift, Controller-Mappings, Versionskatalog, Klartext-Secrets"
 
     doLast {
         val errors = mutableListOf<String>()
@@ -100,7 +100,7 @@ tasks.register("checkDocs") {
         // ── Regel 3: Frontmatter ──────────────────────────────────────────────
         // CLAUDE.md liegt außerhalb des Vaults und trägt bewusst keines.
         val statusByType = mapOf(
-            "adr" to setOf("accepted", "superseded", "draft"),
+            "adr" to setOf("accepted", "superseded", "partially-superseded", "draft"),
             "note" to setOf("current", "draft", "deprecated"),
             "runbook" to setOf("current", "draft", "deprecated"),
             "module" to setOf("active", "deprecated")
@@ -247,6 +247,52 @@ tasks.register("checkDocs") {
             errors += "generierter Code ist versioniert: " +
                 tracked.lines().joinToString().take(300)
         }
+
+        // ── Regel 10: Klartext-Secret in Produktionskonfiguration ─────────────
+        // Verbot 6. Nicht die Datei ist verboten, sondern der Wert:
+        // `application-prod.yml` und `docker-compose.prod.yml` gehören ins Repo,
+        // ihre Zugangsdaten kommen ausschließlich aus der Umgebung.
+        //
+        // Geprüft wird nur Produktionskonfiguration — alles unter `infra/` und
+        // `.github/workflows/` sowie jede Datei, deren Name "prod" enthält. Die
+        // Entwicklungskonfiguration bleibt außen vor: Ihre Zugangsdaten zeigen
+        // auf localhost und stehen bewusst im Klartext.
+        //
+        // Ansible-Vault-Dateien sind ausgenommen; ihr Inhalt ist verschlüsselt.
+        val secretKey = Regex(
+            """^\s*-?\s*["']?([A-Za-z0-9_.-]*""" +
+                """(?:password|passwd|secret|token|api[_-]?key|private[_-]?key|credential)""" +
+                """[A-Za-z0-9_.-]*)["']?\s*[:=]\s*(.*)""",
+            RegexOption.IGNORE_CASE
+        )
+        val configExtensions = setOf("yml", "yaml", "properties", "env", "j2")
+        rootDir.walkTopDown()
+            .onEnter { it.name !in setOf(".git", ".gradle", "build", "node_modules", "dist") }
+            .filter { it.isFile && it.extension in configExtensions }
+            .filter { f ->
+                val rel = f.relativeTo(rootDir).invariantSeparatorsPath
+                rel.startsWith("infra/") || rel.startsWith(".github/workflows/") ||
+                    f.name.contains("prod")
+            }
+            .forEach { f ->
+                val rel = f.relativeTo(rootDir).invariantSeparatorsPath
+                val lines = f.readLines()
+                if (lines.firstOrNull()?.startsWith("\$ANSIBLE_VAULT") == true) return@forEach
+                lines.forEachIndexed { index, line ->
+                    val match = secretKey.find(line) ?: return@forEachIndexed
+                    val (key, rawValue) = match.destructured
+                    val value = rawValue.substringBefore(" #").trim().trim('"', '\'')
+                    val fromEnvironment = value.isEmpty() ||
+                        value.startsWith("\${") ||   // ${POSTGRES_PASSWORD}, ${{ secrets.X }}
+                        value.startsWith("{{") ||    // Ansible/Jinja
+                        value.startsWith("!vault") ||
+                        value == "|" || value == ">"
+                    if (!fromEnvironment) {
+                        errors += "$rel:${index + 1}: '$key' trägt einen Literalwert — " +
+                            "Produktionswerte kommen aus der Umgebung (Verbot 6)"
+                    }
+                }
+            }
 
         // ── Ausgabe ───────────────────────────────────────────────────────────
         warnings.forEach { logger.warn("checkDocs WARNUNG  $it") }

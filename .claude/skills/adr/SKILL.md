@@ -45,7 +45,10 @@ das echte Datum ersetzt, nicht übernommen.
 
 Frontmatter:
 
-- `status` — `accepted` · `superseded` · `draft`
+- `status` — `accepted` · `superseded` · `partially-superseded` · `draft`.
+  `partially-superseded` heißt: ein Teil der Entscheidung gilt weiter. **Welcher,
+  gehört in den `## Status`-Abschnitt** — ohne diesen Satz sagt der Wert nichts
+  ([ADR-0018](../../../docs/adr/0018-status-partially-superseded.md)).
 - `implementation` — `planned` · `partial` · `complete`. **Das ist eine andere
   Frage als der Status.** Ein frisch entschiedenes, ungebautes ADR ist
   `accepted` + `planned`. Ohne dieses Feld liest man das ADR als Beschreibung
