@@ -29,7 +29,7 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 
 ¹ Die `SecurityFilterChain`-Bean existiert, das vorgesehene JWT-Filter-Skelett nicht — dort steht ein `TODO`.
 
-² Die vier Werkzeuge für *jetzt* stehen unter `.claude/`. Die drei Agenten mit benanntem Auslöser sind absichtlich nicht angelegt — `partial` heißt hier „planmäßig unvollständig", nicht „Rückstand".
+² Die Werkzeuge für *jetzt* stehen unter `.claude/`; `/tests` ist seit [ADR-0019](0019-teststrategie.md) dazugekommen. Die drei Agenten mit benanntem Auslöser sind absichtlich nicht angelegt — `partial` heißt hier „planmäßig unvollständig", nicht „Rückstand".
 
 ³ Ebene 1 und 3 stehen. Ebene 2 wird nachgerüstet, Ebene 4 wartet auf ihren benannten Auslöser — auch hier heißt `partial` „planmäßig unvollständig".
 

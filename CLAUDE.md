@@ -75,7 +75,8 @@ pnpm --filter chesstopia-frontend test
 
 **Tests**
 - Kontext-Tests gegen die Datenbank brauchen `@AutoConfigureEmbeddedDatabase` ([ADR-0012](docs/adr/0012-embedded-postgres-fuer-tests.md)) — ohne die Annotation läuft der Test gegen die echte Datenbank.
-- Frontend-Tests laufen unter Vitest. `defineConfig` kommt in der Vitest-Konfiguration aus `vitest/config`, nicht aus `vite`.
+- Frontend-Tests laufen unter Vitest. `defineConfig` kommt in der Vitest-Konfiguration aus `vitest/config`, nicht aus `vite`. Vitest läuft ohne `globals: true` — `describe`/`it`/`expect` werden importiert.
+- Welche Testebene ein Feature braucht, entscheidet [ADR-0019](docs/adr/0019-teststrategie.md); ausgeführt wird das vom Skill `/tests`. E2E ist noch nicht gebaut — der Auslöser steht im ADR.
 
 ---
 
@@ -113,12 +114,13 @@ Trifft keines zu, wird es **nicht** aufgeschrieben. Jedes Dokument erzeugt dauer
 
 ## Werkzeuge
 
-Vier davon liegen unter `.claude/` und sind versioniert, weil sie Projektwissen tragen. Sie werden von Hand aufgerufen.
+Fünf davon liegen unter `.claude/` und sind versioniert, weil sie Projektwissen tragen. Sie werden von Hand aufgerufen.
 
 | Werkzeug | Wofür |
 |---|---|
 | `/adr` | Eine gefallene Architekturentscheidung festhalten — Nummernvergabe, Frontmatter, Registereintrag |
 | `/api-endpoint` | Einen REST-Endpunkt hinzufügen — Kontrakt vor Controller, siehe Verbot 2 |
+| `/tests` | Ein fertiges Feature absichern — Ebenenwahl nach [ADR-0019](docs/adr/0019-teststrategie.md), Randfallkatalog, Gegenprobe |
 | `build-doctor` | Roter Build, rote Pipeline, roter Test, wenn die Ursache nicht in der ersten Fehlerzeile steht |
 | `session-harvester` | Wissen aus Sessionverläufen ernten; schlägt Absätze für `docs/` vor und schreibt nie selbst |
 

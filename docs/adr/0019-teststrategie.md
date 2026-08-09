@@ -9,6 +9,8 @@ verifies:
   - 'chesstopia-backend/build.gradle.kts :: spring-boot-webtestclient'
   - 'chesstopia-backend/src/test/java/io/chesstopia/backend/ChessTopiaApplicationTests.java :: AutoConfigureEmbeddedDatabase'
   - 'chess-engine/src/commonTest/kotlin/io/chesstopia/engine/ChessEngineTest.kt :: kotlin.test'
+  - 'chesstopia-frontend/vite.config.ts :: jsdom'
+  - '.claude/skills/tests/SKILL.md :: name: tests'
 ---
 
 # ADR-0019: Teststrategie — vier Ebenen, zwei davon mit benanntem Auslöser
