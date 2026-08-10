@@ -1,0 +1,16 @@
+{
+  "name": "@chesstopia/learn-examples",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Ausgeführte Sprossen der Komplexitätsleitern aus docs/learn/",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "jsdom": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "vitest": "catalog:"
+  }
+}

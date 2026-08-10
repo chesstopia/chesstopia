@@ -29,6 +29,7 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 | [0017](0017-produktionskonfiguration-im-repo.md) | Produktionskonfiguration im Repo — verboten ist der Wert, nicht die Datei | Accepted | complete |
 | [0018](0018-status-partially-superseded.md) | Vierter Statuswert `partially-superseded` für ADRs | Accepted | complete |
 | [0019](0019-teststrategie.md) | Teststrategie — vier Ebenen, zwei davon mit benanntem Auslöser | Accepted | partial ³ |
+| [0020](0020-lernkonzept.md) | Lernmaterial als eigene Gattung — `docs/learn/`, Komplexitätsleiter, Lernnachweis | Draft ⁵ | partial ⁶ |
 
 ¹ Die `SecurityFilterChain`-Bean existiert, das vorgesehene JWT-Filter-Skelett nicht — dort steht ein `TODO`.
 
@@ -38,9 +39,13 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 
 ⁴ Die Plattform ist weg, die Begründung nicht. Welcher Teil weiterhin gilt, steht im `## Status`-Abschnitt des jeweiligen ADR ([ADR-0018](0018-status-partially-superseded.md)); [ADR-0011](0011-migration-nach-github-actions.md) benennt die entfallenen Prämissen einzeln.
 
+⁵ **Der einzige `draft` im Register, und zwar mit Absicht.** Eine Gattung festzuschreiben, von der noch kein Exemplar existiert, wäre Vorratsbau. Solange der Status `draft` ist, greift das Append-only-Verbot nicht und der Körper darf sich an dem korrigieren, was das Schreiben der ersten Lektionen zutage fördert. `accepted` wird er, wenn die Form sich getragen hat.
+
+⁶ Lektion 03 und die Sprossen unter `learn-examples/` stehen, die Gattung ist in `checkDocs` verankert. Vorlage, Skill `/lernen`, Portal und die Bildmechanik entstehen später — die Bildmechanik erst, wenn eine Lektion tatsächlich ein Bild verlangt. Lektion 03 verlangte keines.
+
 **0009 bis 0011 waren reserviert; die Lücke ist mit dem Merge von PR #2 am 9. August 2026 geschlossen.** Die drei ADRs lagen auf `CHESS-8-Initial-pipeline` und vergaben ihre Nummern zuerst — sie wurden nicht umnummeriert, weil sie sich gegenseitig unter genau diesen Nummern verlinken. Ihr Frontmatter ist beim Zusammenführen nachgetragen worden; die Körper sind unangetastet.
 
-Genau hier ist die Nummernvergabe zweimal fehlgeschlagen: Ein Blick in `docs/adr/` zeigt nur den eigenen Branch. Die nächste freie Nummer wird deshalb über **alle** Branches ermittelt, nicht über das Arbeitsverzeichnis — das Skill `/adr` tut das. **Die nächste freie Nummer ist 0020.**
+Genau hier ist die Nummernvergabe zweimal fehlgeschlagen: Ein Blick in `docs/adr/` zeigt nur den eigenen Branch. Die nächste freie Nummer wird deshalb über **alle** Branches ermittelt, nicht über das Arbeitsverzeichnis — das Skill `/adr` tut das. **Die nächste freie Nummer ist 0021.**
 
 **0013 bis 0015 sind nachträglich verschriftlicht.** Die Entscheidungen wurden beim Aufsetzen des Backends getroffen und lagen bis dahin in einem einzelnen Dokument (`chesstopia-backend/SpringDesign.MD`), das keine ADR-Form hatte und neben diesem Register eine zweite Entscheidungsablage bildete. Begründungen und verworfene Alternativen stammen von dort; das Dokument ist aufgelöst.
 

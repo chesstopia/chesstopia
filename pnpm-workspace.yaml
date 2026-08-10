@@ -5,6 +5,19 @@ packages:
   - 'openapi-client'
   # React/Vite frontend — consumes @chesstopia/chess-engine and @chesstopia/openapi-client
   - 'chesstopia-frontend'
+  # Ausgeführte Sprossen der Lernleitern — siehe docs/learn/
+  - 'learn-examples'
+
+# Katalog: eine Version je Werkzeug, geteilt zwischen Frontend und learn-examples.
+# ADR-0020 verlangt, dass die Sprossen keine eigenen Abhängigkeiten pflegen —
+# sie sollen brechen, wenn das Projekt sein Werkzeug wechselt, und nicht auf
+# einer eigenen Version stehenbleiben. Eine zweite Versionsliste täte genau das,
+# also gibt es nur eine: diese hier.
+catalog:
+  jsdom: ^30.0.1
+  react: ^19.2.6
+  react-dom: ^19.2.6
+  vitest: ^4.1.10
 # Disable pnpm's auto-install before "pnpm run"/"pnpm exec". The workspace packages
 # @chesstopia/chess-engine and @chesstopia/openapi-client are produced by Gradle
 # (KMP build / OpenAPI codegen), not by pnpm. Auto-installing at script-run time

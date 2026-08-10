@@ -24,6 +24,8 @@ Chesstopia ist ein Gradle-Monorepo mit vier Modulen und einem geteilten API-Kont
 | `chesstopia-frontend` | React/Vite | TypeScript |
 | `openapi-client` | generierter Axios-Client — **nie von Hand editieren** | TypeScript (generiert) |
 
+Daneben steht `learn-examples/` — **kein Modul, sondern Lehrmaterial**: die ausgeführten Sprossen der Komplexitätsleitern aus `docs/learn/` ([ADR-0020](docs/adr/0020-lernkonzept.md)). Es pflegt keine eigenen Abhängigkeiten; seine Versionen kommen aus dem `catalog:` in `pnpm-workspace.yaml`. Bricht eine Sprosse an einer neuen Version, ist die Sprosse falsch — nicht die Version.
+
 `docs/api/openapi.yaml` ist die Single Source of Truth der API. Aus ihr entstehen die Spring-Interfaces im Backend und der TypeScript-Client im Frontend ([ADR-0008](docs/adr/0008-openapi-first-codegen.md)).
 
 Die Domänensprache — 25 Begriffe, verbindlich für Bezeichner und Gespräche — steht in [docs/context.md](docs/context.md).
@@ -37,6 +39,7 @@ Was bereits gebaut ist und wie es zusammenhängt, steht in [docs/index.md](docs/
 ```
 ./gradlew buildAll                    # kanonischer Einstiegspunkt: alles
 ./gradlew checkDocs                   # Doku-Konsistenz und Kontraktgrenzen — nach jeder Doku-Änderung
+./gradlew pnpmLearnExamplesTest       # Sprossen der Lernleitern (learn-examples/)
 ./gradlew :chesstopia-backend:build   # Backend allein (baut chess-engine mit)
 ./gradlew :chesstopia-backend:bootRun # Backend starten
 pnpm --filter chesstopia-frontend dev # Frontend-Devserver
@@ -94,9 +97,11 @@ Trifft keines zu, wird es **nicht** aufgeschrieben. Jedes Dokument erzeugt dauer
 
 **Nicht persistiert wird**, was aus dem Code ablesbar ist (Namen, Signaturen, Paketstruktur), was `git log` beantwortet, was in den Build-Dateien steht (siehe Verbot 7) und jede Zustandsbeschreibung, die sich durch Hinzufügen einer Datei ändert.
 
-**Die Weiche:** Wurde etwas **entschieden** → ADR unter `docs/adr/`. Wurde etwas **herausgefunden** → Notiz unter `docs/notes/`. Vorlagen für ADR, Notiz und Modulbeschreibung liegen in [docs/_templates/](docs/_templates/); ein neues ADR trägt sich in [docs/adr/index.md](docs/adr/index.md) ein.
+**Die Weiche:** Wurde etwas **entschieden** → ADR unter `docs/adr/`. Wurde etwas **herausgefunden** → Notiz unter `docs/notes/`. Wurde etwas **erklärt** → Lektion unter `docs/learn/`. Vorlagen für ADR, Notiz und Modulbeschreibung liegen in [docs/_templates/](docs/_templates/); ein neues ADR trägt sich in [docs/adr/index.md](docs/adr/index.md) ein.
 
-**Jedes Dokument in `docs/` trägt Frontmatter** mit `type` und `status`. Erlaubt sind für `adr` die Werte `accepted` · `superseded` · `partially-superseded` · `draft`, für `note` `current` · `draft` · `deprecated`, für `module` `active` · `deprecated`. `partially-superseded` heißt: Ein Teil der Entscheidung gilt weiter, ein anderer nicht — welcher, steht im `## Status`-Abschnitt des ADR ([ADR-0018](docs/adr/0018-status-partially-superseded.md)). Ein ADR trägt zusätzlich `implementation` (`planned` · `partial` · `complete`) — das Feld trennt „noch nicht gebaut" von „nicht mehr gültig".
+**Lektionen sind von der Türschwelle ausgenommen — mit Grenze.** Lehrmaterial ist absichtlich redundant; es erklärt, was der Code zeigt, für jemanden, der die Sprache des Codes noch nicht liest. Zulässig ist eine Lektion, solange sie ein **Verfahren** erklärt. Beschreibt sie **Bestand** — welche Dateien es gibt, welche Endpunkte existieren —, fällt sie zurück unter die Türschwelle. Der Test dafür ist nachprüfbar: **Wird der Satz *falsch*, wenn eine Datei dazukommt, oder nur unvollständig?** Anker ja, Inventar nein ([ADR-0020](docs/adr/0020-lernkonzept.md)).
+
+**Jedes Dokument in `docs/` trägt Frontmatter** mit `type` und `status`. Erlaubt sind für `adr` die Werte `accepted` · `superseded` · `partially-superseded` · `draft`, für `note` und `lesson` `current` · `draft` · `deprecated`, für `module` `active` · `deprecated`. `partially-superseded` heißt: Ein Teil der Entscheidung gilt weiter, ein anderer nicht — welcher, steht im `## Status`-Abschnitt des ADR ([ADR-0018](docs/adr/0018-status-partially-superseded.md)). Ein ADR trägt zusätzlich `implementation` (`planned` · `partial` · `complete`) — das Feld trennt „noch nicht gebaut" von „nicht mehr gültig".
 
 **Wer eine Zahl oder einen Bezeichner aus dem Code in ein Dokument schreibt, schreibt dazu, woher sie stammt** — als `verifies: ['pfad :: erwarteter wert']` im Frontmatter. `checkDocs` sucht den Wert in der Datei und schlägt fehl, wenn er verschwindet. Genau so wäre die „Gradle 8.x"-Falschaussage am Tag des Wrapper-Upgrades aufgefallen. Nur die Substring-Form ist implementiert; ein `#`-Selektor im Pfad ist ein Fehler, kein stiller Durchlauf.
 
@@ -139,6 +144,7 @@ Fünf davon liegen unter `.claude/` und sind versioniert, weil sie Projektwissen
 | Warum ist es so entschieden? | [docs/adr/index.md](docs/adr/index.md) |
 | Was darf ich in diesem Modul nicht tun? | [docs/modules/](docs/modules/) |
 | Wie ist etwas konkret eingerichtet? | [docs/notes/](docs/notes/) |
+| Was ist das für ein Verfahren, und wo gilt es sonst? | [docs/learn/](docs/learn/) |
 | Was heißt dieser Domänenbegriff? | [docs/context.md](docs/context.md) |
 | Wie sieht die API aus? | [docs/api/openapi.yaml](docs/api/openapi.yaml) |
 | Woran wird gerade geplant? | `docs/local/` — gitignored, nie referenzieren |

@@ -79,11 +79,18 @@ tasks.register("checkDocs") {
             }
 
         // ── Regel 2: toter relativer Link ─────────────────────────────────────
+        // Codeblöcke bleiben außen vor: Ein Link in einem Fence ist ein Zitat,
+        // kein Verweis. Ohne die Ausnahme kann eine Lektion, die die
+        // Linkkonvention dieses Repos erklärt, ihren eigenen Gegenstand nicht
+        // zeigen — das Beispiel löst gegen das Verzeichnis der Lektion auf und
+        // bricht den Build. Preis: ein echter toter Link in einem Fence bleibt
+        // ungesehen. Hinnehmbar, weil ihn niemand klicken kann.
+        val fencePattern = Regex("""(?s)```.*?```""")
         val linkPattern = Regex("""\[[^\]]*\]\(([^)\s]+)\)""")
         val outgoing = mutableMapOf<String, MutableSet<String>>()
         docs.forEach { doc ->
             val targets = outgoing.getOrPut(doc.path) { mutableSetOf() }
-            linkPattern.findAll(doc.text).forEach { match ->
+            linkPattern.findAll(fencePattern.replace(doc.text, "")).forEach { match ->
                 val raw = match.groupValues[1]
                 if (raw.startsWith("http") || raw.startsWith("#") || raw.startsWith("mailto:")) return@forEach
                 val relative = raw.substringBefore('#')
@@ -102,6 +109,7 @@ tasks.register("checkDocs") {
         val statusByType = mapOf(
             "adr" to setOf("accepted", "superseded", "partially-superseded", "draft"),
             "note" to setOf("current", "draft", "deprecated"),
+            "lesson" to setOf("current", "draft", "deprecated"),
             "runbook" to setOf("current", "draft", "deprecated"),
             "module" to setOf("active", "deprecated")
         )
@@ -122,6 +130,29 @@ tasks.register("checkDocs") {
         val requiredSections = listOf("## Status", "## Context", "## Decision", "## Consequences")
         docs.filter { it.path.startsWith("docs/adr/") && it.file.name != "index.md" }.forEach { doc ->
             val missing = requiredSections.filterNot { doc.text.contains(it) }
+            if (missing.isNotEmpty()) {
+                errors += "${doc.path}: fehlende Pflichtabschnitte ${missing.joinToString()}"
+            }
+        }
+
+        // ── Regel 4b: Pflichtabschnitte einer Lektion ─────────────────────────
+        // Exakt parallel zu Regel 4 gebaut, gefiltert auf docs/learn/.
+        //
+        // Der Grund ist der Selbsttest: Von allen Blöcken einer Lektion kostet
+        // er beim Schreiben am meisten — drei Fragen zu formulieren, die ohne
+        // Antwort tragen, ist schwerer als der ganze Rest des Abschnitts. Er
+        // fällt deshalb als erster weg. Dass die Fragen etwas taugen, kann kein
+        // Skript prüfen; dass der Abschnitt nicht *schweigend* entfällt, schon.
+        //
+        // `### Transfer` steht bewusst nicht in der Liste: Seine drei Fragen
+        // dürfen auch in Prosa beantwortet sein, und eine Überschrift zu
+        // erzwingen, die eine leere Zeile erfüllt, prüft nichts.
+        val lessonSections = listOf(
+            "## Das Problem", "## Die Leiter", "## Warum nicht anders",
+            "## Was davon überall gilt", "### Selbsttest", "## Weiter"
+        )
+        docs.filter { it.path.startsWith("docs/learn/") && it.file.name != "index.md" }.forEach { doc ->
+            val missing = lessonSections.filterNot { doc.text.contains(it) }
             if (missing.isNotEmpty()) {
                 errors += "${doc.path}: fehlende Pflichtabschnitte ${missing.joinToString()}"
             }

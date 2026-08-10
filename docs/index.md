@@ -6,7 +6,7 @@ updated: 2026-08-08
 
 # Chesstopia — Karte
 
-Der Einstiegspunkt in die Dokumentation. Diese Datei beantwortet **was hier gebaut ist und wie es zusammenhängt**. Die Regeln für die Arbeit im Repo stehen in [CLAUDE.md](../CLAUDE.md), das *Warum* der Architektur in den [ADRs](adr/index.md).
+Der Einstiegspunkt in die Dokumentation. Diese Datei beantwortet **was hier gebaut ist und wie es zusammenhängt**. Die Regeln für die Arbeit im Repo stehen in [CLAUDE.md](../CLAUDE.md), das *Warum* der Architektur in den [ADRs](adr/index.md), das *Feld drumherum* im [Lernpfad](learn/index.md).
 
 ## Der rote Faden
 
@@ -47,6 +47,7 @@ Der Wert des bisher Gebauten liegt nicht in den Features, sondern in der durchge
 |---|---|
 | Was darf ich als Agent hier nicht tun? | [CLAUDE.md](../CLAUDE.md) |
 | Warum ist etwas so entschieden? | [adr/index.md](adr/index.md) |
+| Was ist das für ein Verfahren, und wo gilt es sonst? | [learn/index.md](learn/index.md) |
 | Was bedeutet dieser Domänenbegriff? | [context.md](context.md) |
 | Wie ist das Backend eingerichtet? | [notes/backend-konventionen.md](notes/backend-konventionen.md) |
 | Was darf ich in diesem Modul nicht tun? | [modules/](modules/) |

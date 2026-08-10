@@ -87,7 +87,11 @@ jobs:
       # generateOpenApiClient runs here from the start. ADR-0009 flagged it as a
       # latent dependency: the task lived only in `buildAll`, so the pipeline would
       # have gone red the moment the frontend actually imports @chesstopia/openapi-client.
-      - run: ./gradlew generateOpenApiClient pnpmFrontendLint pnpmFrontendTest pnpmFrontendBuild
+      # pnpmLearnExamplesTest hängt hier mit dran statt in einem eigenen Job:
+      # ein zusätzlicher Runner samt JDK-Setup für eine Handvoll Vitest-Läufe
+      # lohnt nicht, und die Sprossen teilen sich ohnehin den pnpm-Store des
+      # Frontends (Katalog in pnpm-workspace.yaml).
+      - run: ./gradlew generateOpenApiClient pnpmFrontendLint pnpmFrontendTest pnpmLearnExamplesTest pnpmFrontendBuild
       - name: Upload SPA bundle
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4

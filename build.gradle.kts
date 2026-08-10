@@ -46,6 +46,15 @@ tasks.register<PnpmTask>("pnpmFrontendTest") {
     args.set(listOf("--filter", "chesstopia-frontend", "test"))
 }
 
+// Vitest runs for the lesson ladders in learn-examples/ (CI gate).
+// Leiterregel 3 aus ADR-0020: Jede geschriebene Sprosse läuft. Ohne diesen
+// Task ist die Regel eine Behauptung — geprüfte und ungeprüfte Beispiele
+// sähen im Dokument gleich aus.
+tasks.register<PnpmTask>("pnpmLearnExamplesTest") {
+    dependsOn("pnpmInstall")
+    args.set(listOf("--filter", "@chesstopia/learn-examples", "test"))
+}
+
 // Generate the TypeScript Axios client from docs/api/openapi.yaml
 tasks.register<PnpmTask>("generateOpenApiClient") {
     group = "openapi"
@@ -74,7 +83,8 @@ tasks.register("buildAll") {
         gradle.includedBuild("chess-engine").task(":build"),
         "generateOpenApiClient",
         ":chesstopia-backend:build",
-        "pnpmFrontendBuild"
+        "pnpmFrontendBuild",
+        "pnpmLearnExamplesTest"
     )
 }
 
