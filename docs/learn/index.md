@@ -20,9 +20,17 @@ Zwischen den Spuren gibt es **keinen Fortschritt** — es sind zwei Gegenstände
 
 ## Geschrieben
 
-- [03 — Wenn die Anzeige zur Wahrheit wird](03-frontend-react-dom-tests.md) · Spur A · DOM, React, Zustand, und wo die vierte Testebene fehlt
+Spur A ist vollständig — sie erklärt, was heute im Repo läuft:
 
-Die übrigen entstehen nacheinander, nicht auf Vorrat. Was noch nicht hier steht, ist nicht versäumt, sondern nicht geschrieben — und eine Lektion ohne laufenden Gegenstand im Repo wäre ein Lehrbuchkapitel ohne Fall.
+- [01 — Wenn zwei Programme dasselbe wissen müssen](01-architektur-und-schnittfuehrung.md) · geteilte Wahrheit statt abgesprochener, und wo ein Modulschnitt sich lohnt
+- [02 — Das Artefakt von gestern](02-build-kette.md) · Abhängigkeitsgraph statt Anleitung, Erzeugung aus einer Quelle, die Plattformgrenze im Typ
+- [03 — Wenn die Anzeige zur Wahrheit wird](03-frontend-react-dom-tests.md) · DOM, React, Zustand, und wo die vierte Testebene fehlt
+- [04 — Wenn das Drumherum größer ist als die Sache](04-backend-spring-und-persistenz.md) · abgegebene Kontrolle, Schema als Geschichte, Fehler als Kontrakt
+- [05 — Wenn es im Internet steht](05-sicherheit-und-betrieb.md) · sichtbare Vorgabewerte, Struktur gegen Wert, ersetzbar gegen unersetzlich
+
+Spur B ist noch nicht geschrieben. Was noch nicht hier steht, ist nicht versäumt, sondern nicht geschrieben — und eine Lektion ohne laufenden Gegenstand im Repo wäre ein Lehrbuchkapitel ohne Fall.
+
+**Eine Reihenfolge gibt es innerhalb der Spur nur dort, wo eine Lektion es sagt.** Wer bei null anfängt, liest 01 zuerst, weil die übrigen auf dem Schnitt aufsetzen, den sie erklärt. Alles danach ist unabhängig.
 
 ## Wie eine Lektion gelesen wird
 
