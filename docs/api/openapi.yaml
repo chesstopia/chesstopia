@@ -26,20 +26,94 @@ paths:
               schema:
                 $ref: "#/components/schemas/CounterResponse"
 
-  /api/v1/game/board:
-    get:
-      operationId: getBoard
-      summary: Initialen Schachbrettzustand abrufen
-      description: Gibt den aktuellen Spielzustand als FEN-String zurück.
+  /api/v1/games:
+    post:
+      operationId: createGame
+      summary: Neue Partie anlegen
+      description: >
+        Legt eine Partie in der Grundstellung an und gibt sie mitsamt ihrer ID
+        zurück. Spieler werden noch nicht zugeordnet — es gibt keine Nutzer.
       tags:
         - game
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameResponse"
+
+  /api/v1/games/{gameId}:
+    get:
+      operationId: getGame
+      summary: Partie abrufen
+      description: Gibt die aktuelle Stellung der Partie als FEN zurück.
+      tags:
+        - game
+      parameters:
+        - $ref: "#/components/parameters/GameId"
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BoardStateResponse"
+                $ref: "#/components/schemas/GameResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/games/{gameId}/moves:
+    get:
+      operationId: listMoves
+      summary: Zughistorie der Partie abrufen
+      description: >
+        Gibt den Move-Event-Log der Partie in Zugreihenfolge zurück
+        (ADR-0003). Aus ihm lässt sich jede Stellung rekonstruieren.
+      tags:
+        - game
+      parameters:
+        - $ref: "#/components/parameters/GameId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MoveListResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: playMove
+      summary: Zug ausführen
+      description: >
+        Führt einen Zug aus, schreibt ihn in den Move-Event-Log und gibt die
+        Partie mit der neuen Stellung zurück. Die Legalität wird noch **nicht**
+        geprüft — die Schach-Engine kennt derzeit nur die Mechanik eines Zuges.
+      tags:
+        - game
+      parameters:
+        - $ref: "#/components/parameters/GameId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameResponse"
+        "400":
+          description: Der Zug ist in dieser Stellung nicht ausführbar
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/v1/hello:
     get:
@@ -57,7 +131,119 @@ paths:
                 $ref: "#/components/schemas/HelloResponse"
 
 components:
+  parameters:
+    GameId:
+      name: gameId
+      in: path
+      required: true
+      description: ID der Partie
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    NotFound:
+      description: Die Partie existiert nicht
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+
   schemas:
+    ProblemDetail:
+      description: RFC-7807-Fehlerformat, erzeugt vom GlobalExceptionHandler
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+
+    GameResponse:
+      type: object
+      required:
+        - id
+        - fen
+        - status
+        - moveCount
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID der Partie
+        fen:
+          type: string
+          description: Aktuelle Stellung in FEN-Notation
+          example: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        status:
+          type: string
+          description: Zustand der Partie
+          enum: [ONGOING, COMPLETED]
+          example: ONGOING
+        moveCount:
+          type: integer
+          format: int32
+          description: Anzahl der bisher gespielten Halbzüge
+          example: 0
+
+    MoveRequest:
+      type: object
+      required:
+        - uci
+      properties:
+        uci:
+          type: string
+          description: >
+            Der Zug in UCI-Notation — Start- und Zielfeld, bei einer Umwandlung
+            zusätzlich die Zielfigur.
+
+            Bewusst ohne `pattern`: Was ein gültiger Zug ist, entscheidet die
+            Schach-Engine und sonst niemand (ADR-0001). Ein Ausdruck an dieser
+            Stelle wäre Zugwissen außerhalb der Engine und würde denselben Fall
+            als 422 statt als 400 melden.
+          example: e2e4
+
+    MoveRecord:
+      type: object
+      required:
+        - moveNumber
+        - uci
+        - fenAfter
+        - playedAt
+      properties:
+        moveNumber:
+          type: integer
+          format: int32
+          description: Fortlaufende Nummer des Halbzugs, beginnend bei 1
+          example: 1
+        uci:
+          type: string
+          example: e2e4
+        fenAfter:
+          type: string
+          description: Die Stellung nach diesem Zug
+          example: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+        playedAt:
+          type: string
+          format: date-time
+
+    MoveListResponse:
+      type: object
+      required:
+        - moves
+      properties:
+        moves:
+          type: array
+          items:
+            $ref: "#/components/schemas/MoveRecord"
+
     CounterResponse:
       type: object
       required:
@@ -68,16 +254,6 @@ components:
           format: int32
           description: Der Zählerstand nach der Erhöhung
           example: 1
-
-    BoardStateResponse:
-      type: object
-      required:
-        - fen
-      properties:
-        fen:
-          type: string
-          description: Aktuelle Stellung in FEN-Notation
-          example: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
     HelloResponse:
       type: object

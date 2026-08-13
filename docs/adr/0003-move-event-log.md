@@ -1,10 +1,13 @@
 ---
 type: adr
 status: accepted
-implementation: planned
-updated: 2026-08-08
+implementation: partial
+updated: 2026-08-10
 supersedes: []
-verifies: []
+verifies:
+  - 'chesstopia-backend/src/main/resources/db/migration/V2__create_partie_und_zug.sql :: CREATE TABLE zug'
+  - 'chesstopia-backend/src/main/resources/db/migration/V2__create_partie_und_zug.sql :: current_fen'
+  - 'chesstopia-backend/src/main/java/io/chesstopia/backend/game/Zug.java :: fen_after'
 ---
 
 # ADR-0003: Move-Event-Log als Persistenzmodell für Partien
