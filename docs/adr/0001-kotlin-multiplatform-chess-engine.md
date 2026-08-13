@@ -1,12 +1,12 @@
 ---
 type: adr
 status: accepted
-implementation: partial
-updated: 2026-08-10
+implementation: complete
+updated: 2026-08-13
 supersedes: []
 verifies:
   - 'settings.gradle.kts :: includeBuild("chess-engine")'
-  - 'chess-engine/src/commonMain/kotlin/io/chesstopia/engine/ChessEngine.kt :: TODO("Chess rule logic not yet implemented'
+  - 'chess-engine/src/commonMain/kotlin/io/chesstopia/engine/ChessEngine.kt :: fun getLegalMoves(fen: String, ruleSet: RuleSet): LegalMovesResult'
   - 'chesstopia-backend/src/main/java/io/chesstopia/backend/game/GameService.java :: ChessEngineKt.applyMove'
 ---
 

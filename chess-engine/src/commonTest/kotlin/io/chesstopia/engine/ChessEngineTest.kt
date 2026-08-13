@@ -10,8 +10,8 @@ import kotlin.test.assertTrue
  * Ebene 1 (ADR-0019) für die Zugmechanik.
  *
  * Der Katalog folgt den Stellen, an denen ein naives „Figur von A nach B" still
- * falsch wird: die vier FEN-Felder neben dem Brett. Legalität ist hier
- * ausdrücklich **nicht** Gegenstand — sie kommt mit CHESS-2.
+ * falsch wird: die vier FEN-Felder neben dem Brett. Legalität selbst — Gangart,
+ * Fesselung, Schach — deckt [LegalMovesTest] ab, mit Perft als Orakel.
  */
 class ChessEngineTest {
 
@@ -19,14 +19,6 @@ class ChessEngineTest {
     private val rules = RuleSet.standard()
 
     private fun apply(fen: String, uci: String) = applyMove(fen, uci, rules)
-
-    @Test
-    fun `getLegalMoves throws NotImplementedError until engine is implemented`() {
-        // Bleibt bewusst stehen: Zugerzeugung ist CHESS-2, nicht dieses Ticket.
-        assertFailsWith<NotImplementedError> {
-            getLegalMoves(initialFen, rules)
-        }
-    }
 
     // ── Brett ────────────────────────────────────────────────────────────────
 
@@ -49,15 +41,15 @@ class ChessEngineTest {
         // Der Zweig, den man beim ersten Bauen vergisst: Das Zielfeld ist leer,
         // der geschlagene Bauer steht daneben und bliebe sonst stehen.
         assertEquals(
-            "8/8/3P4/8/8/8/8/8 b - - 0 2",
-            apply("8/8/8/3pP3/8/8/8/8 w - d6 0 2", "e5d6"),
+            "k7/8/3P4/8/8/8/8/K7 b - - 0 2",
+            apply("k7/8/8/3pP3/8/8/8/K7 w - d6 0 2", "e5d6"),
         )
     }
 
     @Test
     fun `ein Bauer wandelt in die gewaehlte Figur um`() {
-        assertEquals("4Q3/8/8/8/8/8/8/8 b - - 0 1", apply("8/4P3/8/8/8/8/8/8 w - - 0 1", "e7e8q"))
-        assertEquals("8/8/8/8/8/8/8/4n3 w - - 0 6", apply("8/8/8/8/8/8/4p3/8 b - - 0 5", "e2e1n"))
+        assertEquals("k3Q3/8/8/8/8/8/8/K7 b - - 0 1", apply("k7/4P3/8/8/8/8/8/K7 w - - 0 1", "e7e8q"))
+        assertEquals("k7/8/8/8/8/8/8/K3n3 w - - 0 6", apply("k7/8/8/8/8/8/4p3/K7 b - - 0 5", "e2e1n"))
     }
 
     // ── Rochade ──────────────────────────────────────────────────────────────
@@ -114,8 +106,8 @@ class ChessEngineTest {
 
     @Test
     fun `Schlagen und Bauernzug setzen den Halbzugzaehler zurueck`() {
-        assertTrue(apply("8/8/8/3p4/4P3/8/8/8 w - - 9 20", "e4d5").endsWith(" 0 20"))
-        assertTrue(apply("8/8/8/8/4P3/8/8/8 w - - 9 20", "e4e5").endsWith(" 0 20"))
+        assertTrue(apply("k7/8/8/3p4/4P3/8/8/K7 w - - 9 20", "e4d5").endsWith(" 0 20"))
+        assertTrue(apply("k7/8/8/8/4P3/8/8/K7 w - - 9 20", "e4e5").endsWith(" 0 20"))
     }
 
     @Test
@@ -128,10 +120,15 @@ class ChessEngineTest {
     // ── validateMove ─────────────────────────────────────────────────────────
 
     @Test
-    fun `validateMove nimmt einen mechanisch moeglichen Zug an`() {
+    fun `validateMove nimmt einen legalen Zug an`() {
         assertTrue(validateMove(initialFen, "e2e4", rules))
-        // Und ausdrücklich auch einen unschachlichen — Legalität ist CHESS-2.
-        assertTrue(validateMove(initialFen, "a1a8", rules))
+    }
+
+    @Test
+    fun `validateMove lehnt einen mechanisch moeglichen, aber unschachlichen Zug ab`() {
+        // Der Turm auf a1 könnte "mechanisch" bis a8 ziehen — der eigene Bauer
+        // auf a2 versperrt den Weg. Das ist der Fall, den Verbot 3 verlangt.
+        assertFalse(validateMove(initialFen, "a1a8", rules))
     }
 
     @Test
@@ -159,8 +156,8 @@ class ChessEngineTest {
 
     @Test
     fun `validateMove verlangt eine Zielfigur bei der Umwandlung`() {
-        assertFalse(validateMove("8/4P3/8/8/8/8/8/8 w - - 0 1", "e7e8", rules))
-        assertTrue(validateMove("8/4P3/8/8/8/8/8/8 w - - 0 1", "e7e8q", rules))
+        assertFalse(validateMove("k7/4P3/8/8/8/8/8/K7 w - - 0 1", "e7e8", rules))
+        assertTrue(validateMove("k7/4P3/8/8/8/8/8/K7 w - - 0 1", "e7e8q", rules))
     }
 
     @Test

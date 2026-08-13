@@ -55,6 +55,9 @@ class GameService {
     @Transactional
     GameSnapshot playMove(UUID gameId, String uci) {
         var partie = load(gameId);
+        if (partie.getStatus() == PartieStatus.COMPLETED) {
+            throw new IllegalArgumentException("Die Partie %s ist bereits beendet".formatted(gameId));
+        }
         var ruleSet = new RuleSet(partie.getVariant(), true, true);
 
         if (!ChessEngineKt.validateMove(partie.getCurrentFen(), uci, ruleSet)) {
@@ -65,9 +68,13 @@ class GameService {
         var now = OffsetDateTime.now();
         var fenAfter = ChessEngineKt.applyMove(partie.getCurrentFen(), uci, ruleSet);
         var moveNumber = zugRepository.countByPartieId(gameId) + 1;
+        var legalMovesAfter = ChessEngineKt.getLegalMoves(fenAfter, ruleSet);
+        var statusAfter = legalMovesAfter.isCheckmate() || legalMovesAfter.isStalemate() || legalMovesAfter.isFiftyMoveDraw()
+                ? PartieStatus.COMPLETED
+                : PartieStatus.ONGOING;
 
         zugRepository.save(new Zug(partie, moveNumber, uci, fenAfter, now));
-        partie.advanceTo(fenAfter, now);
+        partie.advanceTo(fenAfter, statusAfter, now);
 
         return GameSnapshot.of(partie, moveNumber);
     }

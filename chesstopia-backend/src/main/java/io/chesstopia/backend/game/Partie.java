@@ -65,8 +65,9 @@ class Partie {
 
     Variant getVariant() { return variant; }
 
-    void advanceTo(String fen, OffsetDateTime now) {
+    void advanceTo(String fen, PartieStatus status, OffsetDateTime now) {
         this.currentFen = fen;
+        this.status = status;
         this.updatedAt = now;
     }
 }

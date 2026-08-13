@@ -145,6 +145,50 @@ class GameControllerIT {
     }
 
     @Test
+    void playMove_lehntEinenZugAbDerNichtzurGangartPasst() {
+        // Vor CHESS-2 wäre das angenommen worden: Mechanik prüfte nur besetzt/
+        // eigene Figur, keine Gangart. Der Läufer zieht hier wie ein Turm.
+        playMove(createGame().getId(), "c1c4")
+                .expectStatus().isBadRequest()
+                .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON);
+    }
+
+    @Test
+    void playMove_setztDenStatusBeiMattAufCompleted() {
+        UUID gameId = createGame().getId();
+        playMove(gameId, "f2f3").expectStatus().isOk();
+        playMove(gameId, "e7e5").expectStatus().isOk();
+        playMove(gameId, "g2g4").expectStatus().isOk();
+
+        GameResponse mate = playMove(gameId, "d8h4")
+                .expectStatus().isOk()
+                .expectBody(GameResponse.class)
+                .returnResult().getResponseBody();
+
+        assertThat(mate).isNotNull();
+        assertThat(mate.getStatus()).isEqualTo(GameResponse.StatusEnum.COMPLETED);
+
+        webTestClient.get().uri("/api/v1/games/{id}", gameId)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(GameResponse.class)
+                .value(game -> assertThat(game.getStatus()).isEqualTo(GameResponse.StatusEnum.COMPLETED));
+    }
+
+    @Test
+    void playMove_lehntEinenZugAufEinerBeendetenPartieAb() {
+        UUID gameId = createGame().getId();
+        playMove(gameId, "f2f3").expectStatus().isOk();
+        playMove(gameId, "e7e5").expectStatus().isOk();
+        playMove(gameId, "g2g4").expectStatus().isOk();
+        playMove(gameId, "d8h4").expectStatus().isOk();
+
+        playMove(gameId, "e1f2")
+                .expectStatus().isBadRequest()
+                .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON);
+    }
+
+    @Test
     void unbekanntePartie_liefert404() {
         webTestClient.get().uri("/api/v1/games/{id}", UUID.randomUUID())
                 .exchange()

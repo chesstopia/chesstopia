@@ -1,7 +1,7 @@
 ---
 type: note
 status: current
-updated: 2026-08-08
+updated: 2026-08-13
 ---
 
 # Chesstopia — Karte
@@ -34,12 +34,10 @@ Zwei Modulbeschreibungen existieren, vier fehlen. Die beiden vorhandenen sind be
 Ehrlich und knapp, weil hier der größte Abstand zwischen Absicht und Realität liegt:
 
 - **Domäne:** [context.md](context.md) beschreibt 25 Begriffe. Umgesetzt ist davon ein Bruchteil.
-- **Engine:** die Mechanik eines Zuges steht — eine FEN wird gelesen, fortgeschrieben und zurückgegeben, samt Rochaderechten, En-passant-Ziel und beiden Zählern. Die **Regellogik fehlt**: `getLegalMoves` ist unverändert ein `TODO`.
-- **Backend:** Partien und ihre Züge liegen in der Datenbank; ein Zug geht durch die Engine und wird als Ereignis angehängt ([ADR-0003](adr/0003-move-event-log.md)). `hello` und `counter` bleiben Durchstiche durch die Codegen-Kette.
+- **Engine:** die Mechanik eines Zuges steht — eine FEN wird gelesen, fortgeschrieben und zurückgegeben, samt Rochaderechten, En-passant-Ziel und beiden Zählern. Darüber liegt jetzt die **Regellogik**: `getLegalMoves` erzeugt die tatsächlich legalen Züge samt Schach-, Matt-, Patt- und 50-Züge-Erkennung sowie SAN-Notation ([ADR-0001](adr/0001-kotlin-multiplatform-chess-engine.md)).
+- **Backend:** Partien und ihre Züge liegen in der Datenbank; ein Zug geht durch die Engine und wird als Ereignis angehängt ([ADR-0003](adr/0003-move-event-log.md)). Ein Zug wird nur noch angenommen, wenn er legal ist; Matt, Patt oder die 50-Züge-Regel setzen die Partie auf `COMPLETED`, weitere Züge werden dann abgelehnt. `hello` und `counter` bleiben Durchstiche durch die Codegen-Kette.
 - **Frontend:** Brett mit Figuren, die sich per Zeiger ziehen lassen.
 - **Sicherheit und Spieler:** keine. Jede Partie ist für jeden erreichbar ([ADR-0015](adr/0015-security-von-tag-eins.md)).
-
-**Ein Zug wird nicht auf Legalität geprüft.** Das Backend nimmt jeden mechanisch ausführbaren Zug an — ein Läufer darf wie ein Turm ziehen, der König in ein Schach hinein. Das ist kein Versäumnis, sondern die Reihenfolge: Erst trägt der Weg, dann die Regel. Bis dahin ist das Gebaute ein Brett, das Zustand hält, und kein Schachspiel.
 
 Der Wert des bisher Gebauten liegt nicht in den Features, sondern in der durchgestochenen Kette: Eine Änderung an `openapi.yaml` bewegt nachweislich vier Artefakte in drei Sprachen — und seit dem 10. August 2026 wird die Engine tatsächlich gerufen, statt nur eingebunden zu sein.
 

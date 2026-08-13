@@ -95,7 +95,7 @@ After `pnpm install` the package is available with full TypeScript types:
 import { getLegalMoves, RuleSet, Variant } from '@chesstopia/chess-engine'
 
 const result = getLegalMoves(fen, RuleSet.standard())
-// result: LegalMovesResult with moves: Move[], isCheck, isCheckmate, isStalemate
+// result: LegalMovesResult with moves: Move[], isCheck, isCheckmate, isStalemate, isFiftyMoveDraw
 ```
 
 ## Source structure
@@ -104,6 +104,10 @@ const result = getLegalMoves(fen, RuleSet.standard())
 src/
 └── commonMain/kotlin/io/chesstopia/engine/
     ├── ChessEngine.kt   # getLegalMoves(), validateMove(), applyMove()
+    ├── Attacks.kt       # attack detection, pseudo-legal move generation
+    ├── San.kt           # Standard Algebraic Notation
+    ├── Mechanics.kt     # UCI parsing, move mechanics (Position.play)
+    ├── Fen.kt           # FEN parsing/serialization, Position
     ├── Move.kt          # Move data class
     └── RuleSet.kt       # RuleSet + Variant enum
 ```
