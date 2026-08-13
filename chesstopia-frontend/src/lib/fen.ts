@@ -10,6 +10,13 @@ const FEN_CHAR_TO_PIECE: Record<string, PieceCode> = {
   k: 'bK', q: 'bQ', r: 'bR', b: 'bB', n: 'bN', p: 'bP',
 };
 
+/** Welche Seite am Zug ist — das zweite Feld einer FEN. */
+export type Side = 'w' | 'b';
+
+export function parseFenSideToMove(fen: string): Side {
+  return fen.split(' ')[1] === 'b' ? 'b' : 'w';
+}
+
 export function parseFenBoard(fen: string): Board {
   const fenBoard = fen.split(' ')[0];
   return fenBoard.split('/').map((rank) => {

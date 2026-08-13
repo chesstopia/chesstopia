@@ -1,11 +1,13 @@
 ---
 type: adr
 status: accepted
-implementation: complete
-updated: 2026-08-08
+implementation: partial
+updated: 2026-08-10
 supersedes: []
 verifies:
   - 'settings.gradle.kts :: includeBuild("chess-engine")'
+  - 'chess-engine/src/commonMain/kotlin/io/chesstopia/engine/ChessEngine.kt :: TODO("Chess rule logic not yet implemented'
+  - 'chesstopia-backend/src/main/java/io/chesstopia/backend/game/GameService.java :: ChessEngineKt.applyMove'
 ---
 
 # ADR-0001: Kotlin Multiplatform für die geteilte Schach-Validierungslogik
