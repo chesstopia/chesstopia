@@ -6,6 +6,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 const { getBoard } = vi.hoisted(() => ({ getBoard: vi.fn() }));
 
 vi.mock('@chesstopia/openapi-client', () => ({
+  Configuration: class {},
   GameApi: class {
     getBoard = getBoard;
   },
