@@ -1,7 +1,7 @@
 ---
 type: note
 status: current
-updated: 2026-08-08
+updated: 2026-09-02
 ---
 
 # Chesstopia — Domain Glossary
@@ -18,13 +18,13 @@ A participant in a Partie. Can be a [Nutzer](#nutzer), an AI, or (future) a gues
 A single chess game between two [Spieler](#spieler). Has a defined start position, an ordered sequence of [Züge](#zug), a result, and optionally a time control. A Partie can be ongoing or completed.
 
 ## Zug
-A single half-move (ply) within a [Partie](#partie). Stored as an immutable event record: SAN notation, the resulting [FEN](#fen) (Stellung after the move), timestamp, and time spent by the player (`time_spent_ms`). After engine analysis, also stores `centipawn_loss` and a move classification (BLUNDER / MISTAKE / INACCURACY / GOOD / EXCELLENT / BEST). The ordered sequence of all Züge in a Partie constitutes the Move-Event-Log from which any [Stellung](#stellung) can be reconstructed and a [PGN](#pgn) export derived.
+A single half-move (ply) within a [Partie](#partie). Stored as an immutable event record: the move as origin/target square (plus promotion piece), the resulting [Stellung](#stellung) after the move, timestamp, and time spent by the player (`time_spent_ms`). After engine analysis, also stores `centipawn_loss` and a move classification (BLUNDER / MISTAKE / INACCURACY / GOOD / EXCELLENT / BEST). The ordered sequence of all Züge in a Partie constitutes the Move-Event-Log from which any [Stellung](#stellung) can be reconstructed and a [PGN](#pgn) export derived.
 
 ## Stellung
-The board state at any point in a [Partie](#partie), fully described by a [FEN](#fen) string (piece placement, side to move, castling rights, en-passant target, half-move clock, full-move number).
+The board state at any point in a [Partie](#partie): a structured object — pieces on squares, side to move, castling rights, en-passant target square, half-move clock, full-move number. Not a [FEN](#fen) string (see [ADR-0020](adr/0020-hexagonale-architektur-und-notationsfreie-domaene.md)); FEN is one possible serialization of a Stellung, used only inside the persistence adapter.
 
 ## FEN
-Forsyth–Edwards Notation. The canonical serialization format for a [Stellung](#stellung). Used as the interchange format between the [Schach-Engine](#schach-engine) and both frontend and backend.
+Forsyth–Edwards Notation. The canonical serialization format for a [Stellung](#stellung). No longer the interchange format: since [ADR-0020](adr/0020-hexagonale-architektur-und-notationsfreie-domaene.md) the [Schach-Engine](#schach-engine) boundary, the REST API and the frontend all use structured objects. FEN survives only as a serialization format for persistence internals and the future [MoveEngine](#moveengine) (Stockfish) adapter — never in the domain or the API.
 
 ## PGN
 Portable Game Notation. The canonical serialization format for a complete [Partie](#partie) including metadata and the full [Zug](#zug) sequence. Used for storage and replay.
