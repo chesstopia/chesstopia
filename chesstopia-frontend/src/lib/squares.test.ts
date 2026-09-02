@@ -3,7 +3,7 @@ import { fromSquare, toSquare } from './squares';
 
 describe('toSquare', () => {
   it('benennt die Ecken des Bretts', () => {
-    // a8 steht in der FEN vorn und im Brett bei [0][0] — dreht sich das um,
+    // a8 ist das erste Feld einer strukturierten Stellung und im Brett bei [0][0] — dreht sich das um,
     // spielt das Brett spiegelverkehrt und niemand sieht es an den Figuren.
     expect(toSquare(0, 0)).toBe('a8');
     expect(toSquare(0, 7)).toBe('h8');

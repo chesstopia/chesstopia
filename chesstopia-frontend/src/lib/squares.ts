@@ -1,8 +1,8 @@
 /**
  * Übersetzung zwischen Brettindex und Feldnamen.
  *
- * Das Brett ist `board[rank][file]` mit `rank 0` = Reihe 8 (siehe `fen.ts`) —
- * dieselbe Leserichtung wie eine FEN. Ein Feldname liest sich umgekehrt: `e2`
+ * Das Brett ist `board[rank][file]` mit `rank 0` = Reihe 8 (siehe `position.ts`) —
+ * von oben nach unten gelesen. Ein Feldname liest sich umgekehrt: `e2`
  * nennt erst die Linie, dann die Reihe. Genau dieser Dreh ist die Stelle, an
  * der ein Brett unbemerkt auf dem Kopf steht.
  */

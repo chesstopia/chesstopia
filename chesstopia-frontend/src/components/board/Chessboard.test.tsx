@@ -2,10 +2,30 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Chessboard } from './Chessboard';
-import { parseFenBoard } from '@/lib/fen';
+import type { Board, PieceCode } from '@/lib/position';
 
-const INITIAL = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-const EMPTY = '8/8/8/8/8/8/8/8 w - - 0 1';
+/**
+ * Baut ein Board aus 8 Reihen-Strings (Figurenbuchstaben, Ziffern = Leerfelder),
+ * Reihe 8 zuerst. Testbequemlichkeit, kein Produktionscode.
+ */
+function board(rows: string[]): Board {
+  const CHAR: Record<string, PieceCode> = {
+    K: 'wK', Q: 'wQ', R: 'wR', B: 'wB', N: 'wN', P: 'wP',
+    k: 'bK', q: 'bQ', r: 'bR', b: 'bB', n: 'bN', p: 'bP',
+  };
+  return rows.map((row) => {
+    const squares: (PieceCode | null)[] = [];
+    for (const ch of row) {
+      if (/\d/.test(ch)) squares.push(...Array<null>(Number(ch)).fill(null));
+      else squares.push(CHAR[ch] ?? null);
+    }
+    return squares;
+  });
+}
+
+const INITIAL = board(['rnbqkbnr', 'pppppppp', '8', '8', '8', '8', 'PPPPPPPP', 'RNBQKBNR']);
+const EMPTY = board(['8', '8', '8', '8', '8', '8', '8', '8']);
+const KINGS_ONLY = board(['4k3', '8', '8', '8', '8', '8', '8', '4K3']);
 
 /** Alle Figurensymbole im Dokument — die Komponenten tragen keine Rollen. */
 function glyphs(container: HTMLElement): string[] {
@@ -14,13 +34,13 @@ function glyphs(container: HTMLElement): string[] {
 
 describe('Chessboard', () => {
   it('rendert 64 Felder', () => {
-    const { container } = render(<Chessboard board={parseFenBoard(INITIAL)} />);
+    const { container } = render(<Chessboard board={INITIAL} />);
 
     expect(container.querySelector('div')?.children).toHaveLength(64);
   });
 
   it('rendert die Grundstellung mit 32 Figuren', () => {
-    const { container } = render(<Chessboard board={parseFenBoard(INITIAL)} />);
+    const { container } = render(<Chessboard board={INITIAL} />);
 
     expect(glyphs(container)).toHaveLength(32);
     expect(screen.getAllByText('♟')).toHaveLength(8);
@@ -29,7 +49,7 @@ describe('Chessboard', () => {
   });
 
   it('setzt Schwarz oben und Weiß unten', () => {
-    const { container } = render(<Chessboard board={parseFenBoard(INITIAL)} />);
+    const { container } = render(<Chessboard board={INITIAL} />);
     const all = glyphs(container);
 
     // board[0] ist Reihe 8 — die schwarze Grundreihe. Der schwarze König steht
@@ -38,17 +58,15 @@ describe('Chessboard', () => {
   });
 
   it('rendert ein leeres Brett ohne Figuren, aber mit allen Feldern', () => {
-    const { container } = render(<Chessboard board={parseFenBoard(EMPTY)} />);
+    const { container } = render(<Chessboard board={EMPTY} />);
 
     expect(container.querySelector('div')?.children).toHaveLength(64);
     expect(glyphs(container)).toHaveLength(0);
   });
 
   it('rendert eine Teilstellung ohne die fehlenden Felder zu verlieren', () => {
-    // Randfall aus ADR-0019: Ziffern in der FEN sind Leerfelder, keine Figuren.
-    const { container } = render(
-      <Chessboard board={parseFenBoard('4k3/8/8/8/8/8/8/4K3 w - - 0 1')} />
-    );
+    // Randfall aus ADR-0019: leere Felder in einer Reihe zählen nicht als Figuren.
+    const { container } = render(<Chessboard board={KINGS_ONLY} />);
 
     expect(container.querySelector('div')?.children).toHaveLength(64);
     expect(glyphs(container)).toEqual(['♚', '♔']);
@@ -60,7 +78,7 @@ describe('Chessboard — Figuren bewegen', () => {
     const onMove = vi.fn();
     const user = userEvent.setup();
     render(
-      <Chessboard board={parseFenBoard(INITIAL)} sideToMove="w" onMove={onMove} {...props} />
+      <Chessboard board={INITIAL} sideToMove="w" onMove={onMove} {...props} />
     );
     return { onMove, user };
   }

@@ -1,4 +1,4 @@
-import type { PieceCode } from '@/lib/fen';
+import type { PieceCode } from '@/lib/position';
 import { Piece } from './Piece';
 
 type SquareProps = {

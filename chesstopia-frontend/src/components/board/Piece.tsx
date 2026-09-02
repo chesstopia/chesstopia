@@ -1,4 +1,4 @@
-import type { PieceCode } from '@/lib/fen';
+import type { PieceCode } from '@/lib/position';
 
 const SYMBOLS: Record<PieceCode, string> = {
   wK: '♔', wQ: '♕', wR: '♖', wB: '♗', wN: '♘', wP: '♙',

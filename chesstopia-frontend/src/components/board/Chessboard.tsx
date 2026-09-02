@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { Board, Side } from '@/lib/fen';
+import type { Board, Side } from '@/lib/position';
 import { fromSquare, toSquare } from '@/lib/squares';
 import { Piece } from './Piece';
 import { Square } from './Square';
