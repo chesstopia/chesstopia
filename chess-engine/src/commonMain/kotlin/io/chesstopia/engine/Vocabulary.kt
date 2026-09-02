@@ -29,8 +29,13 @@ import kotlin.js.JsExport
     }
 }
 
+/**
+ * Feldindex in FEN-Leserichtung: `0` ist a8, `63` ist h1. Das Frontend indiziert
+ * sein Brett identisch.
+ */
 internal fun Square.boardIndex(): Int = (7 - rank.ordinal) * 8 + file.ordinal
 
+/** Umkehrung von [boardIndex]: `0` -> a8, `63` -> h1. */
 internal fun squareAt(index: Int): Square {
     require(index in 0 until 64) { "Feldindex außerhalb des Bretts: $index" }
     return Square(File.entries[index % 8], Rank.entries[7 - index / 8])
