@@ -33,3 +33,18 @@ export function toBoard(position: Position): Board {
 export function sideOf(position: Position): Side {
   return position.sideToMove === 'BLACK' ? 'b' : 'w';
 }
+
+const FILE_BY_LETTER: Record<string, Square['file']> = {
+  a: 'A', b: 'B', c: 'C', d: 'D', e: 'E', f: 'F', g: 'G', h: 'H',
+};
+const RANK_BY_DIGIT: Record<string, Square['rank']> = {
+  '1': 'ONE', '2': 'TWO', '3': 'THREE', '4': 'FOUR', '5': 'FIVE', '6': 'SIX', '7': 'SEVEN', '8': 'EIGHT',
+};
+
+/** `"e2"` → `{ file: 'E', rank: 'TWO' }`. */
+export function parseSquare(name: string): Square {
+  const file = FILE_BY_LETTER[name[0]];
+  const rank = RANK_BY_DIGIT[name[1]];
+  if (name.length !== 2 || !file || !rank) throw new RangeError(`Kein Feldname: ${name}`);
+  return { file, rank };
+}

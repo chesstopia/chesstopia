@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { GameApi } from '@chesstopia/openapi-client';
+import type { MoveRequest, Position } from '@chesstopia/openapi-client';
 import { apiConfig } from '@/lib/api';
-import { parseFenBoard, parseFenSideToMove } from '@/lib/fen';
-import type { Board, Side } from '@/lib/fen';
+import { parseSquare, sideOf, toBoard } from '@/lib/position';
+import type { Board, Side } from '@/lib/position';
 import { fromSquare } from '@/lib/squares';
 
 const gameApi = new GameApi(apiConfig);
@@ -20,7 +21,7 @@ function asError(err: unknown): Error {
  */
 export function useBoardState() {
   const [gameId, setGameId] = useState<string | null>(null);
-  const [fen, setFen] = useState<string | null>(null);
+  const [position, setPosition] = useState<Position | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
@@ -30,41 +31,45 @@ export function useBoardState() {
       .createGame()
       .then((res) => {
         setGameId(res.data.id);
-        setFen(res.data.fen);
+        setPosition(res.data.position);
       })
       .catch((err: unknown) => setError(asError(err)))
       .finally(() => setLoading(false));
   }, []);
 
-  const board: Board | null = fen === null ? null : parseFenBoard(fen);
-  const sideToMove: Side | null = fen === null ? null : parseFenSideToMove(fen);
+  const board: Board | null = position === null ? null : toBoard(position);
+  const sideToMove: Side | null = position === null ? null : sideOf(position);
 
   const playMove = useCallback(
     async (from: string, to: string) => {
-      if (gameId === null || fen === null) return;
+      if (gameId === null || position === null) return;
 
       // Die Wahl der Umwandlungsfigur ist eine Eingabe, keine Regel: Dass ein
       // Bauer auf der Grundreihe umwandeln *muss*, erzwingt die Engine — sie
       // lehnt den Zug ohne Zielfigur ab. Welche es wird, beantwortet die
       // Oberfläche hier vorerst mit der Dame.
       const origin = fromSquare(from);
-      const isPawn = parseFenBoard(fen)[origin.rankIdx][origin.fileIdx]?.[1] === 'P';
+      const isPawn = toBoard(position)[origin.rankIdx][origin.fileIdx]?.[1] === 'P';
       const promotes = to[1] === '8' || to[1] === '1';
-      const uci = `${from}${to}${isPawn && promotes ? 'q' : ''}`;
+      const move: MoveRequest = {
+        from: parseSquare(from),
+        to: parseSquare(to),
+        promotion: isPawn && promotes ? 'QUEEN' : undefined,
+      };
 
       setPending(true);
       setError(null);
       try {
-        const res = await gameApi.playMove(gameId, { uci });
-        setFen(res.data.fen);
+        const res = await gameApi.playMove(gameId, move);
+        setPosition(res.data.position);
       } catch (err: unknown) {
         setError(asError(err));
       } finally {
         setPending(false);
       }
     },
-    [gameId, fen],
+    [gameId, position],
   );
 
-  return { board, fen, gameId, sideToMove, error, loading, pending, playMove };
+  return { board, position, gameId, sideToMove, error, loading, pending, playMove };
 }
