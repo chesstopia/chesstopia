@@ -25,7 +25,7 @@ internal fun parseUci(uci: String): UciMove? {
 }
 
 /** `null`, wenn der Zug mechanisch ausführbar ist — sonst der Grund im Klartext. */
-internal fun Position.rejectReason(move: UciMove): String? {
+internal fun FenPosition.rejectReason(move: UciMove): String? {
     if (move.from == move.to) return "Start- und Zielfeld sind identisch"
     val piece = squares[move.from]
         ?: return "Auf ${indexToSquare(move.from)} steht keine Figur"
@@ -50,7 +50,7 @@ internal fun Position.rejectReason(move: UciMove): String? {
 /**
  * Führt den Zug aus. Setzt voraus, dass [rejectReason] `null` geliefert hat.
  */
-internal fun Position.play(move: UciMove): Position {
+internal fun FenPosition.play(move: UciMove): FenPosition {
     val piece = squares[move.from]!!
     val isWhite = piece.isUpperCase()
     val isPawn = piece.lowercaseChar() == 'p'
@@ -96,7 +96,7 @@ internal fun Position.play(move: UciMove): Position {
     val doubleStep = isPawn && abs(rankOf(move.from) - rankOf(move.to)) == 2
     val captured = squares[move.to] != null || enPassantCapture
 
-    return Position(
+    return FenPosition(
         squares = next,
         whiteToMove = !whiteToMove,
         castling = rights.ifEmpty { "-" },

@@ -10,7 +10,7 @@ package io.chesstopia.engine
  * entspricht die Reihenfolge genau der, in der eine FEN gelesen und
  * geschrieben wird, und das Frontend indiziert sein Brett identisch.
  */
-internal class Position(
+internal class FenPosition(
     val squares: Array<Char?>,
     val whiteToMove: Boolean,
     val castling: String,
@@ -41,7 +41,7 @@ internal fun indexToSquare(index: Int): String {
     return "${'a' + fileOf(index)}${rankOf(index)}"
 }
 
-internal fun parseFen(fen: String): Position {
+internal fun parseFen(fen: String): FenPosition {
     val fields = fen.trim().split(" ").filter { it.isNotEmpty() }
     require(fields.size == 6) { "Eine FEN hat sechs Felder, gefunden: ${fields.size}" }
 
@@ -69,7 +69,7 @@ internal fun parseFen(fen: String): Position {
     }
     if (fields[3] != "-") squareToIndex(fields[3])
 
-    return Position(
+    return FenPosition(
         squares = squares,
         whiteToMove = fields[1] == "w",
         castling = fields[2],
@@ -81,7 +81,7 @@ internal fun parseFen(fen: String): Position {
     )
 }
 
-internal fun Position.toFen(): String {
+internal fun FenPosition.toFen(): String {
     val board = StringBuilder()
     for (rankIndex in 0 until 8) {
         var empty = 0
