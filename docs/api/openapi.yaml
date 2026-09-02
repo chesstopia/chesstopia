@@ -47,7 +47,7 @@ paths:
     get:
       operationId: getGame
       summary: Partie abrufen
-      description: Gibt die aktuelle Stellung der Partie als FEN zurück.
+      description: Gibt die aktuelle Stellung der Partie als strukturiertes Objekt zurück.
       tags:
         - game
       parameters:
@@ -87,8 +87,10 @@ paths:
       summary: Zug ausführen
       description: >
         Führt einen Zug aus, schreibt ihn in den Move-Event-Log und gibt die
-        Partie mit der neuen Stellung zurück. Die Legalität wird noch **nicht**
-        geprüft — die Schach-Engine kennt derzeit nur die Mechanik eines Zuges.
+        Partie mit der neuen Stellung zurück. Der Zug wird als Ausgangs- und
+        Zielfeld angegeben, bei einer Umwandlung zusätzlich die Zielfigur. Die
+        Legalität wird noch **nicht** geprüft — die Schach-Engine kennt derzeit
+        nur die Mechanik eines Zuges und entscheidet allein über ihre Gültigkeit.
       tags:
         - game
       parameters:
@@ -166,11 +168,56 @@ components:
         instance:
           type: string
 
+    Square:
+      type: object
+      required: [file, rank]
+      properties:
+        file: { type: string, enum: [A, B, C, D, E, F, G, H] }
+        rank: { type: string, enum: [ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT] }
+
+    Piece:
+      type: object
+      required: [type, color]
+      properties:
+        type: { type: string, enum: [KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN] }
+        color: { type: string, enum: [WHITE, BLACK] }
+
+    PlacedPiece:
+      type: object
+      required: [square, piece]
+      properties:
+        square: { $ref: "#/components/schemas/Square" }
+        piece: { $ref: "#/components/schemas/Piece" }
+
+    CastlingRights:
+      type: object
+      required: [whiteKingSide, whiteQueenSide, blackKingSide, blackQueenSide]
+      properties:
+        whiteKingSide: { type: boolean }
+        whiteQueenSide: { type: boolean }
+        blackKingSide: { type: boolean }
+        blackQueenSide: { type: boolean }
+
+    Position:
+      description: Eine Stellung als strukturiertes Objekt — keine FEN.
+      type: object
+      required: [board, sideToMove, castlingRights, halfmoveClock, fullmoveNumber]
+      properties:
+        board:
+          type: array
+          description: Nur die besetzten Felder.
+          items: { $ref: "#/components/schemas/PlacedPiece" }
+        sideToMove: { type: string, enum: [WHITE, BLACK] }
+        castlingRights: { $ref: "#/components/schemas/CastlingRights" }
+        enPassantTarget: { $ref: "#/components/schemas/Square" }
+        halfmoveClock: { type: integer, format: int32 }
+        fullmoveNumber: { type: integer, format: int32 }
+
     GameResponse:
       type: object
       required:
         - id
-        - fen
+        - position
         - status
         - moveCount
       properties:
@@ -178,10 +225,7 @@ components:
           type: string
           format: uuid
           description: ID der Partie
-        fen:
-          type: string
-          description: Aktuelle Stellung in FEN-Notation
-          example: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        position: { $ref: "#/components/schemas/Position" }
         status:
           type: string
           description: Zustand der Partie
@@ -196,26 +240,26 @@ components:
     MoveRequest:
       type: object
       required:
-        - uci
+        - from
+        - to
       properties:
-        uci:
+        from: { $ref: "#/components/schemas/Square" }
+        to: { $ref: "#/components/schemas/Square" }
+        promotion:
           type: string
           description: >
-            Der Zug in UCI-Notation — Start- und Zielfeld, bei einer Umwandlung
-            zusätzlich die Zielfigur.
+            Zielfigur bei einer Umwandlung, sonst weggelassen.
 
             Bewusst ohne `pattern`: Was ein gültiger Zug ist, entscheidet die
-            Schach-Engine und sonst niemand (ADR-0001). Ein Ausdruck an dieser
-            Stelle wäre Zugwissen außerhalb der Engine und würde denselben Fall
-            als 422 statt als 400 melden.
-          example: e2e4
+            Schach-Engine und sonst niemand (ADR-0001).
+          enum: [QUEEN, ROOK, BISHOP, KNIGHT]
 
     MoveRecord:
       type: object
       required:
         - moveNumber
-        - uci
-        - fenAfter
+        - move
+        - positionAfter
         - playedAt
       properties:
         moveNumber:
@@ -223,13 +267,8 @@ components:
           format: int32
           description: Fortlaufende Nummer des Halbzugs, beginnend bei 1
           example: 1
-        uci:
-          type: string
-          example: e2e4
-        fenAfter:
-          type: string
-          description: Die Stellung nach diesem Zug
-          example: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+        move: { $ref: "#/components/schemas/MoveRequest" }
+        positionAfter: { $ref: "#/components/schemas/Position" }
         playedAt:
           type: string
           format: date-time
