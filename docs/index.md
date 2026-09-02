@@ -1,7 +1,7 @@
 ---
 type: note
 status: current
-updated: 2026-08-08
+updated: 2026-09-02
 ---
 
 # Chesstopia — Karte
@@ -34,8 +34,8 @@ Zwei Modulbeschreibungen existieren, vier fehlen. Die beiden vorhandenen sind be
 Ehrlich und knapp, weil hier der größte Abstand zwischen Absicht und Realität liegt:
 
 - **Domäne:** [context.md](context.md) beschreibt 25 Begriffe. Umgesetzt ist davon ein Bruchteil.
-- **Engine:** die Mechanik eines Zuges steht — eine FEN wird gelesen, fortgeschrieben und zurückgegeben, samt Rochaderechten, En-passant-Ziel und beiden Zählern. Die **Regellogik fehlt**: `getLegalMoves` ist unverändert ein `TODO`.
-- **Backend:** Partien und ihre Züge liegen in der Datenbank; ein Zug geht durch die Engine und wird als Ereignis angehängt ([ADR-0003](adr/0003-move-event-log.md)). `hello` und `counter` bleiben Durchstiche durch die Codegen-Kette.
+- **Engine:** die Mechanik eines Zuges steht — eine Stellung wird als strukturiertes Objekt (`Position`, `Move`) genommen, fortgeschrieben und zurückgegeben, samt Rochaderechten, En-passant-Ziel und beiden Zählern; keine FEN mehr an der Grenze ([ADR-0020](adr/0020-hexagonale-architektur-und-notationsfreie-domaene.md)). Die **Regellogik fehlt**: `getLegalMoves` ist unverändert ein `TODO`.
+- **Backend:** Partien und ihre Züge liegen in der Datenbank; ein Zug geht durch die Engine und wird als Ereignis angehängt ([ADR-0003](adr/0003-move-event-log.md)). Das `game`-Feature ist hexagonal geschnitten — Domäne, Ports, Adapter ([ADR-0020](adr/0020-hexagonale-architektur-und-notationsfreie-domaene.md)); `hello` und `counter` bleiben klassische Durchstiche durch die Codegen-Kette.
 - **Frontend:** Brett mit Figuren, die sich per Zeiger ziehen lassen.
 - **Sicherheit und Spieler:** keine. Jede Partie ist für jeden erreichbar ([ADR-0015](adr/0015-security-von-tag-eins.md)).
 
