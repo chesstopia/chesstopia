@@ -1,6 +1,6 @@
 ---
 type: adr
-status: accepted
+status: superseded
 implementation: complete
 updated: 2026-08-08
 supersedes: []
@@ -12,6 +12,8 @@ verifies:
 
 ## Status
 Accepted
+
+Superseded by [ADR-0020](0020-hexagonale-architektur-und-notationsfreie-domaene.md)
 
 ## Context
 

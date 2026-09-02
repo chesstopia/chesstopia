@@ -1,6 +1,6 @@
 ---
 type: adr
-status: accepted
+status: partially-superseded
 implementation: complete
 updated: 2026-08-08
 supersedes: []
@@ -12,6 +12,8 @@ verifies:
 
 ## Status
 Accepted
+
+Partially superseded by [ADR-0021](0021-mapstruct-fuer-adapter-mappings.md): MapStruct ist aufgenommen. Der Rest des Dependency-Kerns (kein Lombok, kein Spring Cloud, kein Redis, kein Spring Batch) gilt unverändert.
 
 ## Context
 
