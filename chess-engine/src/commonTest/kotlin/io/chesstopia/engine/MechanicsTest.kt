@@ -80,4 +80,46 @@ class MechanicsTest {
         assertEquals(1, afterWhite.fullmoveNumber)
         assertEquals(2, afterWhite.play(Move(sq(File.E, Rank.SEVEN), sq(File.E, Rank.FIVE))).fullmoveNumber)
     }
+
+    @Test fun `die lange Rochade zieht den Turm mit und nimmt beide weissen Rechte`() {
+        val board = arrayOfNulls<Piece>(64)
+        board[sq(File.E, Rank.ONE).boardIndex()] = Piece(PieceType.KING, Color.WHITE)
+        board[sq(File.A, Rank.ONE).boardIndex()] = Piece(PieceType.ROOK, Color.WHITE)
+        val p = Position(board, Color.WHITE, CastlingRights.ALL, null, 0, 1)
+        val after = p.play(Move(sq(File.E, Rank.ONE), sq(File.C, Rank.ONE)))
+        assertEquals(Piece(PieceType.KING, Color.WHITE), after.pieceAt(sq(File.C, Rank.ONE)))
+        assertEquals(Piece(PieceType.ROOK, Color.WHITE), after.pieceAt(sq(File.D, Rank.ONE)))
+        assertEquals(CastlingRights(false, false, true, true), after.castlingRights)
+    }
+
+    @Test fun `ein Koenigsfluegel-Turmzug loescht nur das Koenigsfluegel-Recht, auf beiden Farben`() {
+        val board = arrayOfNulls<Piece>(64)
+        board[sq(File.E, Rank.ONE).boardIndex()] = Piece(PieceType.KING, Color.WHITE)
+        board[sq(File.A, Rank.ONE).boardIndex()] = Piece(PieceType.ROOK, Color.WHITE)
+        board[sq(File.H, Rank.ONE).boardIndex()] = Piece(PieceType.ROOK, Color.WHITE)
+        board[sq(File.E, Rank.EIGHT).boardIndex()] = Piece(PieceType.KING, Color.BLACK)
+        board[sq(File.A, Rank.EIGHT).boardIndex()] = Piece(PieceType.ROOK, Color.BLACK)
+        board[sq(File.H, Rank.EIGHT).boardIndex()] = Piece(PieceType.ROOK, Color.BLACK)
+
+        val whiteToMove = Position(board.copyOf(), Color.WHITE, CastlingRights.ALL, null, 0, 1)
+        assertEquals(
+            CastlingRights(false, true, true, true),
+            whiteToMove.play(Move(sq(File.H, Rank.ONE), sq(File.H, Rank.TWO))).castlingRights,
+        )
+
+        val blackToMove = Position(board.copyOf(), Color.BLACK, CastlingRights.ALL, null, 0, 1)
+        assertEquals(
+            CastlingRights(true, true, false, true),
+            blackToMove.play(Move(sq(File.H, Rank.EIGHT), sq(File.H, Rank.TWO))).castlingRights,
+        )
+    }
+
+    @Test fun `der Halbzugzaehler nullt bei einem Schlag`() {
+        val board = arrayOfNulls<Piece>(64)
+        board[sq(File.A, Rank.ONE).boardIndex()] = Piece(PieceType.ROOK, Color.WHITE)
+        board[sq(File.A, Rank.EIGHT).boardIndex()] = Piece(PieceType.ROOK, Color.BLACK)
+        val p = Position(board, Color.WHITE, CastlingRights.NONE, null, 5, 1)
+        val after = p.play(Move(sq(File.A, Rank.ONE), sq(File.A, Rank.EIGHT)))
+        assertEquals(0, after.halfmoveClock)
+    }
 }
