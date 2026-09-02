@@ -13,6 +13,13 @@ export default defineConfig({
   optimizeDeps: {
     include: ["@chesstopia/chess-engine"],
   },
+  server: {
+    // Der generierte Client ruft /api/v1/… same-origin auf (openapi.yaml servers[0] = /).
+    // In Prod routet Caddy /api/* ans Backend; im Dev übernimmt das dieser Proxy.
+    proxy: {
+      "/api": "http://localhost:8080",
+    },
+  },
   test: {
     // Ebene 2 aus ADR-0019 braucht ein DOM. Reine Unit-Tests (fen.test.ts) laufen
     // unter jsdom unverändert; der Aufpreis rechtfertigt keine zweite Projektdatei.

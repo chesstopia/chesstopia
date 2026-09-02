@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { GameApi } from '@chesstopia/openapi-client';
+import { apiConfig } from '@/lib/api';
 import { parseFenBoard } from '@/lib/fen';
 import type { Board } from '@/lib/fen';
 
-const gameApi = new GameApi();
+const gameApi = new GameApi(apiConfig);
 
 export function useBoardState() {
   const [board, setBoard] = useState<Board | null>(null);

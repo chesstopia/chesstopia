@@ -49,6 +49,7 @@ Der Wert des bisher Gebauten liegt nicht in den Features, sondern in der durchge
 | Warum ist etwas so entschieden? | [adr/index.md](adr/index.md) |
 | Was bedeutet dieser Domänenbegriff? | [context.md](context.md) |
 | Wie ist das Backend eingerichtet? | [notes/backend-konventionen.md](notes/backend-konventionen.md) |
+| Wie spricht das Frontend die API an? | [notes/frontend-api-anbindung.md](notes/frontend-api-anbindung.md) |
 | Was darf ich in diesem Modul nicht tun? | [modules/](modules/) |
 | Wie ist etwas konkret eingerichtet? | [notes/](notes/) |
 | Wie sieht die API aus? | [api/openapi.yaml](api/openapi.yaml) |
