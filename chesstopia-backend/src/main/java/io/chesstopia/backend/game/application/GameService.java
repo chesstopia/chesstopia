@@ -11,6 +11,7 @@ import io.chesstopia.backend.game.domain.GameId;
 import io.chesstopia.backend.game.domain.Move;
 import io.chesstopia.backend.game.domain.Position;
 import io.chesstopia.backend.game.domain.RuleSet;
+import io.chesstopia.backend.game.domain.Square;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,7 +49,9 @@ class GameService implements StartGame, PlayMove, ViewGame {
         Game game = games.findById(gameId)
             .orElseThrow(() -> new NotFoundException("Partie %s existiert nicht".formatted(gameId.value())));
         if (!chessRules.isExecutable(game.currentPosition(), move, game.ruleSet())) {
-            throw new IllegalArgumentException("Der Zug ist in dieser Stellung nicht ausführbar");
+            throw new IllegalArgumentException(
+                "Der Zug %s→%s ist in dieser Stellung nicht ausführbar".formatted(
+                    square(move.from()), square(move.to())));
         }
         Position resulting = chessRules.apply(game.currentPosition(), move, game.ruleSet());
         return games.save(game.play(move, resulting, OffsetDateTime.now()));
@@ -59,5 +62,9 @@ class GameService implements StartGame, PlayMove, ViewGame {
     public Game load(GameId gameId) {
         return games.findById(gameId)
             .orElseThrow(() -> new NotFoundException("Partie %s existiert nicht".formatted(gameId.value())));
+    }
+
+    private static String square(Square s) {
+        return s.file().name().toLowerCase() + s.rank().number();
     }
 }

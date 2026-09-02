@@ -56,7 +56,7 @@ class GamePersistenceAdapter implements Games {
         pe.setUpdatedAt(game.updatedAt());
         partieRepo.save(pe);
 
-        int existing = zugRepo.findByPartieIdOrderByMoveNumberAsc(pid).size();
+        int existing = zugRepo.countByPartieId(pid);
         for (Ply p : game.history()) {
             if (p.number() > existing) {
                 ZugEntity ze = entityMapper.toEntity(p);

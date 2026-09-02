@@ -8,4 +8,6 @@ import java.util.UUID;
 interface ZugJpaRepository extends JpaRepository<ZugEntity, UUID> {
 
     List<ZugEntity> findByPartieIdOrderByMoveNumberAsc(UUID partieId);
+
+    int countByPartieId(UUID partieId);
 }

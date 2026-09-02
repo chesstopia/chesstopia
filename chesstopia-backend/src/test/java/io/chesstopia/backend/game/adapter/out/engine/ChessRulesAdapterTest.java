@@ -48,14 +48,22 @@ class ChessRulesAdapterTest {
     }
 
     @Test
-    void roundtripEinerStellungUeberDenMapperVerliertNichts() {
-        // MapStruct-Variante: EngineMapper mapper = Mappers.getMapper(EngineMapper.class);
-        // Fallback-Variante: die statischen EngineMapper.toEngine/toDomain aufrufen.
-        Position start = adapter.initialPosition(rules);
-        Position roundtrip = adapter.apply(start,
-            new Move(new Square(File.E, Rank.TWO), new Square(File.E, Rank.FOUR), null), rules);
-        assertThat(roundtrip.pieceAt(new Square(File.E, Rank.FOUR)))
-            .contains(new Piece(PieceType.PAWN, Color.WHITE));
-        // Der eigentliche Roundtrip-Nachweis läuft über adapter.apply: Domäne → Engine → Domäne.
+    void initialPositionUeberDomaeneEngineDomaeneIstDieVolleAnfangsstellung() {
+        Position p = adapter.initialPosition(rules);
+
+        assertThat(p.pieces()).hasSize(32);
+        assertThat(p.pieceAt(new Square(File.A, Rank.ONE)))
+            .contains(new Piece(PieceType.ROOK, Color.WHITE));
+        assertThat(p.pieceAt(new Square(File.E, Rank.ONE)))
+            .contains(new Piece(PieceType.KING, Color.WHITE));
+        assertThat(p.pieceAt(new Square(File.D, Rank.EIGHT)))
+            .contains(new Piece(PieceType.QUEEN, Color.BLACK));
+        assertThat(p.pieceAt(new Square(File.H, Rank.SEVEN)))
+            .contains(new Piece(PieceType.PAWN, Color.BLACK));
+
+        assertThat(p.castlingRights()).isEqualTo(CastlingRights.all());
+        assertThat(p.enPassantTarget()).isNull();
+        assertThat(p.halfmoveClock()).isZero();
+        assertThat(p.fullmoveNumber()).isEqualTo(1);
     }
 }

@@ -1,4 +1,4 @@
-package io.chesstopia.backend.game;
+package io.chesstopia.backend.game.adapter.in.web;
 
 import io.chesstopia.backend.api.model.GameResponse;
 import io.chesstopia.backend.api.model.MoveListResponse;
@@ -156,7 +156,9 @@ class GameControllerIT {
             .bodyValue(move("E", "SEVEN", "E", "FIVE"))
             .exchange()
             .expectStatus().isBadRequest()
-            .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON);
+            .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
+            .expectBody()
+            .jsonPath("$.detail").value(detail -> assertThat((String) detail).contains("e7"));
     }
 
     @Test
