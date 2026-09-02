@@ -1,0 +1,63 @@
+package io.chesstopia.backend.game.adapter.out.persistence;
+
+import io.chesstopia.backend.game.domain.*;
+import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+
+import java.time.OffsetDateTime;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest
+@ActiveProfiles("test")
+@AutoConfigureEmbeddedDatabase
+class GamePersistenceAdapterIT {
+
+    @Autowired GamePersistenceAdapter adapter;
+
+    private static final OffsetDateTime T0 = OffsetDateTime.parse("2026-09-02T10:00:00Z");
+    private final Position start = new Position(
+        Map.of(new Square(File.E, Rank.ONE), new Piece(PieceType.KING, Color.WHITE)),
+        Color.WHITE, CastlingRights.all(), null, 0, 1);
+    private final Position afterMove = new Position(
+        Map.of(new Square(File.E, Rank.TWO), new Piece(PieceType.KING, Color.WHITE)),
+        Color.BLACK, CastlingRights.all(), null, 1, 1);
+    private final Move move = new Move(new Square(File.E, Rank.ONE), new Square(File.E, Rank.TWO), null);
+
+    @Test
+    void eineNeuePartieUeberlebtDenRoundtrip() {
+        Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0);
+        adapter.save(g);
+        assertThat(adapter.findById(g.id())).get().satisfies(loaded -> {
+            assertThat(loaded.currentPosition()).isEqualTo(start);
+            assertThat(loaded.ruleSet()).isEqualTo(RuleSet.standard());
+            assertThat(loaded.status()).isEqualTo(GameStatus.ONGOING);
+            assertThat(loaded.history()).isEmpty();
+        });
+    }
+
+    @Test
+    void einAngehaengterZugWirdAlsEreignisGespeichert() {
+        Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0);
+        adapter.save(g);
+        adapter.save(adapter.findById(g.id()).orElseThrow().play(move, afterMove, T0.plusMinutes(1)));
+
+        assertThat(adapter.findById(g.id())).get().satisfies(loaded -> {
+            assertThat(loaded.currentPosition()).isEqualTo(afterMove);
+            assertThat(loaded.history()).singleElement().satisfies(p -> {
+                assertThat(p.number()).isEqualTo(1);
+                assertThat(p.move()).isEqualTo(move);
+                assertThat(p.positionAfter()).isEqualTo(afterMove);
+            });
+        });
+    }
+
+    @Test
+    void unbekanntePartieIstLeer() {
+        assertThat(adapter.findById(GameId.newId())).isEmpty();
+    }
+}
