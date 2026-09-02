@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toBoard, sideOf } from './position';
+import { toBoard, sideOf, parseSquare } from './position';
 import type { Position } from '@chesstopia/openapi-client';
 
 const startish: Position = {
@@ -31,5 +31,17 @@ describe('toBoard', () => {
 describe('sideOf', () => {
   it('bildet WHITE/BLACK auf w/b ab', () => {
     expect(sideOf(startish)).toBe('b');
+  });
+});
+
+describe('parseSquare', () => {
+  it('übersetzt einen Feldnamen in die strukturierte Form', () => {
+    expect(parseSquare('e2')).toEqual({ file: 'E', rank: 'TWO' });
+    expect(parseSquare('h8')).toEqual({ file: 'H', rank: 'EIGHT' });
+  });
+
+  it('wirft RangeError bei einem unmöglichen oder unvollständigen Feldnamen', () => {
+    expect(() => parseSquare('x9')).toThrow(RangeError);
+    expect(() => parseSquare('e')).toThrow(RangeError);
   });
 });

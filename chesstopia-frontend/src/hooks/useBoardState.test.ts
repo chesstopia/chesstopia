@@ -54,4 +54,41 @@ describe('useBoardState', () => {
     await act(() => result.current.playMove('e7', 'e8'));
     expect(playMove).toHaveBeenCalledWith('p-1', expect.objectContaining({ promotion: 'QUEEN' }));
   });
+
+  it('verpackt einen als Ausnahme gereichten Nicht-Error in ein Error-Objekt', async () => {
+    // Axios liefert nicht immer ein Error — asError fängt das ab, sonst bleibt
+    // genau dieser Zweig unbelegt.
+    createGame.mockRejectedValue('kaputt');
+    const { result } = renderHook(() => useBoardState());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.error).toBeInstanceOf(Error);
+    expect(result.current.error?.message).toBe('kaputt');
+  });
+
+  it('hält den Fehler fest und lässt das Brett leer, wenn das Anlegen scheitert', async () => {
+    createGame.mockRejectedValue(new Error('network down'));
+    const { result } = renderHook(() => useBoardState());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.error).toBeInstanceOf(Error);
+    expect(result.current.error?.message).toBe('network down');
+    expect(result.current.board).toBeNull();
+  });
+
+  it('hält die Stellung, wenn das Backend den Zug ablehnt', async () => {
+    playMove.mockRejectedValue(new Error('Der Zug ist nicht ausführbar'));
+    const { result } = renderHook(() => useBoardState());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await act(() => result.current.playMove('e2', 'e4'));
+    expect(result.current.error?.message).toBe('Der Zug ist nicht ausführbar');
+    expect(result.current.pending).toBe(false);
+    expect(result.current.sideToMove).toBe('w');
+    expect(result.current.board?.[6][4]).toBe('wP'); // e2 unverändert
+  });
+
+  it('spielt keinen Zug, solange keine Partie angelegt ist', async () => {
+    createGame.mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useBoardState());
+    await act(() => result.current.playMove('e2', 'e4'));
+    expect(playMove).not.toHaveBeenCalled();
+  });
 });
