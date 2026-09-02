@@ -36,24 +36,22 @@ class GameService implements StartGame, PlayMove, ViewGame {
 
     @Override
     @Transactional
-    public GameId start(RuleSet ruleSet) {
+    public Game start(RuleSet ruleSet) {
         OffsetDateTime now = OffsetDateTime.now();
         Position initialPosition = chessRules.initialPosition(ruleSet);
-        Game game = games.save(Game.start(GameId.newId(), ruleSet, initialPosition, now));
-        return game.id();
+        return games.save(Game.start(GameId.newId(), ruleSet, initialPosition, now));
     }
 
     @Override
     @Transactional
-    public Position play(GameId gameId, Move move) {
+    public Game play(GameId gameId, Move move) {
         Game game = games.findById(gameId)
             .orElseThrow(() -> new NotFoundException("Partie %s existiert nicht".formatted(gameId.value())));
         if (!chessRules.isExecutable(game.currentPosition(), move, game.ruleSet())) {
             throw new IllegalArgumentException("Der Zug ist in dieser Stellung nicht ausführbar");
         }
         Position resulting = chessRules.apply(game.currentPosition(), move, game.ruleSet());
-        Game saved = games.save(game.play(move, resulting, OffsetDateTime.now()));
-        return saved.currentPosition();
+        return games.save(game.play(move, resulting, OffsetDateTime.now()));
     }
 
     @Override

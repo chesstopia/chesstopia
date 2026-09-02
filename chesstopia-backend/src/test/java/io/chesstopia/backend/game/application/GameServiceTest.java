@@ -26,7 +26,7 @@ class GameServiceTest {
 
     @Test
     void startLegtEineLaufendePartieInDerAnfangsstellungAn() {
-        GameId id = service.start(RuleSet.standard());
+        GameId id = service.start(RuleSet.standard()).id();
         assertThat(games.findById(id)).get().satisfies(g -> {
             assertThat(g.currentPosition()).isEqualTo(start);
             assertThat(g.status()).isEqualTo(GameStatus.ONGOING);
@@ -36,9 +36,9 @@ class GameServiceTest {
 
     @Test
     void playPrueftMitDerEngineHaengtDenZugAnUndSpeichert() {
-        GameId id = service.start(RuleSet.standard());
-        Position result = service.play(id, e2e4);
-        assertThat(result).isEqualTo(afterMove);
+        GameId id = service.start(RuleSet.standard()).id();
+        Game result = service.play(id, e2e4);
+        assertThat(result.currentPosition()).isEqualTo(afterMove);
         assertThat(games.findById(id)).get().satisfies(g ->
             assertThat(g.history()).singleElement()
                 .satisfies(p -> assertThat(p.move()).isEqualTo(e2e4)));
@@ -46,7 +46,7 @@ class GameServiceTest {
 
     @Test
     void playLehntEinenNichtAusfuehrbarenZugAbUndSchreibtNichts() {
-        GameId id = service.start(RuleSet.standard());
+        GameId id = service.start(RuleSet.standard()).id();
         rules.rejectEverything();
         assertThatThrownBy(() -> service.play(id, e2e4)).isInstanceOf(IllegalArgumentException.class);
         assertThat(games.findById(id)).get().satisfies(g -> assertThat(g.history()).isEmpty());

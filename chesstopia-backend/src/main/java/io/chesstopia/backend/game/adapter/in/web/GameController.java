@@ -38,8 +38,7 @@ class GameController implements GameApi {
 
     @Override
     public ResponseEntity<GameResponse> createGame() {
-        GameId id = startGame.start(RuleSet.standard());
-        Game game = viewGame.load(id);
+        Game game = startGame.start(RuleSet.standard());
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(mapper.toResponse(game, game.history().size()));
     }
@@ -52,8 +51,7 @@ class GameController implements GameApi {
 
     @Override
     public ResponseEntity<GameResponse> playMove(UUID gameId, MoveRequest moveRequest) {
-        playMove.play(new GameId(gameId), mapper.toDomain(moveRequest));
-        Game game = viewGame.load(new GameId(gameId));
+        Game game = playMove.play(new GameId(gameId), mapper.toDomain(moveRequest));
         return ResponseEntity.ok(mapper.toResponse(game, game.history().size()));
     }
 
