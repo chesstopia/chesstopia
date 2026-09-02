@@ -1,6 +1,6 @@
 ---
 type: adr
-status: superseded
+status: partially-superseded
 implementation: complete
 updated: 2026-08-08
 supersedes: []
@@ -13,7 +13,7 @@ verifies:
 ## Status
 Accepted
 
-Superseded by [ADR-0020](0020-hexagonale-architektur-und-notationsfreie-domaene.md)
+Partially superseded by [ADR-0020](0020-hexagonale-architektur-und-notationsfreie-domaene.md): Die klassische Schichtung innerhalb eines Features gilt für das `game`-Feature nicht mehr. Package-by-Feature und „das Backend bleibt ein einzelnes Gradle-Subprojekt" gelten unverändert.
 
 ## Context
 

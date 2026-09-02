@@ -21,7 +21,7 @@ export default defineConfig({
     },
   },
   test: {
-    // Ebene 2 aus ADR-0019 braucht ein DOM. Reine Unit-Tests (fen.test.ts) laufen
+    // Ebene 2 aus ADR-0019 braucht ein DOM. Reine Unit-Tests (position.test.ts) laufen
     // unter jsdom unverändert; der Aufpreis rechtfertigt keine zweite Projektdatei.
     environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}"],

@@ -22,7 +22,7 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 | [0010](0010-deployment-cicd-infrastruktur.md) | Deployment- & CI/CD-Infrastruktur | Partially superseded ⁴ | complete |
 | [0011](0011-migration-nach-github-actions.md) | Migration nach GitHub Actions & GHCR | Accepted | complete |
 | [0012](0012-embedded-postgres-fuer-tests.md) | Zonky Embedded PostgreSQL für Tests statt H2 oder Testcontainers | Accepted | complete |
-| [0013](0013-package-by-feature-backend.md) | Package-by-Feature im Backend — kein Hexagonal, keine Backend-Submodule | Superseded ⁷ | complete |
+| [0013](0013-package-by-feature-backend.md) | Package-by-Feature im Backend — kein Hexagonal, keine Backend-Submodule | Partially superseded ⁷ | complete |
 | [0014](0014-minimaler-dependency-kern.md) | Minimaler, erklärter Dependency-Kern — kein Lombok, kein MapStruct | Partially superseded ⁹ | complete |
 | [0015](0015-security-von-tag-eins.md) | Spring Security von Tag 1, initial explizit auf permit-all | Accepted | partial ¹ |
 | [0016](0016-agenten-topologie.md) | Agenten-Topologie — zwei Subagenten, zwei Skills, drei Schwellen | Accepted | partial ² |
@@ -42,9 +42,9 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 
 ⁵ **Von `complete` zurückgestuft, und das ist keine Korrektur eines Fehlers, sondern eine Präzisierung.** Vollständig war und ist die *Struktur*: ein Quellcode, zwei Ziele, beide Konsumenten am selben Artefakt. Nicht vollständig ist der *Gegenstand* — bis zum 10. August 2026 rief niemand die Engine auf, und seither ruft das Backend sie für die Mechanik eines Zuges. Die Regellogik selbst ist weiterhin ein `TODO`. Genau dafür trennt dieses Register `Status` von `Umsetzung`.
 
-⁶ Gebaut ist der Kern des Ereignisstroms: `partie.current_fen` als Snapshot, `zug` als lückenlose Folge mit `fen_after`. Bewusst nicht gebaut ist alles, was heute keinen Schreiber hat — `san_notation` braucht Zugerzeugung (die Engine kennt nur UCI), die Analyse- und Eröffnungsfelder brauchen die MoveEngine aus [ADR-0002](0002-zwei-ki-abstraktionen.md), die Rating-Snapshots brauchen Nutzer und [ADR-0004](0004-glicko2-rating-system.md). `partial` heißt hier „planmäßig unvollständig". (Format seit [ADR-0020](0020-hexagonale-architektur-und-notationsfreie-domaene.md) JSONB statt FEN — siehe ⁸.)
+⁶ Gebaut ist der Kern des Ereignisstroms: `partie.position_snapshot` (JSONB der Stellung) als Snapshot, `zug` als lückenlose Folge mit `position_after` (JSONB) plus lesbaren `from_square`/`to_square`/`promotion`-Spalten ([ADR-0020](0020-hexagonale-architektur-und-notationsfreie-domaene.md)). Bewusst nicht gebaut ist alles, was heute keinen Schreiber hat — `san_notation` braucht Zugerzeugung (die Engine erzeugt heute keine Züge), die Analyse- und Eröffnungsfelder brauchen die MoveEngine aus [ADR-0002](0002-zwei-ki-abstraktionen.md), die Rating-Snapshots brauchen Nutzer und [ADR-0004](0004-glicko2-rating-system.md). `partial` heißt hier „planmäßig unvollständig".
 
-⁷ Abgelöst durch [ADR-0020](0020-hexagonale-architektur-und-notationsfreie-domaene.md): das `game`-Feature ist hexagonal geschnitten, `counter`/`hello` bleiben klassisch.
+⁷ Teilweise abgelöst durch [ADR-0020](0020-hexagonale-architektur-und-notationsfreie-domaene.md): nur die klassische Schichtung innerhalb eines Features ist für `game` aufgehoben; Package-by-Feature und der Ein-Modul-Schnitt gelten weiter.
 
 ⁸ Teilweise abgelöst durch [ADR-0020](0020-hexagonale-architektur-und-notationsfreie-domaene.md) — welcher Teil, steht im `## Status`-Abschnitt des jeweiligen ADR ([ADR-0018](0018-status-partially-superseded.md)).
 

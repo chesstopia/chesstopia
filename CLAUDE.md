@@ -70,8 +70,8 @@ pnpm --filter chesstopia-frontend test
 - Spring Security ist von Anfang an im Classpath und explizit auf permissiv konfiguriert — das ist ein bewusster Zustand, kein vergessener. Nicht entfernen.
 
 **Engine-Grenze**
-- Die Engine-`@JsExport`-Grenze trägt strukturierte Objekte (`Position`, `Move`, `Piece`, `Square`), **keine FEN/UCI** ([ADR-0020](docs/adr/0020-hexagonale-architektur-und-notationsfreie-domaene.md)). FEN ist Serialisierungsformat für Persistenz-Interna und den künftigen Stockfish-Adapter — nie in Domäne oder API.
-- `@JsExport` steht in `commonMain` ([ADR-0007](docs/adr/0007-jsexport-in-commonmain.md)). Exportierte Sammlungen sind `Array<T>`, nicht `List<T>` (z. B. `Position.board`, `LegalMovesResult.moves`); die Konvertierung mit `.toList()` erfolgt **direkt am Engine-Aufruf**.
+- Die Engine-`@JsExport`-Grenze trägt strukturierte Objekte (`Position`, `Move`, `Piece`, `Square`), **keine FEN/UCI** ([ADR-0020](docs/adr/0020-hexagonale-architektur-und-notationsfreie-domaene.md)). FEN ist im Projekt derzeit nicht in Gebrauch; erst wenn der künftige Stockfish-Adapter (ADR-0005) es braucht, entsteht eine `toFen`-Hilfe in der Engine — nie in Domäne oder API.
+- `@JsExport` steht in `commonMain` ([ADR-0007](docs/adr/0007-jsexport-in-commonmain.md)). Exportierte Sammlungen sind `Array<T>`, nicht `List<T>` (z. B. `Position.board`, `LegalMovesResult.moves`); wo eine exportierte `Array<T>` in Java-Code weiterverwendet wird (z. B. `LegalMovesResult.moves` mit CHESS-2), erfolgt die Konvertierung mit `.toList()` direkt am Engine-Aufruf.
 - Die Übersetzung Domäne ↔ Engine liegt ausschließlich im `ChessRulesAdapter`.
 
 **Tests**

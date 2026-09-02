@@ -239,6 +239,11 @@ components:
 
     MoveRequest:
       type: object
+      description: >
+        Ein Zug als Ursprungs- und Zielfeld (plus optionaler Umwandlungsfigur).
+
+        Bewusst ohne `pattern`: Was ein gültiger Zug ist, entscheidet die
+        Schach-Engine und sonst niemand (ADR-0001).
       required:
         - from
         - to
@@ -247,11 +252,7 @@ components:
         to: { $ref: "#/components/schemas/Square" }
         promotion:
           type: string
-          description: >
-            Zielfigur bei einer Umwandlung, sonst weggelassen.
-
-            Bewusst ohne `pattern`: Was ein gültiger Zug ist, entscheidet die
-            Schach-Engine und sonst niemand (ADR-0001).
+          description: Zielfigur bei einer Umwandlung, sonst weggelassen.
           enum: [QUEEN, ROOK, BISHOP, KNIGHT]
 
     MoveRecord:
