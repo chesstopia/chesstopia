@@ -32,7 +32,7 @@ MapStruct wird aufgenommen (Version in `gradle/libs.versions.toml`), als `implem
 
 MapStruct wird dort verwendet, wo es trägt: `PositionJsonMapper` und `WebMapper` sind `@Mapper(componentModel = "spring")`-Interfaces.
 
-Zwei Mapper bleiben von Hand geschrieben, weil MapStruct 1.6.x ihre Eigenschaften nicht liest:
+Zwei Mapper bleiben von Hand geschrieben, weil MapStruct ihre Eigenschaften nicht liest:
 
 - `EngineMapper` — die `chess-engine`-Typen sind Kotlin-`data class`es, deren Property-Modell MapStruct nicht sauber sieht; die Brett-Konvertierung `Array<Piece?>` ↔ `Map<Square, Piece>` ist ohnehin reiner Handcode. `EngineMapper` ist eine Utility-Klasse mit statischen Methoden, die `ChessRulesAdapter` aufruft.
 - `GameEntityMapper` — die JPA-Entities sind package-private, MapStruct meldet „no properties". Er ist eine `@Component`-Klasse, in die `PositionJsonMapper` injiziert wird.
@@ -42,5 +42,5 @@ Zwei Mapper bleiben von Hand geschrieben, weil MapStruct 1.6.x ihre Eigenschafte
 ## Consequences
 
 - Der Build bekommt einen Annotation-Processor — genau die Art, die [ADR-0014](0014-minimaler-dependency-kern.md) in den Consequences ausschließt („Ein Stacktrace zeigt Code, den man im Editor sehen kann"). Bewusst in Kauf genommen: der generierte OpenAPI-Code ist bereits so eine Konzession, und `unmappedTargetPolicy=ERROR` macht das stille Weglassen eines Feldes unmöglich.
-- Der übrige Dependency-Kern aus [ADR-0014](0014-minimaler-dependency-kern.md) — kein Lombok, kein Spring Cloud, kein Redis, kein Spring Batch — gilt unverändert.
+- Abgelöst ist allein die MapStruct-Klausel aus [ADR-0014](0014-minimaler-dependency-kern.md). Der übrige Dependency-Kern — kein Lombok, kein Spring Cloud, kein Redis, kein Spring Batch — gilt unverändert.
 - Das gemischte Ergebnis (zwei MapStruct, zwei von Hand) ist das ehrliche Resultat der Grenzen von MapStruct mit Kotlin-`data class`es und package-private Beans. Ein künftiger Mapper wählt MapStruct nur, wenn Quelle und Ziel Bean-Properties offenlegen.

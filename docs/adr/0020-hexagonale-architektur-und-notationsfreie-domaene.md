@@ -38,4 +38,4 @@ Die Domäne kennt keine FEN, UCI oder SAN. Sie arbeitet mit `Position`, `Move`, 
 - Die Domäne baut und testet ohne jede Änderung an der Engine.
 - [ADR-0013](0013-package-by-feature-backend.md) („kein Hexagonal") ist abgelöst; [ADR-0001](0001-kotlin-multiplatform-chess-engine.md), [ADR-0003](0003-move-event-log.md) und [ADR-0007](0007-jsexport-in-commonmain.md) sind teilweise abgelöst — welcher Teil, steht in deren `## Status`.
 - Neue Features entscheiden pro Fall, ob sie hexagonal werden. Der bewiesene Schnitt ist `game`, kein Mandat für das ganze Backend.
-- Die vier Mapper sind Handmapping-Fläche, die mit dem Kontrakt und dem Schema synchron gehalten werden muss.
+- Die vier Adapter-Mapper müssen mit dem Kontrakt und dem Schema synchron gehalten werden; ihre Umsetzung regelt [ADR-0021](0021-mapstruct-fuer-adapter-mappings.md).
