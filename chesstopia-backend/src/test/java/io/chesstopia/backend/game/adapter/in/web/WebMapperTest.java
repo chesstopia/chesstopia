@@ -25,6 +25,7 @@ class WebMapperTest {
 
     @Test
     void moveRequestZuDomaeneMitUndOhneUmwandlung() {
+        // ARRANGE
         var mitUmwandlung = new MoveRequest()
             .from(new io.chesstopia.backend.api.model.Square()
                 .file(io.chesstopia.backend.api.model.Square.FileEnum.E)
@@ -33,12 +34,6 @@ class WebMapperTest {
                 .file(io.chesstopia.backend.api.model.Square.FileEnum.E)
                 .rank(io.chesstopia.backend.api.model.Square.RankEnum.EIGHT))
             .promotion(MoveRequest.PromotionEnum.QUEEN);
-
-        Move m = mapper.toDomain(mitUmwandlung);
-        assertThat(m.from()).isEqualTo(new Square(File.E, Rank.SEVEN));
-        assertThat(m.to()).isEqualTo(new Square(File.E, Rank.EIGHT));
-        assertThat(m.promotion()).isEqualTo(PieceType.QUEEN);
-
         var ohneUmwandlung = new MoveRequest()
             .from(new io.chesstopia.backend.api.model.Square()
                 .file(io.chesstopia.backend.api.model.Square.FileEnum.E)
@@ -47,18 +42,28 @@ class WebMapperTest {
                 .file(io.chesstopia.backend.api.model.Square.FileEnum.E)
                 .rank(io.chesstopia.backend.api.model.Square.RankEnum.FOUR));
 
+        // ACT
+        Move m = mapper.toDomain(mitUmwandlung);
         Move plain = mapper.toDomain(ohneUmwandlung);
+
+        // ASSERTIONS
+        assertThat(m.from()).isEqualTo(new Square(File.E, Rank.SEVEN));
+        assertThat(m.to()).isEqualTo(new Square(File.E, Rank.EIGHT));
+        assertThat(m.promotion()).isEqualTo(PieceType.QUEEN);
         assertThat(plain.promotion()).isNull();
     }
 
     @Test
     void positionZuApiUndDerBoardEnthaeltNurBesetzteFelder() {
+        // ARRANGE
         var pos = new Position(
             Map.of(new Square(File.E, Rank.ONE), new Piece(PieceType.KING, Color.WHITE)),
             Color.WHITE, CastlingRights.all(), null, 0, 1);
 
+        // ACT
         var api = mapper.toApi(pos);
 
+        // ASSERTIONS
         assertThat(api.getBoard()).hasSize(1);
         assertThat(api.getBoard().get(0).getSquare()).isEqualTo(
             new io.chesstopia.backend.api.model.Square()
@@ -78,6 +83,7 @@ class WebMapperTest {
 
     @Test
     void piecesToBoardLiefertDieBesetztenFelderNachFeldNamenSortiert() {
+        // ARRANGE
         var pos = new Position(
             Map.of(
                 new Square(File.H, Rank.ONE), new Piece(PieceType.ROOK, Color.WHITE),
@@ -85,8 +91,10 @@ class WebMapperTest {
                 new Square(File.A, Rank.ONE), new Piece(PieceType.QUEEN, Color.WHITE)),
             Color.WHITE, CastlingRights.all(), null, 0, 1);
 
+        // ACT
         var board = mapper.toApi(pos).getBoard();
 
+        // ASSERTIONS
         assertThat(board).extracting(
                 pp -> pp.getSquare().getFile(), pp -> pp.getSquare().getRank())
             .containsExactly(
@@ -100,6 +108,7 @@ class WebMapperTest {
 
     @Test
     void toMoveListNummeriertJedenHalbzug() {
+        // ARRANGE
         var pos = new Position(Map.of(), Color.WHITE, CastlingRights.all(), null, 0, 1);
         var history = List.of(
             new Ply(1, new Move(new Square(File.E, Rank.TWO), new Square(File.E, Rank.FOUR), null),
@@ -107,8 +116,10 @@ class WebMapperTest {
             new Ply(2, new Move(new Square(File.E, Rank.SEVEN), new Square(File.E, Rank.FIVE), null),
                 pos, OffsetDateTime.parse("2026-01-01T12:01:00Z")));
 
+        // ACT
         var response = mapper.toMoveList(history);
 
+        // ASSERTIONS
         assertThat(response.getMoves()).extracting(
                 io.chesstopia.backend.api.model.MoveRecord::getMoveNumber)
             .containsExactly(1, 2);
@@ -116,6 +127,7 @@ class WebMapperTest {
 
     @Test
     void toPromotionUebersetztDieUmwandlungsfigurUndNull() {
+        // ACT & ASSERTIONS
         assertThat(mapper.toPromotion(PieceType.ROOK)).isEqualTo(MoveRequest.PromotionEnum.ROOK);
         assertThat(mapper.toPromotion(null)).isNull();
     }

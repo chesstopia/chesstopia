@@ -75,6 +75,7 @@ pnpm --filter chesstopia-frontend test
 - Die Übersetzung Domäne ↔ Engine liegt ausschließlich im `ChessEngineAdapter`.
 
 **Tests**
+- Jeder Testkörper ist in `// ARRANGE` · `// ACT` · `// ASSERTIONS` gegliedert, in dieser Reihenfolge. Eine leere Phase entfällt; sind Act und Assertion untrennbar (Exception-Prüfung), steht `// ACT & ASSERTIONS`. Gilt für JUnit, `kotlin.test` und Vitest.
 - Kontext-Tests gegen die Datenbank brauchen `@AutoConfigureEmbeddedDatabase` ([ADR-0012](docs/adr/0012-embedded-postgres-fuer-tests.md)) — ohne die Annotation läuft der Test gegen die echte Datenbank.
 - Frontend-Tests laufen unter Vitest. `defineConfig` kommt in der Vitest-Konfiguration aus `vitest/config`, nicht aus `vite`. Vitest läuft ohne `globals: true` — `describe`/`it`/`expect` werden importiert.
 - Welche Testebene ein Feature braucht, entscheidet [ADR-0019](docs/adr/0019-teststrategie.md); ausgeführt wird das vom Skill `/tests`. E2E ist noch nicht gebaut — der Auslöser steht im ADR.

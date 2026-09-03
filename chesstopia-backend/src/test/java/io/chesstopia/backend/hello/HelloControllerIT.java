@@ -22,6 +22,7 @@ class HelloControllerIT {
 
     @Test
     void get_returnsGreeting() {
+        // ACT & ASSERTIONS
         webTestClient.get()
             .uri("/api/v1/hello")
             .exchange()
@@ -36,6 +37,8 @@ class HelloControllerIT {
         // konfiguriert (ADR-0015). Dieser Test hält fest, dass das so ist: Wer die
         // Kette scharf schaltet, sieht hier ein 401 statt eines stillen Verhaltens-
         // wechsels an der Aussenkante.
+
+        // ACT & ASSERTIONS
         webTestClient.get()
             .uri("/api/v1/hello")
             .exchange()

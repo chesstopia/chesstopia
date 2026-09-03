@@ -14,7 +14,10 @@ class GameTest {
 
     @Test
     void startBeginntOhneHistorieLaufendInDerGrundstellung() {
+        // ACT
         Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0);
+
+        // ASSERTIONS
         assertThat(g.history()).isEmpty();
         assertThat(g.status()).isEqualTo(GameStatus.ONGOING);
         assertThat(g.currentPosition()).isEqualTo(start);
@@ -23,8 +26,11 @@ class GameTest {
 
     @Test
     void playHaengtEinenLueckenlosNummeriertenPlyAn() {
+        // ACT
         Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0)
                      .play(move, afterOne, T0.plusMinutes(1));
+
+        // ASSERTIONS
         assertThat(g.history()).singleElement().satisfies(p -> {
             assertThat(p.number()).isEqualTo(1);
             assertThat(p.move()).isEqualTo(move);
@@ -36,21 +42,30 @@ class GameTest {
 
     @Test
     void aufeinanderfolgendePlysZaehlenHoch() {
+        // ACT
         Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0)
                      .play(move, afterOne, T0).play(move, start, T0);
+
+        // ASSERTIONS
         assertThat(g.history()).extracting(Ply::number).containsExactly(1, 2);
     }
 
     @Test
     void dieHistorieIstNachAussenUnveraenderlich() {
+        // ARRANGE
         Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0).play(move, afterOne, T0);
+
+        // ACT & ASSERTIONS
         assertThatThrownBy(() -> g.history().clear()).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
     void playAufEinerBeendetenPartieWirft() {
+        // ARRANGE
         Game done = new Game(GameId.newId(), RuleSet.standard(), start, java.util.List.of(),
                              GameStatus.COMPLETED, T0, T0);
+
+        // ACT & ASSERTIONS
         assertThatThrownBy(() -> done.play(move, afterOne, T0)).isInstanceOf(IllegalStateException.class);
     }
 }

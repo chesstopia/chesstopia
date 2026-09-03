@@ -22,9 +22,11 @@ class EngineMapperTest {
 
     @Test
     void toEngineBoardUebersetztFeldUndFigurNachNamen() {
+        // ACT
         var board = mapper.toEngineBoard(Map.of(
             new Square(File.E, Rank.ONE), new Piece(PieceType.KING, Color.WHITE)));
 
+        // ASSERTIONS
         assertThat(board).hasSize(1);
         assertThat(board[0].getSquare()).isEqualTo(
             new io.chesstopia.engine.Square(io.chesstopia.engine.File.E, io.chesstopia.engine.Rank.ONE));
@@ -35,21 +37,25 @@ class EngineMapperTest {
 
     @Test
     void toEngineBoardAufLeererMapGibtLeeresArray() {
+        // ACT & ASSERTIONS
         assertThat(mapper.toEngineBoard(Map.of())).isEmpty();
     }
 
     @Test
     void toDomainBoardAufLeeremArrayGibtLeereMap() {
+        // ACT & ASSERTIONS
         assertThat(mapper.toDomainBoard(new io.chesstopia.engine.PlacedPiece[0])).isEmpty();
     }
 
     @Test
     void brettUeberEngineUndZurueckVerliertNichts() {
+        // ARRANGE
         var original = Map.of(
             new Square(File.A, Rank.ONE), new Piece(PieceType.ROOK, Color.WHITE),
             new Square(File.D, Rank.EIGHT), new Piece(PieceType.QUEEN, Color.BLACK),
             new Square(File.E, Rank.TWO), new Piece(PieceType.PAWN, Color.WHITE));
 
+        // ACT & ASSERTIONS
         assertThat(mapper.toDomainBoard(mapper.toEngineBoard(original))).isEqualTo(original);
     }
 }

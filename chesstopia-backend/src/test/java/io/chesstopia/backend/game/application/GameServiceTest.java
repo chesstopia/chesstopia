@@ -26,7 +26,10 @@ class GameServiceTest {
 
     @Test
     void startLegtEineLaufendePartieInDerAnfangsstellungAn() {
+        // ACT
         GameId id = service.start(RuleSet.standard()).id();
+
+        // ASSERTIONS
         assertThat(games.findById(id)).get().satisfies(g -> {
             assertThat(g.currentPosition()).isEqualTo(start);
             assertThat(g.status()).isEqualTo(GameStatus.ONGOING);
@@ -36,8 +39,13 @@ class GameServiceTest {
 
     @Test
     void playPrueftMitDerEngineHaengtDenZugAnUndSpeichert() {
+        // ARRANGE
         GameId id = service.start(RuleSet.standard()).id();
+
+        // ACT
         Game result = service.play(id, e2e4);
+
+        // ASSERTIONS
         assertThat(result.currentPosition()).isEqualTo(afterMove);
         assertThat(games.findById(id)).get().satisfies(g ->
             assertThat(g.history()).singleElement()
@@ -46,19 +54,24 @@ class GameServiceTest {
 
     @Test
     void playLehntEinenNichtAusfuehrbarenZugAbUndSchreibtNichts() {
+        // ARRANGE
         GameId id = service.start(RuleSet.standard()).id();
         rules.rejectEverything();
+
+        // ACT & ASSERTIONS
         assertThatThrownBy(() -> service.play(id, e2e4)).isInstanceOf(IllegalArgumentException.class);
         assertThat(games.findById(id)).get().satisfies(g -> assertThat(g.history()).isEmpty());
     }
 
     @Test
     void playAufUnbekannterPartieWirftNotFound() {
+        // ACT & ASSERTIONS
         assertThatThrownBy(() -> service.play(GameId.newId(), e2e4)).isInstanceOf(NotFoundException.class);
     }
 
     @Test
     void loadAufUnbekannterPartieWirftNotFound() {
+        // ACT & ASSERTIONS
         assertThatThrownBy(() -> service.load(GameId.newId())).isInstanceOf(NotFoundException.class);
     }
 }

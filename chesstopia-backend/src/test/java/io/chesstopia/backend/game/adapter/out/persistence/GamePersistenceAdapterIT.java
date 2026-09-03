@@ -30,22 +30,32 @@ class GamePersistenceAdapterIT {
 
     @Test
     void eineNeuePartieUeberlebtDenRoundtrip() {
+        // ARRANGE
         Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0);
         adapter.save(g);
-        assertThat(adapter.findById(g.id())).get().satisfies(loaded -> {
-            assertThat(loaded.currentPosition()).isEqualTo(start);
-            assertThat(loaded.ruleSet()).isEqualTo(RuleSet.standard());
-            assertThat(loaded.status()).isEqualTo(GameStatus.ONGOING);
-            assertThat(loaded.history()).isEmpty();
+
+        // ACT
+        var loaded = adapter.findById(g.id());
+
+        // ASSERTIONS
+        assertThat(loaded).get().satisfies(l -> {
+            assertThat(l.currentPosition()).isEqualTo(start);
+            assertThat(l.ruleSet()).isEqualTo(RuleSet.standard());
+            assertThat(l.status()).isEqualTo(GameStatus.ONGOING);
+            assertThat(l.history()).isEmpty();
         });
     }
 
     @Test
     void einAngehaengterZugWirdAlsEreignisGespeichert() {
+        // ARRANGE
         Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0);
         adapter.save(g);
+
+        // ACT
         adapter.save(adapter.findById(g.id()).orElseThrow().play(move, afterMove, T0.plusMinutes(1)));
 
+        // ASSERTIONS
         assertThat(adapter.findById(g.id())).get().satisfies(loaded -> {
             assertThat(loaded.currentPosition()).isEqualTo(afterMove);
             assertThat(loaded.history()).singleElement().satisfies(p -> {
@@ -58,6 +68,7 @@ class GamePersistenceAdapterIT {
 
     @Test
     void unbekanntePartieIstLeer() {
+        // ACT & ASSERTIONS
         assertThat(adapter.findById(GameId.newId())).isEmpty();
     }
 }

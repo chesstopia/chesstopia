@@ -13,41 +13,55 @@ class ChessEngineTest {
     private val e2e4 = Move(sq(File.E, Rank.TWO), sq(File.E, Rank.FOUR))
 
     @Test fun `initialPosition liefert die Grundstellung`() {
+        // ACT & ASSERTIONS
         assertEquals(standardStartPosition(), initialPosition(rules))
     }
 
     @Test fun `getLegalMoves bleibt bis CHESS-2 nicht implementiert`() {
+        // ACT & ASSERTIONS
         assertFailsWith<NotImplementedError> { getLegalMoves(start, rules) }
     }
 
     @Test fun `validateMove nimmt einen mechanisch moeglichen Zug an, auch einen unschachlichen`() {
+        // ACT & ASSERTIONS
         assertTrue(validateMove(start, e2e4, rules))
         assertTrue(validateMove(start, Move(sq(File.A, Rank.ONE), sq(File.A, Rank.EIGHT)), rules))
     }
 
     @Test fun `validateMove lehnt den Zug der falschen Seite ab`() {
+        // ACT & ASSERTIONS
         assertFalse(validateMove(start, Move(sq(File.E, Rank.SEVEN), sq(File.E, Rank.FIVE)), rules))
     }
 
     @Test fun `validateMove verlangt eine Zielfigur bei der Umwandlung`() {
+        // ARRANGE
         val p = position(sq(File.E, Rank.SEVEN) to Piece(PieceType.PAWN, Color.WHITE))
+
+        // ACT & ASSERTIONS
         assertFalse(validateMove(p, Move(sq(File.E, Rank.SEVEN), sq(File.E, Rank.EIGHT)), rules))
         assertTrue(validateMove(p, Move(sq(File.E, Rank.SEVEN), sq(File.E, Rank.EIGHT), PieceType.QUEEN), rules))
     }
 
     @Test fun `applyMove wirft bei einem mechanisch unmoeglichen Zug`() {
+        // ACT & ASSERTIONS
         assertFailsWith<IllegalArgumentException> {
             applyMove(start, Move(sq(File.E, Rank.SEVEN), sq(File.E, Rank.FIVE)), rules)
         }
     }
 
     @Test fun `applyMove fuehrt den Zug aus`() {
+        // ACT
         val after = applyMove(start, e2e4, rules)
+
+        // ASSERTIONS
         assertEquals(Piece(PieceType.PAWN, Color.WHITE), after.pieceAt(sq(File.E, Rank.FOUR)))
     }
 
     @Test fun `RuleSet standard hat die erwarteten Vorgaben`() {
+        // ACT
         val rs = RuleSet.standard()
+
+        // ASSERTIONS
         assertEquals(Variant.STANDARD, rs.variant)
         assertTrue(rs.enPassantEnabled)
         assertTrue(rs.castlingEnabled)

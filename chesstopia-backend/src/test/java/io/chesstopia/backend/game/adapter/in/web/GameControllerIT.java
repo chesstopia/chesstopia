@@ -61,6 +61,14 @@ class GameControllerIT {
             .returnResult().getResponseBody();
     }
 
+    private void playMove(UUID id, Map<String, Object> body) {
+        webTestClient.post()
+            .uri("/api/v1/games/{id}/moves", id)
+            .bodyValue(body)
+            .exchange()
+            .expectStatus().isOk();
+    }
+
     private static boolean hasPiece(Position position, Square.FileEnum file, Square.RankEnum rank,
                                     Piece.TypeEnum type, Piece.ColorEnum color) {
         return position.getBoard().stream().anyMatch(pp ->
@@ -74,8 +82,10 @@ class GameControllerIT {
 
     @Test
     void createGame_liefertStartstellung() {
+        // ACT
         GameResponse response = createGame();
 
+        // ASSERTIONS
         assertThat(response.getId()).isNotNull();
         assertThat(response.getStatus()).isEqualTo(GameResponse.StatusEnum.ONGOING);
         assertThat(response.getMoveCount()).isZero();
@@ -85,13 +95,16 @@ class GameControllerIT {
 
     @Test
     void createGame_zweiPartienHabenVerschiedeneIds() {
+        // ACT & ASSERTIONS
         assertThat(createGame().getId()).isNotEqualTo(createGame().getId());
     }
 
     @Test
     void playMove_e2e4_wirdAusgefuehrtUndPersistiert() {
+        // ARRANGE
         UUID id = createGame().getId();
 
+        // ACT
         GameResponse afterMove = webTestClient.post()
             .uri("/api/v1/games/{id}/moves", id)
             .bodyValue(move("E", "TWO", "E", "FOUR"))
@@ -100,6 +113,7 @@ class GameControllerIT {
             .expectBody(GameResponse.class)
             .returnResult().getResponseBody();
 
+        // ASSERTIONS
         assertThat(afterMove.getMoveCount()).isEqualTo(1);
         assertThat(hasPiece(afterMove.getPosition(),
             Square.FileEnum.E, Square.RankEnum.FOUR, Piece.TypeEnum.PAWN, Piece.ColorEnum.WHITE)).isTrue();
@@ -114,10 +128,12 @@ class GameControllerIT {
 
     @Test
     void listMoves_nachZweiZuegen_liefertBeideEintraege() {
+        // ARRANGE
         UUID id = createGame().getId();
         playMove(id, move("E", "TWO", "E", "FOUR"));
         playMove(id, move("E", "SEVEN", "E", "FIVE"));
 
+        // ACT
         MoveListResponse list = webTestClient.get()
             .uri("/api/v1/games/{id}/moves", id)
             .exchange()
@@ -125,6 +141,7 @@ class GameControllerIT {
             .expectBody(MoveListResponse.class)
             .returnResult().getResponseBody();
 
+        // ASSERTIONS
         assertThat(list.getMoves()).hasSize(2);
         assertThat(list.getMoves().get(0).getMoveNumber()).isEqualTo(1);
         assertThat(list.getMoves().get(1).getMoveNumber()).isEqualTo(2);
@@ -137,8 +154,10 @@ class GameControllerIT {
 
     @Test
     void listMoves_neuePartie_istLeer() {
+        // ARRANGE
         UUID id = createGame().getId();
 
+        // ACT & ASSERTIONS
         webTestClient.get()
             .uri("/api/v1/games/{id}/moves", id)
             .exchange()
@@ -149,8 +168,10 @@ class GameControllerIT {
 
     @Test
     void playMove_falscheSeiteZuerst_wird400MitProblemJson() {
+        // ARRANGE
         UUID id = createGame().getId();
 
+        // ACT & ASSERTIONS
         webTestClient.post()
             .uri("/api/v1/games/{id}/moves", id)
             .bodyValue(move("E", "SEVEN", "E", "FIVE"))
@@ -163,6 +184,7 @@ class GameControllerIT {
 
     @Test
     void unbekanntePartie_wird404() {
+        // ACT & ASSERTIONS
         webTestClient.post()
             .uri("/api/v1/games/{id}/moves", UUID.randomUUID())
             .bodyValue(move("E", "TWO", "E", "FOUR"))
@@ -177,6 +199,7 @@ class GameControllerIT {
 
     @Test
     void getGame_keineUuid_wird400() {
+        // ACT & ASSERTIONS
         webTestClient.get()
             .uri("/api/v1/games/keine-uuid")
             .exchange()
@@ -185,8 +208,10 @@ class GameControllerIT {
 
     @Test
     void abgelehnterZug_hinterlaesstKeinenPly() {
+        // ARRANGE
         UUID id = createGame().getId();
 
+        // ACT & ASSERTIONS
         webTestClient.post()
             .uri("/api/v1/games/{id}/moves", id)
             .bodyValue(move("E", "SEVEN", "E", "FIVE"))
@@ -194,13 +219,5 @@ class GameControllerIT {
             .expectStatus().isBadRequest();
 
         assertThat(getGame(id).getMoveCount()).isZero();
-    }
-
-    private void playMove(UUID id, Map<String, Object> body) {
-        webTestClient.post()
-            .uri("/api/v1/games/{id}/moves", id)
-            .bodyValue(body)
-            .exchange()
-            .expectStatus().isOk();
     }
 }
