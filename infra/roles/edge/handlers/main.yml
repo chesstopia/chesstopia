@@ -1,0 +1,11 @@
+---
+# `docker compose up` startet Caddy bei einer reinen Bind-Mount-Änderung des
+# Caddyfile nicht neu. `caddy reload` (zero-downtime) hat in diesem Setup die
+# laufende Config nicht übernommen — nur ein Container-Restart wirkt. Caddy
+# startet in <1 s kalt, die ACME-Certs liegen im persistenten caddy_data-Volume.
+- name: Restart caddy
+  community.docker.docker_compose_v2:
+    project_src: "{{ edge_compose_dir }}"
+    services:
+      - caddy
+    state: restarted
