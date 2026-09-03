@@ -328,11 +328,14 @@ tasks.register("checkDocs") {
             .filter { !it.name.contains(".test.") }
             .forEach { f ->
                 val base = f.name.removeSuffix(".${f.extension}")
-                val expected = File(f.parentFile, "$base.test.${f.extension}")
-                if (!expected.isFile) {
+                // Konvention (CLAUDE.md): Test in __tests__/ neben der Datei. Ein
+                // Geschwister-Test zählt weiter, damit die Regel nicht am Ordner klebt.
+                val inTestsDir = File(f.parentFile, "__tests__/$base.test.${f.extension}")
+                val sibling = File(f.parentFile, "$base.test.${f.extension}")
+                if (!inTestsDir.isFile && !sibling.isFile) {
                     errors += "${f.relativeTo(rootDir).invariantSeparatorsPath}: kein Test — " +
                         "ein Hook hält Zustand und ist damit Ebene 2 Pflicht (ADR-0019). " +
-                        "Erwartet: ${expected.name}"
+                        "Erwartet: __tests__/${inTestsDir.name}"
                 }
             }
 

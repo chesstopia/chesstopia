@@ -22,8 +22,14 @@ kotlin {
     // Toolchain applies to all JVM targets — must be at extension scope in Kotlin 2.3+
     jvmToolchain(25)
 
-    // JVM target — consumed by Spring Boot backend via Gradle composite build
-    jvm()
+    // JVM target — consumed by Spring Boot backend via Gradle composite build.
+    // -java-parameters: der EngineMapper (MapStruct) matcht die Primärkonstruktoren
+    // der @JsExport-data-class-Typen über die Parameternamen.
+    jvm {
+        compilerOptions {
+            javaParameters = true
+        }
+    }
 
     // JS target — consumed by React frontend via pnpm workspace
     js(IR) {

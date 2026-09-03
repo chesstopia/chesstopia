@@ -1,16 +1,21 @@
 ---
 type: adr
-status: accepted
-implementation: planned
-updated: 2026-08-08
+status: partially-superseded
+implementation: partial
+updated: 2026-08-10
 supersedes: []
-verifies: []
+verifies:
+  - 'chesstopia-backend/src/main/resources/db/migration/V2__create_partie_und_zug.sql :: CREATE TABLE zug'
+  - 'chesstopia-backend/src/main/resources/db/migration/V2__create_partie_und_zug.sql :: position_snapshot'
+  - 'chesstopia-backend/src/main/java/io/chesstopia/backend/game/adapter/out/persistence/entities/PartieEntity.java :: position_snapshot'
 ---
 
 # ADR-0003: Move-Event-Log als Persistenzmodell für Partien
 
 ## Status
 Accepted
+
+Partially superseded by [ADR-0020](0020-hexagonale-architektur-und-notationsfreie-domaene.md): Ereignisstrom + materialisierter Snapshot gelten weiter. Das Snapshot-Format ist JSONB des Domänen-`Position`-Objekts, nicht FEN; ein Zug wird als `from_square`/`to_square`/`promotion` + `position_after` gespeichert, nicht als `uci`/`fen_after`.
 
 ## Context
 Partien müssen gespeichert, abgespielt, analysiert und für Statistiken ausgewertet werden. Die Frage ist wie Spielzustand und Zughistorie in PostgreSQL abgelegt werden.

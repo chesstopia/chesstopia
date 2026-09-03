@@ -22,6 +22,7 @@ class CounterControllerIT {
 
     @Test
     void post_incrementsCounterByOne() {
+        // ACT & ASSERTIONS
         webTestClient.post()
             .uri("/api/v1/counter")
             .exchange()

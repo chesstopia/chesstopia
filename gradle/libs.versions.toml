@@ -3,12 +3,15 @@ node-gradle = "7.1.0"
 spring-boot = "4.0.6"
 spring-dependency-management = "1.1.7"
 logstash-logback-encoder = "8.0"
+mapstruct = "1.6.3"
 openapi-generator = "7.22.0"
 zonky-embedded-database = "2.8.0"
 zonky-embedded-postgres = "2.2.2"
 
 [libraries]
 logstash-logback-encoder = { group = "net.logstash.logback", name = "logstash-logback-encoder", version.ref = "logstash-logback-encoder" }
+mapstruct = { module = "org.mapstruct:mapstruct", version.ref = "mapstruct" }
+mapstruct-processor = { module = "org.mapstruct:mapstruct-processor", version.ref = "mapstruct" }
 openapi-generator-cli = { group = "org.openapitools", name = "openapi-generator-cli", version.ref = "openapi-generator" }
 zonky-embedded-database-spring-test = { group = "io.zonky.test", name = "embedded-database-spring-test", version.ref = "zonky-embedded-database" }
 zonky-embedded-postgres = { group = "io.zonky.test", name = "embedded-postgres", version.ref = "zonky-embedded-postgres" }

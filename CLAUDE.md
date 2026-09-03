@@ -55,7 +55,7 @@ pnpm --filter chesstopia-frontend test
 2. **Neue Endpunkte entstehen nie im Controller.** Sie beginnen in `docs/api/openapi.yaml`; der Controller implementiert danach das generierte Interface. Ein Controller trägt kein eigenes `@RequestMapping` ([ADR-0008](docs/adr/0008-openapi-first-codegen.md)).
 3. **Schachregeln gehören nicht ins Backend.** Zuglogik, Legalitätsprüfung und Stellungsbewertung liegen ausschließlich in `chess-engine` ([ADR-0001](docs/adr/0001-kotlin-multiplatform-chess-engine.md)).
 4. **Kein Kotlin im Backend.** Kotlin ist ausschließlich für `chess-engine` ([ADR-0001](docs/adr/0001-kotlin-multiplatform-chess-engine.md)).
-5. **Kein Lombok, kein MapStruct.** Records und moderne Sprachfeatures ersetzen sie; Mapping wird zunächst von Hand geschrieben.
+5. **Kein Lombok.** Alle vier Adapter-Mapper sind `@Mapper(componentModel = "spring")`-Interfaces mit `unmappedTargetPolicy=ERROR` ([ADR-0021](docs/adr/0021-mapstruct-fuer-adapter-mappings.md)): `PositionJsonMapper`, `WebMapper`, `EngineMapper`, `GameEntityMapper`. Der Engine-JVM-Build trägt `-java-parameters`, damit MapStruct die Kotlin-`data class`-Konstruktoren per Parametername trifft. Hand-geschriebene `default`-Methoden in einem Mapper bekommen je einen eigenen Test, die generierten Abbildungen nicht. `SquareCodec` ist ein package-private Helfer. Die Domäne selbst bleibt Records ohne Framework.
 6. **Keine Secrets im Repo — verboten ist der Wert, nicht die Datei.** Produktionskonfiguration ist versioniert (`application-prod.yml`, `docker-compose.prod.yml`, `infra/`); jeder Zugangsdatenwert darin kommt aus der Umgebung (`${VAR}`), aus Ansible (`{{ var }}`) oder aus Ansible Vault. Ein Literal an einer Secret-Stelle bricht den Build ([ADR-0017](docs/adr/0017-produktionskonfiguration-im-repo.md)).
 7. **Versionsnummern nicht in Dokumente schreiben.** Toolchain- und Abhängigkeitsversionen stehen in `gradle/libs.versions.toml`, den `build.gradle.kts` und `openapi-client/openapitools.json`. Abgeschriebene Versionen driften unbemerkt — genau so ist die bestehende „Gradle 8.x"-Falschaussage entstanden.
 
@@ -64,18 +64,23 @@ pnpm --filter chesstopia-frontend test
 ## Konventionen
 
 **Backend**
-- Package-by-Feature (`io.chesstopia.backend.<feature>`), innerhalb eines Features klassische Schichtung. Kein Hexagonal, keine eigenen Gradle-Module pro Feature.
+- Package-by-Feature (`io.chesstopia.backend.<feature>`). Das `game`-Feature ist hexagonal geschnitten (`domain` / `application` mit `port/in` + `port/out` / `adapter`) — siehe [ADR-0020](docs/adr/0020-hexagonale-architektur-und-notationsfreie-domaene.md). `counter` und `hello` bleiben klassisch geschichtet. Keine eigenen Gradle-Module pro Feature.
 - REST unter `/api/v1/`, kebab-case in Pfaden, camelCase in JSON. Ausschließlich `application/json`, kein HATEOAS.
 - Fehler als RFC-7807-`ProblemDetail` über den globalen `GlobalExceptionHandler`. 4xx ohne Logging, 5xx mit ERROR-Log.
 - Spring Security ist von Anfang an im Classpath und explizit auf permissiv konfiguriert — das ist ein bewusster Zustand, kein vergessener. Nicht entfernen.
 
 **Engine-Grenze**
-- `@JsExport` steht in `commonMain` ([ADR-0007](docs/adr/0007-jsexport-in-commonmain.md)). Exportierte Rückgabetypen sind deshalb `Array<Move>`, nicht `List<Move>`.
-- Die Konvertierung erfolgt mit `.toList()` **direkt am Engine-Aufruf**. Das `Array`-Format dringt nicht bis in die REST-Schicht.
+- Die Engine-`@JsExport`-Grenze trägt strukturierte Objekte (`Position`, `Move`, `Piece`, `Square`), **keine FEN/UCI** ([ADR-0020](docs/adr/0020-hexagonale-architektur-und-notationsfreie-domaene.md)). FEN ist im Projekt derzeit nicht in Gebrauch; erst wenn der künftige Stockfish-Adapter (ADR-0005) es braucht, entsteht eine `toFen`-Hilfe in der Engine — nie in Domäne oder API.
+- `@JsExport` steht in `commonMain` ([ADR-0007](docs/adr/0007-jsexport-in-commonmain.md)). Exportierte Sammlungen sind `Array<T>`, nicht `List<T>` (z. B. `Position.board`, `LegalMovesResult.moves`); wo eine exportierte `Array<T>` in Java-Code weiterverwendet wird (z. B. `LegalMovesResult.moves` mit CHESS-2), erfolgt die Konvertierung mit `.toList()` direkt am Engine-Aufruf.
+- Die Übersetzung Domäne ↔ Engine liegt ausschließlich im `ChessEngineAdapter`.
 
 **Tests**
+- Jeder Testkörper ist in `// ARRANGE` · `// ACT` · `// ASSERTIONS` gegliedert, in dieser Reihenfolge. Eine leere Phase entfällt; sind Act und Assertion untrennbar (Exception-Prüfung), steht `// ACT & ASSERTIONS`. Gilt für JUnit, `kotlin.test` und Vitest.
+- Kollaborateure eines Unit-Tests werden mit Mockito gemockt (`@ExtendWith(MockitoExtension.class)`, `@Mock`, `@InjectMocks`), nicht von Hand als Fake gebaut. Mockito kommt über `spring-boot-starter-test`. Stubs stehen pro Test in der `// ARRANGE`-Phase (Strict Stubs).
 - Kontext-Tests gegen die Datenbank brauchen `@AutoConfigureEmbeddedDatabase` ([ADR-0012](docs/adr/0012-embedded-postgres-fuer-tests.md)) — ohne die Annotation läuft der Test gegen die echte Datenbank.
 - Frontend-Tests laufen unter Vitest. `defineConfig` kommt in der Vitest-Konfiguration aus `vitest/config`, nicht aus `vite`. Vitest läuft ohne `globals: true` — `describe`/`it`/`expect` werden importiert.
+- Jeder Frontend-Test liegt in einem `__tests__/`-Ordner neben der getesteten Datei (`src/lib/__tests__/position.test.ts` prüft `src/lib/position.ts`). `src/test/setup.ts` ist Infrastruktur, kein Datei-Test, und bleibt.
+- Jede Frontend-Testdatei hat genau ein äußeres `describe` mit dem Basisnamen der getesteten Datei (`Chessboard.test.tsx` → `describe('Chessboard', …)`); weitere `describe`/`it` schachteln darin.
 - Welche Testebene ein Feature braucht, entscheidet [ADR-0019](docs/adr/0019-teststrategie.md); ausgeführt wird das vom Skill `/tests`. E2E ist noch nicht gebaut — der Auslöser steht im ADR.
 
 ---

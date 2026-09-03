@@ -1,38 +1,67 @@
 package io.chesstopia.engine
 
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ChessEngineTest {
 
-    private val initialFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    private val rules = RuleSet.standard()
+    private val start = standardStartPosition()
+    private val e2e4 = Move(sq(File.E, Rank.TWO), sq(File.E, Rank.FOUR))
 
-    @Test
-    fun `getLegalMoves throws NotImplementedError until engine is implemented`() {
-        assertFailsWith<NotImplementedError> {
-            getLegalMoves(initialFen, RuleSet.standard())
+    @Test fun `initialPosition liefert die Grundstellung`() {
+        // ACT & ASSERTIONS
+        assertEquals(standardStartPosition(), initialPosition(rules))
+    }
+
+    @Test fun `getLegalMoves bleibt bis CHESS-2 nicht implementiert`() {
+        // ACT & ASSERTIONS
+        assertFailsWith<NotImplementedError> { getLegalMoves(start, rules) }
+    }
+
+    @Test fun `validateMove nimmt einen mechanisch moeglichen Zug an, auch einen unschachlichen`() {
+        // ACT & ASSERTIONS
+        assertTrue(validateMove(start, e2e4, rules))
+        assertTrue(validateMove(start, Move(sq(File.A, Rank.ONE), sq(File.A, Rank.EIGHT)), rules))
+    }
+
+    @Test fun `validateMove lehnt den Zug der falschen Seite ab`() {
+        // ACT & ASSERTIONS
+        assertFalse(validateMove(start, Move(sq(File.E, Rank.SEVEN), sq(File.E, Rank.FIVE)), rules))
+    }
+
+    @Test fun `validateMove verlangt eine Zielfigur bei der Umwandlung`() {
+        // ARRANGE
+        val p = position(sq(File.E, Rank.SEVEN) to Piece(PieceType.PAWN, Color.WHITE))
+
+        // ACT & ASSERTIONS
+        assertFalse(validateMove(p, Move(sq(File.E, Rank.SEVEN), sq(File.E, Rank.EIGHT)), rules))
+        assertTrue(validateMove(p, Move(sq(File.E, Rank.SEVEN), sq(File.E, Rank.EIGHT), PieceType.QUEEN), rules))
+    }
+
+    @Test fun `applyMove wirft bei einem mechanisch unmoeglichen Zug`() {
+        // ACT & ASSERTIONS
+        assertFailsWith<IllegalArgumentException> {
+            applyMove(start, Move(sq(File.E, Rank.SEVEN), sq(File.E, Rank.FIVE)), rules)
         }
     }
 
-    @Test
-    fun `validateMove throws NotImplementedError until engine is implemented`() {
-        assertFailsWith<NotImplementedError> {
-            validateMove(initialFen, "e2e4", RuleSet.standard())
-        }
+    @Test fun `applyMove fuehrt den Zug aus`() {
+        // ACT
+        val after = applyMove(start, e2e4, rules)
+
+        // ASSERTIONS
+        assertEquals(Piece(PieceType.PAWN, Color.WHITE), after.pieceAt(sq(File.E, Rank.FOUR)))
     }
 
-    @Test
-    fun `applyMove throws NotImplementedError until engine is implemented`() {
-        assertFailsWith<NotImplementedError> {
-            applyMove(initialFen, "e2e4", RuleSet.standard())
-        }
-    }
-
-    @Test
-    fun `RuleSet standard() has expected defaults`() {
+    @Test fun `RuleSet standard hat die erwarteten Vorgaben`() {
+        // ACT
         val rs = RuleSet.standard()
+
+        // ASSERTIONS
         assertEquals(Variant.STANDARD, rs.variant)
         assertTrue(rs.enPassantEnabled)
         assertTrue(rs.castlingEnabled)

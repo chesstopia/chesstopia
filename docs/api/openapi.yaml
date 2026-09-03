@@ -26,20 +26,96 @@ paths:
               schema:
                 $ref: "#/components/schemas/CounterResponse"
 
-  /api/v1/game/board:
-    get:
-      operationId: getBoard
-      summary: Initialen Schachbrettzustand abrufen
-      description: Gibt den aktuellen Spielzustand als FEN-String zurück.
+  /api/v1/games:
+    post:
+      operationId: createGame
+      summary: Neue Partie anlegen
+      description: >
+        Legt eine Partie in der Grundstellung an und gibt sie mitsamt ihrer ID
+        zurück. Spieler werden noch nicht zugeordnet — es gibt keine Nutzer.
       tags:
         - game
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameResponse"
+
+  /api/v1/games/{gameId}:
+    get:
+      operationId: getGame
+      summary: Partie abrufen
+      description: Gibt die aktuelle Stellung der Partie als strukturiertes Objekt zurück.
+      tags:
+        - game
+      parameters:
+        - $ref: "#/components/parameters/GameId"
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BoardStateResponse"
+                $ref: "#/components/schemas/GameResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/games/{gameId}/moves:
+    get:
+      operationId: listMoves
+      summary: Zughistorie der Partie abrufen
+      description: >
+        Gibt den Move-Event-Log der Partie in Zugreihenfolge zurück
+        (ADR-0003). Aus ihm lässt sich jede Stellung rekonstruieren.
+      tags:
+        - game
+      parameters:
+        - $ref: "#/components/parameters/GameId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MoveListResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: playMove
+      summary: Zug ausführen
+      description: >
+        Führt einen Zug aus, schreibt ihn in den Move-Event-Log und gibt die
+        Partie mit der neuen Stellung zurück. Der Zug wird als Ausgangs- und
+        Zielfeld angegeben, bei einer Umwandlung zusätzlich die Zielfigur. Die
+        Legalität wird noch **nicht** geprüft — die Schach-Engine kennt derzeit
+        nur die Mechanik eines Zuges und entscheidet allein über ihre Gültigkeit.
+      tags:
+        - game
+      parameters:
+        - $ref: "#/components/parameters/GameId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameResponse"
+        "400":
+          description: Der Zug ist in dieser Stellung nicht ausführbar
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/v1/hello:
     get:
@@ -57,7 +133,157 @@ paths:
                 $ref: "#/components/schemas/HelloResponse"
 
 components:
+  parameters:
+    GameId:
+      name: gameId
+      in: path
+      required: true
+      description: ID der Partie
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    NotFound:
+      description: Die Partie existiert nicht
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+
   schemas:
+    ProblemDetail:
+      description: RFC-7807-Fehlerformat, erzeugt vom GlobalExceptionHandler
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+
+    Square:
+      type: object
+      required: [file, rank]
+      properties:
+        file: { type: string, enum: [A, B, C, D, E, F, G, H] }
+        rank: { type: string, enum: [ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT] }
+
+    Piece:
+      type: object
+      required: [type, color]
+      properties:
+        type: { type: string, enum: [KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN] }
+        color: { type: string, enum: [WHITE, BLACK] }
+
+    PlacedPiece:
+      type: object
+      required: [square, piece]
+      properties:
+        square: { $ref: "#/components/schemas/Square" }
+        piece: { $ref: "#/components/schemas/Piece" }
+
+    CastlingRights:
+      type: object
+      required: [whiteKingSide, whiteQueenSide, blackKingSide, blackQueenSide]
+      properties:
+        whiteKingSide: { type: boolean }
+        whiteQueenSide: { type: boolean }
+        blackKingSide: { type: boolean }
+        blackQueenSide: { type: boolean }
+
+    Position:
+      description: Eine Stellung als strukturiertes Objekt — keine FEN.
+      type: object
+      required: [board, sideToMove, castlingRights, halfmoveClock, fullmoveNumber]
+      properties:
+        board:
+          type: array
+          description: Nur die besetzten Felder.
+          items: { $ref: "#/components/schemas/PlacedPiece" }
+        sideToMove: { type: string, enum: [WHITE, BLACK] }
+        castlingRights: { $ref: "#/components/schemas/CastlingRights" }
+        enPassantTarget: { $ref: "#/components/schemas/Square" }
+        halfmoveClock: { type: integer, format: int32 }
+        fullmoveNumber: { type: integer, format: int32 }
+
+    GameResponse:
+      type: object
+      required:
+        - id
+        - position
+        - status
+        - moveCount
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID der Partie
+        position: { $ref: "#/components/schemas/Position" }
+        status:
+          type: string
+          description: Zustand der Partie
+          enum: [ONGOING, COMPLETED]
+          example: ONGOING
+        moveCount:
+          type: integer
+          format: int32
+          description: Anzahl der bisher gespielten Halbzüge
+          example: 0
+
+    MoveRequest:
+      type: object
+      description: >
+        Ein Zug als Ursprungs- und Zielfeld (plus optionaler Umwandlungsfigur).
+
+        Bewusst ohne `pattern`: Was ein gültiger Zug ist, entscheidet die
+        Schach-Engine und sonst niemand (ADR-0001).
+      required:
+        - from
+        - to
+      properties:
+        from: { $ref: "#/components/schemas/Square" }
+        to: { $ref: "#/components/schemas/Square" }
+        promotion:
+          type: string
+          description: Zielfigur bei einer Umwandlung, sonst weggelassen.
+          enum: [QUEEN, ROOK, BISHOP, KNIGHT]
+
+    MoveRecord:
+      type: object
+      required:
+        - moveNumber
+        - move
+        - positionAfter
+        - playedAt
+      properties:
+        moveNumber:
+          type: integer
+          format: int32
+          description: Fortlaufende Nummer des Halbzugs, beginnend bei 1
+          example: 1
+        move: { $ref: "#/components/schemas/MoveRequest" }
+        positionAfter: { $ref: "#/components/schemas/Position" }
+        playedAt:
+          type: string
+          format: date-time
+
+    MoveListResponse:
+      type: object
+      required:
+        - moves
+      properties:
+        moves:
+          type: array
+          items:
+            $ref: "#/components/schemas/MoveRecord"
+
     CounterResponse:
       type: object
       required:
@@ -68,16 +294,6 @@ components:
           format: int32
           description: Der Zählerstand nach der Erhöhung
           example: 1
-
-    BoardStateResponse:
-      type: object
-      required:
-        - fen
-      properties:
-        fen:
-          type: string
-          description: Aktuelle Stellung in FEN-Notation
-          example: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
     HelloResponse:
       type: object

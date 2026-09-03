@@ -13,5 +13,7 @@ class ChessTopiaApplicationTests {
 
     @Test
     void contextLoads() {
+        // ACT & ASSERTIONS
+        // Der Anwendungskontext startet — oder der Test schlägt fehl.
     }
 }

@@ -43,12 +43,12 @@ Zwei Generatorläufe, zwei Werkzeuge, eine Quelle. Beide Ausgabeverzeichnisse si
 
 ## Invarianten
 
-1. **`operationId` ist der Methodenname** — auf beiden Seiten. `getBoard` wird zu `GameApi.getBoard()` in Java *und* in TypeScript. Ein Umbenennen bricht die `@Override`-Methode im Controller und jeden Frontend-Aufruf gleichzeitig.
+1. **`operationId` ist der Methodenname** — auf beiden Seiten. `playMove` wird zu `GameApi.playMove()` in Java *und* in TypeScript. Ein Umbenennen bricht die `@Override`-Methode im Controller und jeden Frontend-Aufruf gleichzeitig.
 2. **`tags` bestimmt den Interface-Namen.** Der Generator läuft mit `useTags=true`: Tag `game` → `GameApi`. Ein geänderter Tag benennt die Klasse auf beiden Seiten um.
 3. **Der Controller trägt kein eigenes `@RequestMapping`.** Der Pfad steht in der YAML; ein Pfad im Controller wäre eine zweite Wahrheit. `checkDocs` prüft das und schlägt fehl — die Invariante ist nicht nur vereinbart, sondern erzwungen.
 4. **Der Controller enthält keine Logik.** Er implementiert das generierte Interface und delegiert an einen Service. `GameController` ist das Muster.
 5. **`interfaceOnly=true, skipDefaultInterface=true`** — der Generator erzeugt keine Default-Implementierung. Ein nicht implementierter Endpunkt bricht die Kompilierung, statt zur Laufzeit 501 zu liefern. Das ist gewollt.
-6. **Konventionen:** Pfade unter `/api/v1/`, kebab-case; JSON-Felder camelCase; ausschließlich `application/json`; Fehler als RFC-7807-`ProblemDetail` über den `GlobalExceptionHandler`.
+6. **Konventionen:** Pfade unter `/api/v1/`, kebab-case; JSON-Felder camelCase; Nutzlast ausschließlich `application/json`, Fehler als RFC-7807-`ProblemDetail` unter `application/problem+json` über den `GlobalExceptionHandler`.
 
 ## Einstiegspunkte
 

@@ -70,6 +70,8 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("io.chesstopia:chess-engine")
     implementation(libs.logstash.logback.encoder)
+    implementation(libs.mapstruct)
+    annotationProcessor(libs.mapstruct.processor)
 
     runtimeOnly("org.postgresql:postgresql")
 
@@ -90,7 +92,11 @@ dependencies {
 
 tasks.withType<JavaCompile> {
     // Suppress deprecation warnings from generated OpenAPI sources (e.g. @Nullable migration in Spring 7)
-    options.compilerArgs.addAll(listOf("-Xlint:-deprecation"))
+    options.compilerArgs.addAll(listOf(
+        "-Xlint:-deprecation",
+        "-Amapstruct.defaultComponentModel=spring",
+        "-Amapstruct.unmappedTargetPolicy=ERROR",
+    ))
 }
 
 tasks.withType<Test> {

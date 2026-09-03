@@ -1,17 +1,21 @@
 ---
 type: adr
-status: accepted
-implementation: complete
-updated: 2026-08-08
+status: partially-superseded
+implementation: partial
+updated: 2026-08-10
 supersedes: []
 verifies:
   - 'settings.gradle.kts :: includeBuild("chess-engine")'
+  - 'chess-engine/src/commonMain/kotlin/io/chesstopia/engine/ChessEngine.kt :: TODO("Chess rule logic not yet implemented'
+  - 'chesstopia-backend/src/main/java/io/chesstopia/backend/game/adapter/out/engine/ChessEngineAdapter.java :: ChessEngineKt.applyMove'
 ---
 
 # ADR-0001: Kotlin Multiplatform für die geteilte Schach-Validierungslogik
 
 ## Status
 Accepted
+
+Partially superseded by [ADR-0020](0020-hexagonale-architektur-und-notationsfreie-domaene.md): Die Engine-`@JsExport`-Grenze trägt seit CHESS-13 strukturierte `Position`/`Move`-Objekte statt FEN-Strings. Unverändert gilt: Schachregeln liegen ausschließlich in `chess-engine`.
 
 ## Context
 Die Schach-Regelvalidierung (legale Züge, Schach/Matt/Patt-Erkennung, Sonderregeln wie En passant, Rochade, Promotion) ist komplex und muss sowohl im Backend (Spring Boot, JVM) als auch im Frontend (React, Browser) vorhanden sein. Das Backend ist die autoritäre Instanz; das Frontend braucht die Logik für sofortiges UX-Feedback (legale Züge hervorheben, Figuren bewegen ohne Server-Round-Trip).

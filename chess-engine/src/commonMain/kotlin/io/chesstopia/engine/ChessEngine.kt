@@ -38,39 +38,34 @@ data class LegalMovesResult(
 }
 
 /**
- * Returns all legal moves for the side to move in the given Stellung.
- *
- * @param fen     The board state in FEN notation (canonical interchange format).
- * @param ruleSet The active rule configuration for the Partie.
- * @return        Legal moves plus check/checkmate/stalemate flags.
+ * Die Grundstellung für eine neue Partie mit diesem RuleSet.
+ * Chess960 & Co. folgen mit ihrer eigenen Aufstellung — heute nur Standard.
  */
 @JsExport
-fun getLegalMoves(fen: String, ruleSet: RuleSet): LegalMovesResult {
+fun initialPosition(ruleSet: RuleSet): Position = standardStartPosition()
+
+/**
+ * Alle legalen Züge der Seite am Zug. Noch nicht implementiert (CHESS-2).
+ */
+@JsExport
+fun getLegalMoves(position: Position, ruleSet: RuleSet): LegalMovesResult {
     TODO("Chess rule logic not yet implemented — tracked in CHESS-2")
 }
 
 /**
- * Validates whether a move (given in UCI notation) is legal in the given Stellung.
- *
- * @param fen      The board state in FEN notation.
- * @param uciMove  The move to validate in UCI notation, e.g. "e2e4", "e7e8q".
- * @param ruleSet  The active rule configuration for the Partie.
- * @return         true if the move is legal, false otherwise.
+ * Ob der Zug in dieser Stellung MECHANISCH ausführbar ist — nicht, ob er legal ist.
+ * Gangart, Fesselung und Schach werden nicht geprüft (CHESS-2).
  */
 @JsExport
-fun validateMove(fen: String, uciMove: String, ruleSet: RuleSet): Boolean {
-    TODO("Chess rule logic not yet implemented — tracked in CHESS-2")
-}
+fun validateMove(position: Position, move: Move, ruleSet: RuleSet): Boolean =
+    position.rejectReason(move) == null
 
 /**
- * Applies a legal move to a Stellung and returns the resulting FEN.
- *
- * @param fen      The current board state in FEN notation.
- * @param uciMove  The move to apply in UCI notation.
- * @param ruleSet  The active rule configuration for the Partie.
- * @return         The FEN string of the Stellung after the move.
+ * Führt den Zug aus und liefert die neue Stellung. Prüft die Legalität nicht.
+ * @throws IllegalArgumentException wenn der Zug nicht mechanisch ausführbar ist.
  */
 @JsExport
-fun applyMove(fen: String, uciMove: String, ruleSet: RuleSet): String {
-    TODO("Chess rule logic not yet implemented — tracked in CHESS-2")
+fun applyMove(position: Position, move: Move, ruleSet: RuleSet): Position {
+    position.rejectReason(move)?.let { throw IllegalArgumentException(it) }
+    return position.play(move)
 }

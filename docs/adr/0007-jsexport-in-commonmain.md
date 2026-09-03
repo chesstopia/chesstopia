@@ -13,6 +13,8 @@ verifies:
 ## Status
 Accepted
 
+Ergänzung ([ADR-0020](0020-hexagonale-architektur-und-notationsfreie-domaene.md)): Der `@JsExport`-Typ `Position` folgt derselben Regel — `board` ist `Array<PlacedPiece>` (nur die besetzten Felder), nicht `List` und nicht `Map`. `Map` über `@JsExport` erzeugt in der `.d.ts` einen Wrapper-Typ statt eines nativen JS-Objekts; die dünne `PlacedPiece`-Liste hat dieselbe Form wie der REST-Kontrakt und die Persistenz.
+
 ## Context
 Die Schach-Engine ist ein KMP-Modul, das für JVM (Spring Boot) und JS (React) kompiliert wird.
 Alle exportierten Typen (`Move`, `RuleSet`, `Variant`, `LegalMovesResult`) und Funktionen tragen

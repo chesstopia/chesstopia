@@ -7,6 +7,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
@@ -18,6 +19,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     public ProblemDetail handleNoResourceFound(NoResourceFoundException ex) {
         return ex.getBody();
+    }
+
+    // Die Ressource gibt es nicht — 404, kein Logging. Ein Tippfehler in einer
+    // ID ist kein Serverproblem.
+    @ExceptionHandler(NotFoundException.class)
+    public ProblemDetail handleNotFound(NotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    // Ein Pfadsegment lässt sich nicht in den erwarteten Typ wandeln — etwa
+    // etwas, das keine UUID ist. Ohne diesen Handler landete der Fall beim
+    // Auffangbecken darunter und meldete 500 samt ERROR-Log für einen
+    // Clientfehler.
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST,
+            "'%s' ist kein gültiger Wert für %s".formatted(ex.getValue(), ex.getName())
+        );
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
