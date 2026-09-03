@@ -7,7 +7,7 @@ supersedes: []
 verifies:
   - 'chesstopia-backend/src/main/resources/db/migration/V2__create_partie_und_zug.sql :: CREATE TABLE zug'
   - 'chesstopia-backend/src/main/resources/db/migration/V2__create_partie_und_zug.sql :: position_snapshot'
-  - 'chesstopia-backend/src/main/java/io/chesstopia/backend/game/adapter/out/persistence/PartieEntity.java :: position_snapshot'
+  - 'chesstopia-backend/src/main/java/io/chesstopia/backend/game/adapter/out/persistence/entities/PartieEntity.java :: position_snapshot'
 ---
 
 # ADR-0003: Move-Event-Log als Persistenzmodell für Partien

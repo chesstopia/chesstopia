@@ -15,7 +15,9 @@ verifies:
 ## Status
 Accepted
 
-Ergänzung: `EngineMapper` ist seit der `PlacedPiece[]`-Umstellung ([ADR-0020](0020-hexagonale-architektur-und-notationsfreie-domaene.md)) ebenfalls ein `@Mapper`-Interface. Beide Gründe für die ursprüngliche Handarbeit sind entfallen: die Brett-Brücke `Array<Piece?>` ↔ `Map` gibt es nicht mehr (nur noch `PlacedPiece[]` ↔ `Map` als zwei `default`-Methoden), und „MapStruct sieht das Kotlin-`data class`-Property-Modell nicht sauber" ließ sich mit `-java-parameters` im Engine-JVM-Build lösen — MapStruct trifft die Primärkonstruktoren dann per Parametername. Damit sind drei der vier Adapter-Mapper MapStruct; nur `GameEntityMapper` (package-private JPA-Entities) bleibt von Hand.
+Ergänzung: `EngineMapper` ist seit der `PlacedPiece[]`-Umstellung ([ADR-0020](0020-hexagonale-architektur-und-notationsfreie-domaene.md)) ebenfalls ein `@Mapper`-Interface. Beide Gründe für die ursprüngliche Handarbeit sind entfallen: die Brett-Brücke `Array<Piece?>` ↔ `Map` gibt es nicht mehr (nur noch `PlacedPiece[]` ↔ `Map` als zwei `default`-Methoden), und „MapStruct sieht das Kotlin-`data class`-Property-Modell nicht sauber" ließ sich mit `-java-parameters` im Engine-JVM-Build lösen — MapStruct trifft die Primärkonstruktoren dann per Parametername. Damit sind drei der vier Adapter-Mapper MapStruct; nur `GameEntityMapper` bleibt von Hand.
+
+Ergänzung: Seit dem Split des Persistenz-Packages in `entities/` und `mapper/` sind `PartieEntity`/`ZugEntity` `public` mit `public`-Accessoren — die im Kontext genannte package-private-Hürde besteht nicht mehr. `GameEntityMapper` bleibt trotzdem von Hand: die flache `Move`-Zerlegung (`from_square`/`to_square`/`promotion`) und die `Game`-Aggregatmontage im `GamePersistenceAdapter` sind der Grund, nicht die Sichtbarkeit.
 
 ## Context
 

@@ -1,4 +1,4 @@
-package io.chesstopia.backend.game.adapter.out.persistence;
+package io.chesstopia.backend.game.adapter.out.persistence.entities;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,7 +17,7 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "zug")
-class ZugEntity {
+public class ZugEntity {
 
     @Id
     private UUID id;
@@ -47,77 +47,77 @@ class ZugEntity {
     @Column(name = "time_spent_ms")
     private Long timeSpentMs;
 
-    protected ZugEntity() {}
+    public ZugEntity() {}
 
-    UUID getId() {
+    public UUID getId() {
         return id;
     }
 
-    void setId(UUID id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
-    UUID getPartieId() {
+    public UUID getPartieId() {
         return partieId;
     }
 
-    void setPartieId(UUID partieId) {
+    public void setPartieId(UUID partieId) {
         this.partieId = partieId;
     }
 
-    int getMoveNumber() {
+    public int getMoveNumber() {
         return moveNumber;
     }
 
-    void setMoveNumber(int moveNumber) {
+    public void setMoveNumber(int moveNumber) {
         this.moveNumber = moveNumber;
     }
 
-    String getFromSquare() {
+    public String getFromSquare() {
         return fromSquare;
     }
 
-    void setFromSquare(String fromSquare) {
+    public void setFromSquare(String fromSquare) {
         this.fromSquare = fromSquare;
     }
 
-    String getToSquare() {
+    public String getToSquare() {
         return toSquare;
     }
 
-    void setToSquare(String toSquare) {
+    public void setToSquare(String toSquare) {
         this.toSquare = toSquare;
     }
 
-    String getPromotion() {
+    public String getPromotion() {
         return promotion;
     }
 
-    void setPromotion(String promotion) {
+    public void setPromotion(String promotion) {
         this.promotion = promotion;
     }
 
-    PositionJson getPositionAfter() {
+    public PositionJson getPositionAfter() {
         return positionAfter;
     }
 
-    void setPositionAfter(PositionJson positionAfter) {
+    public void setPositionAfter(PositionJson positionAfter) {
         this.positionAfter = positionAfter;
     }
 
-    OffsetDateTime getPlayedAt() {
+    public OffsetDateTime getPlayedAt() {
         return playedAt;
     }
 
-    void setPlayedAt(OffsetDateTime playedAt) {
+    public void setPlayedAt(OffsetDateTime playedAt) {
         this.playedAt = playedAt;
     }
 
-    Long getTimeSpentMs() {
+    public Long getTimeSpentMs() {
         return timeSpentMs;
     }
 
-    void setTimeSpentMs(Long timeSpentMs) {
+    public void setTimeSpentMs(Long timeSpentMs) {
         this.timeSpentMs = timeSpentMs;
     }
 }

@@ -1,5 +1,11 @@
 package io.chesstopia.backend.game.adapter.out.persistence;
 
+import io.chesstopia.backend.game.adapter.out.persistence.entities.PartieEntity;
+import io.chesstopia.backend.game.adapter.out.persistence.entities.PartieJpaRepository;
+import io.chesstopia.backend.game.adapter.out.persistence.entities.ZugEntity;
+import io.chesstopia.backend.game.adapter.out.persistence.entities.ZugJpaRepository;
+import io.chesstopia.backend.game.adapter.out.persistence.mapper.GameEntityMapper;
+import io.chesstopia.backend.game.adapter.out.persistence.mapper.PositionJsonMapper;
 import io.chesstopia.backend.game.application.port.out.Games;
 import io.chesstopia.backend.game.domain.Game;
 import io.chesstopia.backend.game.domain.GameId;

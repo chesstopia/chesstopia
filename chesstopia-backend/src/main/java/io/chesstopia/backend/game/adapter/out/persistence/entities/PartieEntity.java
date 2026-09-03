@@ -1,4 +1,4 @@
-package io.chesstopia.backend.game.adapter.out.persistence;
+package io.chesstopia.backend.game.adapter.out.persistence.entities;
 
 import io.chesstopia.backend.game.domain.GameStatus;
 import io.chesstopia.backend.game.domain.Variant;
@@ -20,7 +20,7 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "partie")
-class PartieEntity {
+public class PartieEntity {
 
     @Id
     private UUID id;
@@ -49,69 +49,69 @@ class PartieEntity {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    protected PartieEntity() {}
+    public PartieEntity() {}
 
-    UUID getId() {
+    public UUID getId() {
         return id;
     }
 
-    void setId(UUID id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
-    Variant getVariant() {
+    public Variant getVariant() {
         return variant;
     }
 
-    void setVariant(Variant variant) {
+    public void setVariant(Variant variant) {
         this.variant = variant;
     }
 
-    boolean isEnPassantEnabled() {
+    public boolean isEnPassantEnabled() {
         return enPassantEnabled;
     }
 
-    void setEnPassantEnabled(boolean enPassantEnabled) {
+    public void setEnPassantEnabled(boolean enPassantEnabled) {
         this.enPassantEnabled = enPassantEnabled;
     }
 
-    boolean isCastlingEnabled() {
+    public boolean isCastlingEnabled() {
         return castlingEnabled;
     }
 
-    void setCastlingEnabled(boolean castlingEnabled) {
+    public void setCastlingEnabled(boolean castlingEnabled) {
         this.castlingEnabled = castlingEnabled;
     }
 
-    GameStatus getStatus() {
+    public GameStatus getStatus() {
         return status;
     }
 
-    void setStatus(GameStatus status) {
+    public void setStatus(GameStatus status) {
         this.status = status;
     }
 
-    PositionJson getPositionSnapshot() {
+    public PositionJson getPositionSnapshot() {
         return positionSnapshot;
     }
 
-    void setPositionSnapshot(PositionJson positionSnapshot) {
+    public void setPositionSnapshot(PositionJson positionSnapshot) {
         this.positionSnapshot = positionSnapshot;
     }
 
-    OffsetDateTime getCreatedAt() {
+    public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
 
-    void setCreatedAt(OffsetDateTime createdAt) {
+    public void setCreatedAt(OffsetDateTime createdAt) {
         this.createdAt = createdAt;
     }
 
-    OffsetDateTime getUpdatedAt() {
+    public OffsetDateTime getUpdatedAt() {
         return updatedAt;
     }
 
-    void setUpdatedAt(OffsetDateTime updatedAt) {
+    public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
 }

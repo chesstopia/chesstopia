@@ -1,5 +1,7 @@
-package io.chesstopia.backend.game.adapter.out.persistence;
+package io.chesstopia.backend.game.adapter.out.persistence.mapper;
 
+import io.chesstopia.backend.game.adapter.out.persistence.entities.PositionJson;
+import io.chesstopia.backend.game.adapter.out.persistence.entities.ZugEntity;
 import io.chesstopia.backend.game.domain.Move;
 import io.chesstopia.backend.game.domain.PieceType;
 import io.chesstopia.backend.game.domain.Ply;
@@ -11,21 +13,20 @@ import org.springframework.stereotype.Component;
  * das verschachtelte {@link Move}; {@code positionAfter} geht als lesbares
  * {@link PositionJson} über den {@link PositionJsonMapper}.
  *
- * Von Hand geschrieben statt MapStruct: MapStruct erkennt an den
- * package-private Accessoren der Entities keine Properties, und die flache
- * {@code Move}-Zerlegung braucht ohnehin Ausdrücke. Die Aggregat-Montage
- * ({@code Game}) liegt im {@link GamePersistenceAdapter}.
+ * Von Hand geschrieben statt MapStruct: die flache {@code Move}-Zerlegung braucht
+ * Ausdrücke, und die Aggregat-Montage ({@code Game}) liegt im
+ * {@code GamePersistenceAdapter}.
  */
 @Component
-final class GameEntityMapper {
+public final class GameEntityMapper {
 
     private final PositionJsonMapper positionJsonMapper;
 
-    GameEntityMapper(PositionJsonMapper positionJsonMapper) {
+    public GameEntityMapper(PositionJsonMapper positionJsonMapper) {
         this.positionJsonMapper = positionJsonMapper;
     }
 
-    ZugEntity toEntity(Ply ply) {
+    public ZugEntity toEntity(Ply ply) {
         Move move = ply.move();
         ZugEntity zug = new ZugEntity();
         zug.setMoveNumber(ply.number());
@@ -37,7 +38,7 @@ final class GameEntityMapper {
         return zug;
     }
 
-    Ply toPly(ZugEntity zug) {
+    public Ply toPly(ZugEntity zug) {
         Move move = new Move(
             SquareCodec.parse(zug.getFromSquare()),
             SquareCodec.parse(zug.getToSquare()),

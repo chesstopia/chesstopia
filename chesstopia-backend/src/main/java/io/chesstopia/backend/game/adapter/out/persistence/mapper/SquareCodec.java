@@ -1,4 +1,4 @@
-package io.chesstopia.backend.game.adapter.out.persistence;
+package io.chesstopia.backend.game.adapter.out.persistence.mapper;
 
 import io.chesstopia.backend.game.domain.File;
 import io.chesstopia.backend.game.domain.Rank;

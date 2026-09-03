@@ -1,6 +1,7 @@
-package io.chesstopia.backend.game.adapter.out.persistence;
+package io.chesstopia.backend.game.adapter.out.persistence.mapper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.chesstopia.backend.game.adapter.out.persistence.entities.PositionJson;
 import io.chesstopia.backend.game.domain.*;
 import org.junit.jupiter.api.Test;
 import java.util.Map;

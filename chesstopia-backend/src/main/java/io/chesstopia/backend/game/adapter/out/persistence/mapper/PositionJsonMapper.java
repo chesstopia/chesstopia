@@ -1,6 +1,7 @@
-package io.chesstopia.backend.game.adapter.out.persistence;
+package io.chesstopia.backend.game.adapter.out.persistence.mapper;
 
-import io.chesstopia.backend.game.adapter.out.persistence.PositionJson.PlacedPieceJson;
+import io.chesstopia.backend.game.adapter.out.persistence.entities.PositionJson;
+import io.chesstopia.backend.game.adapter.out.persistence.entities.PositionJson.PlacedPieceJson;
 import io.chesstopia.backend.game.domain.Color;
 import io.chesstopia.backend.game.domain.Piece;
 import io.chesstopia.backend.game.domain.PieceType;

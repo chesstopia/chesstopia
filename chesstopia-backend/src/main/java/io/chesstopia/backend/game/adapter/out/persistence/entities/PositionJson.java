@@ -1,4 +1,4 @@
-package io.chesstopia.backend.game.adapter.out.persistence;
+package io.chesstopia.backend.game.adapter.out.persistence.entities;
 
 import java.util.List;
 
