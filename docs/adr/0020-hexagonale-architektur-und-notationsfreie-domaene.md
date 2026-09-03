@@ -5,7 +5,7 @@ implementation: partial
 updated: 2026-09-02
 supersedes: ['0013']
 verifies:
-  - 'chesstopia-backend/src/main/java/io/chesstopia/backend/game/adapter/out/engine/ChessRulesAdapter.java :: implements ChessRules'
+  - 'chesstopia-backend/src/main/java/io/chesstopia/backend/game/adapter/out/engine/ChessEngineAdapter.java :: implements ChessEngine'
   - 'docs/api/openapi.yaml :: PlacedPiece'
 ---
 
