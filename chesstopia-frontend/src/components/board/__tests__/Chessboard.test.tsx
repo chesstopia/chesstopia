@@ -33,166 +33,168 @@ function glyphs(container: HTMLElement): string[] {
 }
 
 describe('Chessboard', () => {
-  it('rendert 64 Felder', () => {
-    // ACT
-    const { container } = render(<Chessboard board={INITIAL} />);
+  describe('Darstellung', () => {
+    it('rendert 64 Felder', () => {
+      // ACT
+      const { container } = render(<Chessboard board={INITIAL} />);
 
-    // ASSERTIONS
-    expect(container.querySelector('div')?.children).toHaveLength(64);
+      // ASSERTIONS
+      expect(container.querySelector('div')?.children).toHaveLength(64);
+    });
+
+    it('rendert die Grundstellung mit 32 Figuren', () => {
+      // ACT
+      const { container } = render(<Chessboard board={INITIAL} />);
+
+      // ASSERTIONS
+      expect(glyphs(container)).toHaveLength(32);
+      expect(screen.getAllByText('♟')).toHaveLength(8);
+      expect(screen.getAllByText('♙')).toHaveLength(8);
+      expect(screen.getAllByText('♔')).toHaveLength(1);
+    });
+
+    it('setzt Schwarz oben und Weiß unten', () => {
+      // ACT
+      const { container } = render(<Chessboard board={INITIAL} />);
+      const all = glyphs(container);
+
+      // ASSERTIONS
+      // board[0] ist Reihe 8 — die schwarze Grundreihe. Der schwarze König steht
+      // vor allen weißen Figuren, sonst ist das Brett gespiegelt.
+      expect(all.indexOf('♚')).toBeLessThan(all.indexOf('♔'));
+    });
+
+    it('rendert ein leeres Brett ohne Figuren, aber mit allen Feldern', () => {
+      // ACT
+      const { container } = render(<Chessboard board={EMPTY} />);
+
+      // ASSERTIONS
+      expect(container.querySelector('div')?.children).toHaveLength(64);
+      expect(glyphs(container)).toHaveLength(0);
+    });
+
+    it('rendert eine Teilstellung ohne die fehlenden Felder zu verlieren', () => {
+      // Randfall aus ADR-0019: leere Felder in einer Reihe zählen nicht als Figuren.
+
+      // ACT
+      const { container } = render(<Chessboard board={KINGS_ONLY} />);
+
+      // ASSERTIONS
+      expect(container.querySelector('div')?.children).toHaveLength(64);
+      expect(glyphs(container)).toEqual(['♚', '♔']);
+    });
   });
 
-  it('rendert die Grundstellung mit 32 Figuren', () => {
-    // ACT
-    const { container } = render(<Chessboard board={INITIAL} />);
+  describe('Figuren bewegen', () => {
+    function setup(props: Partial<Parameters<typeof Chessboard>[0]> = {}) {
+      const onMove = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <Chessboard board={INITIAL} sideToMove="w" onMove={onMove} {...props} />
+      );
+      return { onMove, user };
+    }
 
-    // ASSERTIONS
-    expect(glyphs(container)).toHaveLength(32);
-    expect(screen.getAllByText('♟')).toHaveLength(8);
-    expect(screen.getAllByText('♙')).toHaveLength(8);
-    expect(screen.getAllByText('♔')).toHaveLength(1);
-  });
+    /** Aufnehmen, überfahren, ablegen — die Geste in drei Zeigerschritten. */
+    async function drag(
+      user: ReturnType<typeof userEvent.setup>,
+      from: HTMLElement,
+      to: HTMLElement
+    ) {
+      await user.pointer([
+        { keys: '[MouseLeft>]', target: from },
+        { target: to },
+        { keys: '[/MouseLeft]', target: to },
+      ]);
+    }
 
-  it('setzt Schwarz oben und Weiß unten', () => {
-    // ACT
-    const { container } = render(<Chessboard board={INITIAL} />);
-    const all = glyphs(container);
+    it('meldet den gezogenen Zug mit Start- und Zielfeld', async () => {
+      // ARRANGE
+      const { onMove, user } = setup();
 
-    // ASSERTIONS
-    // board[0] ist Reihe 8 — die schwarze Grundreihe. Der schwarze König steht
-    // vor allen weißen Figuren, sonst ist das Brett gespiegelt.
-    expect(all.indexOf('♚')).toBeLessThan(all.indexOf('♔'));
-  });
+      // ACT
+      await drag(user, screen.getByLabelText('e2'), screen.getByLabelText('e4'));
 
-  it('rendert ein leeres Brett ohne Figuren, aber mit allen Feldern', () => {
-    // ACT
-    const { container } = render(<Chessboard board={EMPTY} />);
+      // ASSERTIONS
+      expect(onMove).toHaveBeenCalledExactlyOnceWith('e2', 'e4');
+    });
 
-    // ASSERTIONS
-    expect(container.querySelector('div')?.children).toHaveLength(64);
-    expect(glyphs(container)).toHaveLength(0);
-  });
+    it('meldet nichts, wenn die Figur auf ihrem Feld abgelegt wird', async () => {
+      // ARRANGE
+      const { onMove, user } = setup();
 
-  it('rendert eine Teilstellung ohne die fehlenden Felder zu verlieren', () => {
-    // Randfall aus ADR-0019: leere Felder in einer Reihe zählen nicht als Figuren.
+      // ACT
+      await drag(user, screen.getByLabelText('e2'), screen.getByLabelText('e2'));
 
-    // ACT
-    const { container } = render(<Chessboard board={KINGS_ONLY} />);
+      // ASSERTIONS
+      expect(onMove).not.toHaveBeenCalled();
+    });
 
-    // ASSERTIONS
-    expect(container.querySelector('div')?.children).toHaveLength(64);
-    expect(glyphs(container)).toEqual(['♚', '♔']);
-  });
-});
+    it('lässt die Figur der wartenden Seite nicht anfassen', async () => {
+      // Sonst erzeugt die Oberfläche einen Zug, den das Backend nur ablehnen kann.
 
-describe('Chessboard — Figuren bewegen', () => {
-  function setup(props: Partial<Parameters<typeof Chessboard>[0]> = {}) {
-    const onMove = vi.fn();
-    const user = userEvent.setup();
-    render(
-      <Chessboard board={INITIAL} sideToMove="w" onMove={onMove} {...props} />
-    );
-    return { onMove, user };
-  }
+      // ARRANGE
+      const { onMove, user } = setup();
 
-  /** Aufnehmen, überfahren, ablegen — die Geste in drei Zeigerschritten. */
-  async function drag(
-    user: ReturnType<typeof userEvent.setup>,
-    from: HTMLElement,
-    to: HTMLElement
-  ) {
-    await user.pointer([
-      { keys: '[MouseLeft>]', target: from },
-      { target: to },
-      { keys: '[/MouseLeft]', target: to },
-    ]);
-  }
+      // ACT
+      await drag(user, screen.getByLabelText('e7'), screen.getByLabelText('e5'));
 
-  it('meldet den gezogenen Zug mit Start- und Zielfeld', async () => {
-    // ARRANGE
-    const { onMove, user } = setup();
+      // ASSERTIONS
+      expect(onMove).not.toHaveBeenCalled();
+    });
 
-    // ACT
-    await drag(user, screen.getByLabelText('e2'), screen.getByLabelText('e4'));
+    it('lässt ein leeres Feld nicht anfassen', async () => {
+      // ARRANGE
+      const { onMove, user } = setup();
 
-    // ASSERTIONS
-    expect(onMove).toHaveBeenCalledExactlyOnceWith('e2', 'e4');
-  });
+      // ACT
+      await drag(user, screen.getByLabelText('e4'), screen.getByLabelText('e5'));
 
-  it('meldet nichts, wenn die Figur auf ihrem Feld abgelegt wird', async () => {
-    // ARRANGE
-    const { onMove, user } = setup();
+      // ASSERTIONS
+      expect(onMove).not.toHaveBeenCalled();
+    });
 
-    // ACT
-    await drag(user, screen.getByLabelText('e2'), screen.getByLabelText('e2'));
+    it('meldet nichts, während ein Zug noch läuft', async () => {
+      // ARRANGE
+      const { onMove, user } = setup({ disabled: true });
 
-    // ASSERTIONS
-    expect(onMove).not.toHaveBeenCalled();
-  });
+      // ACT
+      await drag(user, screen.getByLabelText('e2'), screen.getByLabelText('e4'));
 
-  it('lässt die Figur der wartenden Seite nicht anfassen', async () => {
-    // Sonst erzeugt die Oberfläche einen Zug, den das Backend nur ablehnen kann.
+      // ASSERTIONS
+      expect(onMove).not.toHaveBeenCalled();
+    });
 
-    // ARRANGE
-    const { onMove, user } = setup();
+    it('bricht ab, wenn außerhalb des Bretts losgelassen wird', async () => {
+      // Und lässt danach nichts kleben: Der nächste Zeigerdruck auf ein Feld darf
+      // nicht als Abschluss des alten Zuges gelten.
 
-    // ACT
-    await drag(user, screen.getByLabelText('e7'), screen.getByLabelText('e5'));
+      // ARRANGE
+      const { onMove, user } = setup();
 
-    // ASSERTIONS
-    expect(onMove).not.toHaveBeenCalled();
-  });
+      // ACT & ASSERTIONS
+      await user.pointer([
+        { keys: '[MouseLeft>]', target: screen.getByLabelText('e2') },
+        { keys: '[/MouseLeft]', target: document.body },
+      ]);
+      expect(onMove).not.toHaveBeenCalled();
 
-  it('lässt ein leeres Feld nicht anfassen', async () => {
-    // ARRANGE
-    const { onMove, user } = setup();
+      await user.pointer({ target: screen.getByLabelText('e4') });
+      await user.pointer({ keys: '[/MouseLeft]', target: screen.getByLabelText('e4') });
+      expect(onMove).not.toHaveBeenCalled();
+    });
 
-    // ACT
-    await drag(user, screen.getByLabelText('e4'), screen.getByLabelText('e5'));
+    it('hebt das aufgenommene Feld hervor und lässt es beim Ablegen wieder los', async () => {
+      // ARRANGE
+      const { user } = setup();
+      const from = screen.getByLabelText('e2');
 
-    // ASSERTIONS
-    expect(onMove).not.toHaveBeenCalled();
-  });
+      // ACT & ASSERTIONS
+      await user.pointer({ keys: '[MouseLeft>]', target: from });
+      expect(from.className).toContain('ring-sky-400');
 
-  it('meldet nichts, während ein Zug noch läuft', async () => {
-    // ARRANGE
-    const { onMove, user } = setup({ disabled: true });
-
-    // ACT
-    await drag(user, screen.getByLabelText('e2'), screen.getByLabelText('e4'));
-
-    // ASSERTIONS
-    expect(onMove).not.toHaveBeenCalled();
-  });
-
-  it('bricht ab, wenn außerhalb des Bretts losgelassen wird', async () => {
-    // Und lässt danach nichts kleben: Der nächste Zeigerdruck auf ein Feld darf
-    // nicht als Abschluss des alten Zuges gelten.
-
-    // ARRANGE
-    const { onMove, user } = setup();
-
-    // ACT & ASSERTIONS
-    await user.pointer([
-      { keys: '[MouseLeft>]', target: screen.getByLabelText('e2') },
-      { keys: '[/MouseLeft]', target: document.body },
-    ]);
-    expect(onMove).not.toHaveBeenCalled();
-
-    await user.pointer({ target: screen.getByLabelText('e4') });
-    await user.pointer({ keys: '[/MouseLeft]', target: screen.getByLabelText('e4') });
-    expect(onMove).not.toHaveBeenCalled();
-  });
-
-  it('hebt das aufgenommene Feld hervor und lässt es beim Ablegen wieder los', async () => {
-    // ARRANGE
-    const { user } = setup();
-    const from = screen.getByLabelText('e2');
-
-    // ACT & ASSERTIONS
-    await user.pointer({ keys: '[MouseLeft>]', target: from });
-    expect(from.className).toContain('ring-sky-400');
-
-    await user.pointer({ keys: '[/MouseLeft]', target: screen.getByLabelText('e4') });
-    expect(from.className).not.toContain('ring-sky-400');
+      await user.pointer({ keys: '[/MouseLeft]', target: screen.getByLabelText('e4') });
+      expect(from.className).not.toContain('ring-sky-400');
+    });
   });
 });
