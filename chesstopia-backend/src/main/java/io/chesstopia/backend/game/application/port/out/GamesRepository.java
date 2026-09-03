@@ -8,7 +8,7 @@ import java.util.Optional;
 /**
  * Vom Persistence-Adapter implementiert: Persistiert und lädt Partien.
  */
-public interface Games {
+public interface GamesRepository {
     Game save(Game game);
     Optional<Game> findById(GameId id);
 }

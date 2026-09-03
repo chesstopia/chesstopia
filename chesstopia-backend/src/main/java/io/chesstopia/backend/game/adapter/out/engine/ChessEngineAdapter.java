@@ -1,6 +1,6 @@
 package io.chesstopia.backend.game.adapter.out.engine;
 
-import io.chesstopia.backend.game.application.port.out.ChessRules;
+import io.chesstopia.backend.game.application.port.out.ChessEngine;
 import io.chesstopia.backend.game.domain.Move;
 import io.chesstopia.backend.game.domain.Position;
 import io.chesstopia.backend.game.domain.RuleSet;
@@ -8,16 +8,16 @@ import io.chesstopia.engine.ChessEngineKt;
 import org.springframework.stereotype.Component;
 
 /**
- * Kapselt die chess-engine hinter dem {@link ChessRules}-Port. Zusammen mit
+ * Kapselt die chess-engine hinter dem {@link ChessEngine}-Port. Zusammen mit
  * {@link EngineMapper} die einzige Klasse im game-Feature, die {@code io.chesstopia.engine.*}
  * berührt.
  */
 @Component
-class ChessRulesAdapter implements ChessRules {
+class ChessEngineAdapter implements ChessEngine {
 
     private final EngineMapper mapper;
 
-    ChessRulesAdapter(EngineMapper mapper) {
+    ChessEngineAdapter(EngineMapper mapper) {
         this.mapper = mapper;
     }
 

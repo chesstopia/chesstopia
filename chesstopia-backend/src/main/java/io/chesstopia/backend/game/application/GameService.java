@@ -4,8 +4,8 @@ import io.chesstopia.backend.error.NotFoundException;
 import io.chesstopia.backend.game.application.port.in.PlayMove;
 import io.chesstopia.backend.game.application.port.in.StartGame;
 import io.chesstopia.backend.game.application.port.in.ViewGame;
-import io.chesstopia.backend.game.application.port.out.ChessRules;
-import io.chesstopia.backend.game.application.port.out.Games;
+import io.chesstopia.backend.game.application.port.out.ChessEngine;
+import io.chesstopia.backend.game.application.port.out.GamesRepository;
 import io.chesstopia.backend.game.domain.Game;
 import io.chesstopia.backend.game.domain.GameId;
 import io.chesstopia.backend.game.domain.Move;
@@ -21,46 +21,46 @@ import java.time.OffsetDateTime;
  * Orchestriert die In-Ports des game-Features über die Out-Ports.
  *
  * Der einzige Ort, an dem der Ablauf zusammenläuft: Regeln kommen aus
- * {@link ChessRules}, Persistenz aus {@link Games}. Keine Schachlogik, kein
+ * {@link ChessEngine}, Persistenz aus {@link GamesRepository}. Keine Schachlogik, kein
  * Engine-Import, kein FEN.
  */
 @Service
 class GameService implements StartGame, PlayMove, ViewGame {
 
-    private final Games games;
-    private final ChessRules chessRules;
+    private final GamesRepository gamesRepository;
+    private final ChessEngine chessEngine;
 
-    GameService(Games games, ChessRules chessRules) {
-        this.games = games;
-        this.chessRules = chessRules;
+    GameService(GamesRepository gamesRepository, ChessEngine chessEngine) {
+        this.gamesRepository = gamesRepository;
+        this.chessEngine = chessEngine;
     }
 
     @Override
     @Transactional
     public Game start(RuleSet ruleSet) {
         OffsetDateTime now = OffsetDateTime.now();
-        Position initialPosition = chessRules.initialPosition(ruleSet);
-        return games.save(Game.start(GameId.newId(), ruleSet, initialPosition, now));
+        Position initialPosition = chessEngine.initialPosition(ruleSet);
+        return gamesRepository.save(Game.start(GameId.newId(), ruleSet, initialPosition, now));
     }
 
     @Override
     @Transactional
     public Game play(GameId gameId, Move move) {
-        Game game = games.findById(gameId)
+        Game game = gamesRepository.findById(gameId)
             .orElseThrow(() -> new NotFoundException("Partie %s existiert nicht".formatted(gameId.value())));
-        if (!chessRules.isExecutable(game.currentPosition(), move, game.ruleSet())) {
+        if (!chessEngine.isExecutable(game.currentPosition(), move, game.ruleSet())) {
             throw new IllegalArgumentException(
                 "Der Zug %s→%s ist in dieser Stellung nicht ausführbar".formatted(
                     square(move.from()), square(move.to())));
         }
-        Position resulting = chessRules.apply(game.currentPosition(), move, game.ruleSet());
-        return games.save(game.play(move, resulting, OffsetDateTime.now()));
+        Position resulting = chessEngine.apply(game.currentPosition(), move, game.ruleSet());
+        return gamesRepository.save(game.play(move, resulting, OffsetDateTime.now()));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Game load(GameId gameId) {
-        return games.findById(gameId)
+        return gamesRepository.findById(gameId)
             .orElseThrow(() -> new NotFoundException("Partie %s existiert nicht".formatted(gameId.value())));
     }
 

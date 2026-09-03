@@ -72,7 +72,7 @@ pnpm --filter chesstopia-frontend test
 **Engine-Grenze**
 - Die Engine-`@JsExport`-Grenze trägt strukturierte Objekte (`Position`, `Move`, `Piece`, `Square`), **keine FEN/UCI** ([ADR-0020](docs/adr/0020-hexagonale-architektur-und-notationsfreie-domaene.md)). FEN ist im Projekt derzeit nicht in Gebrauch; erst wenn der künftige Stockfish-Adapter (ADR-0005) es braucht, entsteht eine `toFen`-Hilfe in der Engine — nie in Domäne oder API.
 - `@JsExport` steht in `commonMain` ([ADR-0007](docs/adr/0007-jsexport-in-commonmain.md)). Exportierte Sammlungen sind `Array<T>`, nicht `List<T>` (z. B. `Position.board`, `LegalMovesResult.moves`); wo eine exportierte `Array<T>` in Java-Code weiterverwendet wird (z. B. `LegalMovesResult.moves` mit CHESS-2), erfolgt die Konvertierung mit `.toList()` direkt am Engine-Aufruf.
-- Die Übersetzung Domäne ↔ Engine liegt ausschließlich im `ChessRulesAdapter`.
+- Die Übersetzung Domäne ↔ Engine liegt ausschließlich im `ChessEngineAdapter`.
 
 **Tests**
 - Kontext-Tests gegen die Datenbank brauchen `@AutoConfigureEmbeddedDatabase` ([ADR-0012](docs/adr/0012-embedded-postgres-fuer-tests.md)) — ohne die Annotation läuft der Test gegen die echte Datenbank.

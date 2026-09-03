@@ -26,7 +26,7 @@ Die Engine ist nach [ADR-0001](0001-kotlin-multiplatform-chess-engine.md) die au
 
 - **Shared Kernel** — die Engine definiert das Vokabular, Backend und Frontend konsumieren es gemeinsam. Verworfen: die `@JsExport`-Typen sind für JS-Interop geformt (`Array` statt `List`, [ADR-0007](0007-jsexport-in-commonmain.md)) und passen schlecht auf eine Java-Domäne; die Domäne hinge zudem an der Engine-Bibliothek.
 - **Formlose Übersetzungsschicht im Service** statt eines benannten Ports. Verworfen: kein Mock-Punkt, das Aggregat wäre nur mit der TODO-lastigen Engine testbar.
-- **Strikt getrennte Domäne, ein `ChessRules`-Out-Port und `ChessRulesAdapter` als einzige Anti-Corruption-Layer** — gewählt.
+- **Strikt getrennte Domäne, ein `ChessEngine`-Out-Port und `ChessEngineAdapter` als einzige Anti-Corruption-Layer** — gewählt.
 
 ## Decision
 

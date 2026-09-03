@@ -9,8 +9,8 @@ import static org.assertj.core.api.Assertions.*;
 
 class GameServiceTest {
 
-    private FakeGames games;
-    private FakeChessRules rules;
+    private FakeGamesRepository games;
+    private FakeChessEngine rules;
     private GameService service;
 
     private final Position start = new Position(Map.of(), Color.WHITE, CastlingRights.all(), null, 0, 1);
@@ -19,8 +19,8 @@ class GameServiceTest {
 
     @BeforeEach
     void setUp() {
-        games = new FakeGames();
-        rules = new FakeChessRules(start, afterMove);
+        games = new FakeGamesRepository();
+        rules = new FakeChessEngine(start, afterMove);
         service = new GameService(games, rules);
     }
 

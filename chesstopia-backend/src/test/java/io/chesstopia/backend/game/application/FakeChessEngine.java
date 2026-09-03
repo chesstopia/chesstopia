@@ -1,20 +1,20 @@
 package io.chesstopia.backend.game.application;
 
-import io.chesstopia.backend.game.application.port.out.ChessRules;
+import io.chesstopia.backend.game.application.port.out.ChessEngine;
 import io.chesstopia.backend.game.domain.Move;
 import io.chesstopia.backend.game.domain.Position;
 import io.chesstopia.backend.game.domain.RuleSet;
 
 /**
- * Test-Double für {@link ChessRules}: liefert feste Stellungen, kein Engine-Aufruf.
+ * Test-Double für {@link ChessEngine}: liefert feste Stellungen, kein Engine-Aufruf.
  */
-class FakeChessRules implements ChessRules {
+class FakeChessEngine implements ChessEngine {
 
     private final Position initial;
     private final Position afterApply;
     private boolean executable = true;
 
-    FakeChessRules(Position initial, Position afterApply) {
+    FakeChessEngine(Position initial, Position afterApply) {
         this.initial = initial;
         this.afterApply = afterApply;
     }

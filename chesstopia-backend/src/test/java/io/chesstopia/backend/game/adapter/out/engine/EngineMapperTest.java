@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Nur die von Hand geschriebenen {@code default}-Methoden — die Brücke
  * {@code Map<Square,Piece>} ↔ {@code PlacedPiece[]}. Die generierten Abbildungen
- * deckt {@link ChessRulesAdapterTest} ab.
+ * deckt {@link ChessEngineAdapterTest} ab.
  */
 class EngineMapperTest {
 

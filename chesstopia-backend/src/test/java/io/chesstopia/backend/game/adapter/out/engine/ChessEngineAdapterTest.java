@@ -4,9 +4,9 @@ import io.chesstopia.backend.game.domain.*;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.*;
 
-class ChessRulesAdapterTest {
+class ChessEngineAdapterTest {
 
-    private final ChessRulesAdapter adapter = new ChessRulesAdapter(new EngineMapperImpl());
+    private final ChessEngineAdapter adapter = new ChessEngineAdapter(new EngineMapperImpl());
     private final RuleSet rules = RuleSet.standard();
 
     @Test

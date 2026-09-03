@@ -6,7 +6,7 @@ import io.chesstopia.backend.game.adapter.out.persistence.entities.ZugEntity;
 import io.chesstopia.backend.game.adapter.out.persistence.entities.ZugJpaRepository;
 import io.chesstopia.backend.game.adapter.out.persistence.mapper.GameEntityMapper;
 import io.chesstopia.backend.game.adapter.out.persistence.mapper.PositionJsonMapper;
-import io.chesstopia.backend.game.application.port.out.Games;
+import io.chesstopia.backend.game.application.port.out.GamesRepository;
 import io.chesstopia.backend.game.domain.Game;
 import io.chesstopia.backend.game.domain.GameId;
 import io.chesstopia.backend.game.domain.Ply;
@@ -19,7 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Implementiert den {@link Games}-Port über JPA. Der {@code partie}-Snapshot wird
+ * Implementiert den {@link GamesRepository}-Port über JPA. Der {@code partie}-Snapshot wird
  * bei jedem {@code save} überschrieben, der {@code zug}-Strom ist append-only:
  * eine bestehende Zeile wird nie geändert, nur fehlende {@link Ply} werden angefügt.
  *
@@ -27,7 +27,7 @@ import java.util.UUID;
  * {@code GameService}.
  */
 @Component
-class GamePersistenceAdapter implements Games {
+class GamePersistenceAdapter implements GamesRepository {
 
     private final PartieJpaRepository partieRepo;
     private final ZugJpaRepository zugRepo;

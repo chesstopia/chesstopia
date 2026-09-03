@@ -42,7 +42,7 @@ MapStruct wird dort verwendet, wo es trägt: `PositionJsonMapper` und `WebMapper
 
 Zwei Mapper bleiben von Hand geschrieben, weil MapStruct ihre Eigenschaften nicht liest:
 
-- `EngineMapper` — die `chess-engine`-Typen sind Kotlin-`data class`es, deren Property-Modell MapStruct nicht sauber sieht; die Brett-Konvertierung `Array<Piece?>` ↔ `Map<Square, Piece>` ist ohnehin reiner Handcode. `EngineMapper` ist eine Utility-Klasse mit statischen Methoden, die `ChessRulesAdapter` aufruft.
+- `EngineMapper` — die `chess-engine`-Typen sind Kotlin-`data class`es, deren Property-Modell MapStruct nicht sauber sieht; die Brett-Konvertierung `Array<Piece?>` ↔ `Map<Square, Piece>` ist ohnehin reiner Handcode. `EngineMapper` ist eine Utility-Klasse mit statischen Methoden, die `ChessEngineAdapter` aufruft.
 - `GameEntityMapper` — die JPA-Entities sind package-private, MapStruct meldet „no properties". Er ist eine `@Component`-Klasse, in die `PositionJsonMapper` injiziert wird.
 
 `SquareCodec` (Domäne ↔ Feld-String `"e2"`) ist ein schlichter Helfer, den beide Persistenz-Mapper nutzen.
