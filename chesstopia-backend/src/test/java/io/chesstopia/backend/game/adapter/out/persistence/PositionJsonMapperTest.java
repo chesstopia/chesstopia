@@ -44,4 +44,24 @@ class PositionJsonMapperTest {
         Position noEp = new Position(Map.of(), Color.WHITE, CastlingRights.none(), null, 0, 1);
         assertThat(mapper.toDomain(mapper.toJson(noEp))).isEqualTo(noEp);
     }
+
+    @Test
+    void piecesToBoardIstNachFeldTextSortiert() {
+        Position pos = new Position(
+            Map.of(
+                new Square(File.H, Rank.ONE), new Piece(PieceType.ROOK, Color.WHITE),
+                new Square(File.A, Rank.EIGHT), new Piece(PieceType.ROOK, Color.BLACK),
+                new Square(File.A, Rank.ONE), new Piece(PieceType.QUEEN, Color.WHITE)),
+            Color.WHITE, CastlingRights.none(), null, 0, 1);
+
+        assertThat(mapper.toJson(pos).board())
+            .extracting(PositionJson.PlacedPieceJson::square)
+            .containsExactly("a1", "a8", "h1");
+    }
+
+    @Test
+    void squareToTextUndTextToSquareSindNullSicher() {
+        assertThat(mapper.squareToText(null)).isNull();
+        assertThat(mapper.textToSquare(null)).isNull();
+    }
 }
