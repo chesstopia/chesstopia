@@ -18,18 +18,14 @@ final class EngineMapper {
 
     private EngineMapper() {}
 
-    // ── Index-Konvention: Engine-Brett ist Piece[64], Index 0 = a8 ──
-    static int boardIndex(Square s) {
-        return (7 - s.rank().ordinal()) * 8 + s.file().ordinal();
-    }
-
     static io.chesstopia.engine.Position toEngine(Position p) {
-        var board = new io.chesstopia.engine.Piece[64];
-        for (var e : p.pieces().entrySet()) {
-            board[boardIndex(e.getKey())] = new io.chesstopia.engine.Piece(
-                io.chesstopia.engine.PieceType.valueOf(e.getValue().type().name()),
-                io.chesstopia.engine.Color.valueOf(e.getValue().color().name()));
-        }
+        var board = p.pieces().entrySet().stream()
+            .map(e -> new io.chesstopia.engine.PlacedPiece(
+                toEngine(e.getKey()),
+                new io.chesstopia.engine.Piece(
+                    io.chesstopia.engine.PieceType.valueOf(e.getValue().type().name()),
+                    io.chesstopia.engine.Color.valueOf(e.getValue().color().name()))))
+            .toArray(io.chesstopia.engine.PlacedPiece[]::new);
         return new io.chesstopia.engine.Position(
             board,
             io.chesstopia.engine.Color.valueOf(p.sideToMove().name()),
@@ -42,12 +38,10 @@ final class EngineMapper {
 
     static Position toDomain(io.chesstopia.engine.Position p) {
         Map<Square, Piece> pieces = new HashMap<>();
-        var board = p.getBoard();
-        for (int i = 0; i < 64; i++) {
-            var ep = board[i];
-            if (ep == null) continue;
-            pieces.put(square(i), new Piece(
-                PieceType.valueOf(ep.getType().name()), Color.valueOf(ep.getColor().name())));
+        for (var pp : p.getBoard()) {
+            pieces.put(square(pp.getSquare()), new Piece(
+                PieceType.valueOf(pp.getPiece().getType().name()),
+                Color.valueOf(pp.getPiece().getColor().name())));
         }
         var c = p.getCastlingRights();
         return new Position(
@@ -67,10 +61,6 @@ final class EngineMapper {
 
     static Square square(io.chesstopia.engine.Square s) {
         return new Square(File.valueOf(s.getFile().name()), Rank.valueOf(s.getRank().name()));
-    }
-
-    static Square square(int index) {
-        return new Square(File.values()[index % 8], Rank.values()[7 - index / 8]);
     }
 
     static io.chesstopia.engine.Move toEngine(Move m) {

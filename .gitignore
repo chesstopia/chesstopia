@@ -55,3 +55,4 @@ docs/.obsidian/*
 !docs/.obsidian/core-plugins.json
 !docs/.obsidian/templates.json
 !docs/.obsidian/types.json
+.kotlin

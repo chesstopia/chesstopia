@@ -9,7 +9,7 @@ class PositionTest {
     @Test
     fun `die Startstellung besetzt genau 32 Felder`() {
         val p = standardStartPosition()
-        assertEquals(32, p.board.count { it != null })
+        assertEquals(32, p.board.size)
         assertEquals(Piece(PieceType.ROOK, Color.BLACK), p.pieceAt(Square(File.A, Rank.EIGHT)))
         assertEquals(Piece(PieceType.KING, Color.WHITE), p.pieceAt(Square(File.E, Rank.ONE)))
         assertNull(p.pieceAt(Square(File.E, Rank.FOUR)))
@@ -28,5 +28,19 @@ class PositionTest {
     @Test
     fun `zwei gleich aufgebaute Stellungen sind gleich`() {
         assertEquals(standardStartPosition(), standardStartPosition())
+    }
+
+    @Test
+    fun `die Reihenfolge der Feldliste ändert die Gleichheit nicht`() {
+        val a = position(
+            Square(File.E, Rank.TWO) to Piece(PieceType.PAWN, Color.WHITE),
+            Square(File.D, Rank.FOUR) to Piece(PieceType.KNIGHT, Color.BLACK),
+        )
+        val b = position(
+            Square(File.D, Rank.FOUR) to Piece(PieceType.KNIGHT, Color.BLACK),
+            Square(File.E, Rank.TWO) to Piece(PieceType.PAWN, Color.WHITE),
+        )
+        assertEquals(a, b)
+        assertEquals(a.hashCode(), b.hashCode())
     }
 }

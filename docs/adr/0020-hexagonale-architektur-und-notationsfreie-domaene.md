@@ -14,6 +14,8 @@ verifies:
 ## Status
 Accepted
 
+Ergänzung: Das Engine-Brett an der `@JsExport`-Grenze ist `Array<PlacedPiece>` — dünn besetzt, dieselbe Form wie der REST-Kontrakt (`Position.board`) und die JSONB-Persistenz. `Mechanics` rechnet intern auf `Map<Square, Piece>` wie die Backend-Domäne. Die frühere Index-Konvention (`Piece[64]`, `0` = a8) ist damit aus Engine und `EngineMapper` verschwunden. `Map` direkt über `@JsExport` wurde verworfen (Wrapper-Typ in der `.d.ts`, siehe [ADR-0007](0007-jsexport-in-commonmain.md)).
+
 ## Context
 
 Der Commit `d0ca0c8` (CHESS-13) fädelte FEN und UCI ungebrochen durch jede Schicht: von der Datenbankspalte über die JPA-Entity, den Service und den Controller bis in `GameResponse.fen` und das Frontend, wo `parseFenBoard` die Zeichenkette wieder zerlegte. Die Domäne trug damit Notation, die an jeder Station neu interpretiert werden musste, und ein Formatfehler im FEN-String fiel erst zur Laufzeit auf.

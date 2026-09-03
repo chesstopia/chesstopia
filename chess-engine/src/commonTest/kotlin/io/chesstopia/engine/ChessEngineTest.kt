@@ -10,7 +10,6 @@ class ChessEngineTest {
 
     private val rules = RuleSet.standard()
     private val start = standardStartPosition()
-    private fun sq(f: File, r: Rank) = Square(f, r)
     private val e2e4 = Move(sq(File.E, Rank.TWO), sq(File.E, Rank.FOUR))
 
     @Test fun `initialPosition liefert die Grundstellung`() {
@@ -31,9 +30,7 @@ class ChessEngineTest {
     }
 
     @Test fun `validateMove verlangt eine Zielfigur bei der Umwandlung`() {
-        val board = arrayOfNulls<Piece>(64)
-        board[sq(File.E, Rank.SEVEN).boardIndex()] = Piece(PieceType.PAWN, Color.WHITE)
-        val p = Position(board, Color.WHITE, CastlingRights.NONE, null, 0, 1)
+        val p = position(sq(File.E, Rank.SEVEN) to Piece(PieceType.PAWN, Color.WHITE))
         assertFalse(validateMove(p, Move(sq(File.E, Rank.SEVEN), sq(File.E, Rank.EIGHT)), rules))
         assertTrue(validateMove(p, Move(sq(File.E, Rank.SEVEN), sq(File.E, Rank.EIGHT), PieceType.QUEEN), rules))
     }
