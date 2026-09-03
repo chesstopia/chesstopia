@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toBoard, sideOf, parseSquare } from './position';
+import { toBoard, sideOf, parseSquare } from '../position';
 import type { Position } from '@chesstopia/openapi-client';
 
 const startish: Position = {

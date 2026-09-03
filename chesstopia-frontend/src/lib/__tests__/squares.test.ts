@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fromSquare, toSquare } from './squares';
+import { fromSquare, toSquare } from '../squares';
 
 describe('toSquare', () => {
   it('benennt die Ecken des Bretts', () => {

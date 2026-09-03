@@ -21,9 +21,11 @@ export default defineConfig({
     },
   },
   test: {
-    // Ebene 2 aus ADR-0019 braucht ein DOM. Reine Unit-Tests (position.test.ts) laufen
-    // unter jsdom unverändert; der Aufpreis rechtfertigt keine zweite Projektdatei.
+    // Ebene 2 aus ADR-0019 braucht ein DOM. Reine Unit-Tests (lib/__tests__/position.test.ts)
+    // laufen unter jsdom unverändert; der Aufpreis rechtfertigt keine zweite Projektdatei.
     environment: "jsdom",
+    // Tests liegen konventionell in __tests__/ neben der getesteten Datei; der Glob
+    // findet sie überall, damit ein verlegter Test nicht still übergangen wird.
     include: ["src/**/*.test.{ts,tsx}"],
     // Ohne diese Zeile räumt die Testing Library nicht auf — Vitest läuft hier ohne
     // `globals: true`, und ihr automatisches Cleanup hängt an einem globalen afterEach.

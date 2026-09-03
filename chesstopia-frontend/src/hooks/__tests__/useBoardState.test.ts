@@ -7,7 +7,7 @@ vi.mock('@chesstopia/openapi-client', () => ({
   GameApi: class { createGame = createGame; playMove = playMove; getGame = vi.fn(); },
 }));
 
-import { useBoardState } from './useBoardState';
+import { useBoardState } from '../useBoardState';
 import type { Position } from '@chesstopia/openapi-client';
 
 const START: Position = {

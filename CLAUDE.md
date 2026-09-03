@@ -79,6 +79,7 @@ pnpm --filter chesstopia-frontend test
 - Kollaborateure eines Unit-Tests werden mit Mockito gemockt (`@ExtendWith(MockitoExtension.class)`, `@Mock`, `@InjectMocks`), nicht von Hand als Fake gebaut. Mockito kommt über `spring-boot-starter-test`. Stubs stehen pro Test in der `// ARRANGE`-Phase (Strict Stubs).
 - Kontext-Tests gegen die Datenbank brauchen `@AutoConfigureEmbeddedDatabase` ([ADR-0012](docs/adr/0012-embedded-postgres-fuer-tests.md)) — ohne die Annotation läuft der Test gegen die echte Datenbank.
 - Frontend-Tests laufen unter Vitest. `defineConfig` kommt in der Vitest-Konfiguration aus `vitest/config`, nicht aus `vite`. Vitest läuft ohne `globals: true` — `describe`/`it`/`expect` werden importiert.
+- Jeder Frontend-Test liegt in einem `__tests__/`-Ordner neben der getesteten Datei (`src/lib/__tests__/position.test.ts` prüft `src/lib/position.ts`). `src/test/setup.ts` ist Infrastruktur, kein Datei-Test, und bleibt.
 - Welche Testebene ein Feature braucht, entscheidet [ADR-0019](docs/adr/0019-teststrategie.md); ausgeführt wird das vom Skill `/tests`. E2E ist noch nicht gebaut — der Auslöser steht im ADR.
 
 ---

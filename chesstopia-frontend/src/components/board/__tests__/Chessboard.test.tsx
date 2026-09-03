@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Chessboard } from './Chessboard';
+import { Chessboard } from '../Chessboard';
 import type { Board, PieceCode } from '@/lib/position';
 
 /**
