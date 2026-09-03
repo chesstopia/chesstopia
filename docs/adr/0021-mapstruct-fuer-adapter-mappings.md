@@ -7,12 +7,15 @@ supersedes: ['0014']
 verifies:
   - 'chesstopia-backend/build.gradle.kts :: annotationProcessor(libs.mapstruct.processor)'
   - 'gradle/libs.versions.toml :: mapstruct'
+  - 'chess-engine/build.gradle.kts :: javaParameters'
 ---
 
 # ADR-0021: MapStruct für die Adapter-Mappings — wo es passt
 
 ## Status
 Accepted
+
+Ergänzung: `EngineMapper` ist seit der `PlacedPiece[]`-Umstellung ([ADR-0020](0020-hexagonale-architektur-und-notationsfreie-domaene.md)) ebenfalls ein `@Mapper`-Interface. Beide Gründe für die ursprüngliche Handarbeit sind entfallen: die Brett-Brücke `Array<Piece?>` ↔ `Map` gibt es nicht mehr (nur noch `PlacedPiece[]` ↔ `Map` als zwei `default`-Methoden), und „MapStruct sieht das Kotlin-`data class`-Property-Modell nicht sauber" ließ sich mit `-java-parameters` im Engine-JVM-Build lösen — MapStruct trifft die Primärkonstruktoren dann per Parametername. Damit sind drei der vier Adapter-Mapper MapStruct; nur `GameEntityMapper` (package-private JPA-Entities) bleibt von Hand.
 
 ## Context
 

@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.*;
 
 class ChessRulesAdapterTest {
 
-    private final ChessRulesAdapter adapter = new ChessRulesAdapter();
+    private final ChessRulesAdapter adapter = new ChessRulesAdapter(new EngineMapperImpl());
     private final RuleSet rules = RuleSet.standard();
 
     @Test

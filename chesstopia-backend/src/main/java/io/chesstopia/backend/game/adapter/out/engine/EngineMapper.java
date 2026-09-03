@@ -1,78 +1,65 @@
 package io.chesstopia.backend.game.adapter.out.engine;
 
 import io.chesstopia.backend.game.domain.CastlingRights;
-import io.chesstopia.backend.game.domain.Color;
-import io.chesstopia.backend.game.domain.File;
 import io.chesstopia.backend.game.domain.Move;
 import io.chesstopia.backend.game.domain.Piece;
-import io.chesstopia.backend.game.domain.PieceType;
 import io.chesstopia.backend.game.domain.Position;
-import io.chesstopia.backend.game.domain.Rank;
 import io.chesstopia.backend.game.domain.RuleSet;
 import io.chesstopia.backend.game.domain.Square;
 import java.util.HashMap;
 import java.util.Map;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-/** Anti-Corruption-Layer: übersetzt zwischen Backend-Domäne und chess-engine. */
-final class EngineMapper {
+/**
+ * Anti-Corruption-Layer zwischen der {@code game}-Domäne und der chess-engine.
+ *
+ * <p>MapStruct-Interface: die Engine-Typen sind Kotlin-{@code data class}es, deren
+ * JVM-Getter und Primärkonstruktor MapStruct liest (der Engine-JVM-Build trägt
+ * {@code -java-parameters}). Enum-zu-Enum trägt über gleiche Konstantennamen —
+ * ein Engine-Enum-Wert ohne Domänen-Pendant ist ein Compile-Fehler. Einzige
+ * Handarbeit ist die Brücke {@code Map<Square,Piece>} ↔ {@code PlacedPiece[]}.
+ */
+@Mapper(componentModel = "spring")
+interface EngineMapper {
 
-    private EngineMapper() {}
+    // ---- Domäne -> Engine ----
 
-    static io.chesstopia.engine.Position toEngine(Position p) {
-        var board = p.pieces().entrySet().stream()
-            .map(e -> new io.chesstopia.engine.PlacedPiece(
-                toEngine(e.getKey()),
-                new io.chesstopia.engine.Piece(
-                    io.chesstopia.engine.PieceType.valueOf(e.getValue().type().name()),
-                    io.chesstopia.engine.Color.valueOf(e.getValue().color().name()))))
+    @Mapping(target = "board", source = "pieces")
+    io.chesstopia.engine.Position toEngine(Position position);
+
+    io.chesstopia.engine.Move toEngine(Move move);
+
+    io.chesstopia.engine.Square toEngine(Square square);
+
+    io.chesstopia.engine.Piece toEngine(Piece piece);
+
+    io.chesstopia.engine.CastlingRights toEngine(CastlingRights castlingRights);
+
+    io.chesstopia.engine.RuleSet toEngine(RuleSet ruleSet);
+
+    default io.chesstopia.engine.PlacedPiece[] toEngineBoard(Map<Square, Piece> pieces) {
+        return pieces.entrySet().stream()
+            .map(e -> new io.chesstopia.engine.PlacedPiece(toEngine(e.getKey()), toEngine(e.getValue())))
             .toArray(io.chesstopia.engine.PlacedPiece[]::new);
-        return new io.chesstopia.engine.Position(
-            board,
-            io.chesstopia.engine.Color.valueOf(p.sideToMove().name()),
-            new io.chesstopia.engine.CastlingRights(
-                p.castlingRights().whiteKingSide(), p.castlingRights().whiteQueenSide(),
-                p.castlingRights().blackKingSide(), p.castlingRights().blackQueenSide()),
-            p.enPassantTarget() == null ? null : toEngine(p.enPassantTarget()),
-            p.halfmoveClock(), p.fullmoveNumber());
     }
 
-    static Position toDomain(io.chesstopia.engine.Position p) {
+    // ---- Engine -> Domäne ----
+
+    @Mapping(target = "pieces", source = "board")
+    Position toDomain(io.chesstopia.engine.Position position);
+
+    Square toDomain(io.chesstopia.engine.Square square);
+
+    Piece toDomain(io.chesstopia.engine.Piece piece);
+
+    CastlingRights toDomain(io.chesstopia.engine.CastlingRights castlingRights);
+
+    default Map<Square, Piece> toDomainBoard(io.chesstopia.engine.PlacedPiece[] board) {
         Map<Square, Piece> pieces = new HashMap<>();
-        for (var pp : p.getBoard()) {
-            pieces.put(square(pp.getSquare()), new Piece(
-                PieceType.valueOf(pp.getPiece().getType().name()),
-                Color.valueOf(pp.getPiece().getColor().name())));
+        for (var placed : board) {
+            pieces.put(toDomain(placed.getSquare()), toDomain(placed.getPiece()));
         }
-        var c = p.getCastlingRights();
-        return new Position(
-            pieces,
-            Color.valueOf(p.getSideToMove().name()),
-            new CastlingRights(c.getWhiteKingSide(), c.getWhiteQueenSide(),
-                               c.getBlackKingSide(), c.getBlackQueenSide()),
-            p.getEnPassantTarget() == null ? null : square(p.getEnPassantTarget()),
-            p.getHalfmoveClock(), p.getFullmoveNumber());
-    }
-
-    static io.chesstopia.engine.Square toEngine(Square s) {
-        return new io.chesstopia.engine.Square(
-            io.chesstopia.engine.File.valueOf(s.file().name()),
-            io.chesstopia.engine.Rank.valueOf(s.rank().name()));
-    }
-
-    static Square square(io.chesstopia.engine.Square s) {
-        return new Square(File.valueOf(s.getFile().name()), Rank.valueOf(s.getRank().name()));
-    }
-
-    static io.chesstopia.engine.Move toEngine(Move m) {
-        return new io.chesstopia.engine.Move(
-            toEngine(m.from()), toEngine(m.to()),
-            m.promotion() == null ? null
-                : io.chesstopia.engine.PieceType.valueOf(m.promotion().name()));
-    }
-
-    static io.chesstopia.engine.RuleSet toEngine(RuleSet r) {
-        return new io.chesstopia.engine.RuleSet(
-            io.chesstopia.engine.Variant.valueOf(r.variant().name()),
-            r.enPassantEnabled(), r.castlingEnabled());
+        return pieces;
     }
 }
