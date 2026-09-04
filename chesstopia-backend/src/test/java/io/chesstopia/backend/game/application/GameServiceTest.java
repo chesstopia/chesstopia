@@ -56,7 +56,7 @@ class GameServiceTest {
         // ARRANGE
         Game existing = Game.start(ID, RuleSet.standard(), start, T0);
         when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
-        when(chessEngine.isExecutable(start, e2e4, RuleSet.standard())).thenReturn(true);
+        when(chessEngine.isLegal(start, e2e4, RuleSet.standard())).thenReturn(true);
         when(chessEngine.apply(start, e2e4, RuleSet.standard())).thenReturn(afterMove);
         when(gamesRepository.save(any())).then(returnsFirstArg());
 
@@ -71,10 +71,10 @@ class GameServiceTest {
     }
 
     @Test
-    void playLehntEinenNichtAusfuehrbarenZugAbUndSchreibtNichts() {
+    void playLehntEinenIllegalenZugAbUndSchreibtNichts() {
         // ARRANGE
         when(gamesRepository.findById(ID)).thenReturn(Optional.of(Game.start(ID, RuleSet.standard(), start, T0)));
-        when(chessEngine.isExecutable(any(), any(), any())).thenReturn(false);
+        when(chessEngine.isLegal(any(), any(), any())).thenReturn(false);
 
         // ACT & ASSERTIONS
         assertThatThrownBy(() -> service.play(ID, e2e4)).isInstanceOf(IllegalArgumentException.class);

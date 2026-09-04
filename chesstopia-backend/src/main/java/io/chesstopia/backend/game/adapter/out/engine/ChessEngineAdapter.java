@@ -27,7 +27,7 @@ class ChessEngineAdapter implements ChessEngine {
     }
 
     @Override
-    public boolean isExecutable(Position position, Move move, RuleSet ruleSet) {
+    public boolean isLegal(Position position, Move move, RuleSet ruleSet) {
         return ChessEngineKt.validateMove(
             mapper.toEngine(position), mapper.toEngine(move), mapper.toEngine(ruleSet));
     }

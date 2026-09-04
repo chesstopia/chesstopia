@@ -22,14 +22,14 @@ class ChessEngineAdapterTest {
     }
 
     @Test
-    void isExecutableNimmtE2E4AnUndLehntDenZugDerFalschenSeiteAb() {
+    void isLegalNimmtE2E4AnUndLehntDenZugDerFalschenSeiteAb() {
         // ARRANGE
         Position start = adapter.initialPosition(rules);
 
         // ACT & ASSERTIONS
-        assertThat(adapter.isExecutable(start,
+        assertThat(adapter.isLegal(start,
             new Move(new Square(File.E, Rank.TWO), new Square(File.E, Rank.FOUR), null), rules)).isTrue();
-        assertThat(adapter.isExecutable(start,
+        assertThat(adapter.isLegal(start,
             new Move(new Square(File.E, Rank.SEVEN), new Square(File.E, Rank.FIVE), null), rules)).isFalse();
     }
 

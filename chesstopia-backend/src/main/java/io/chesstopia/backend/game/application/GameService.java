@@ -48,9 +48,9 @@ class GameService implements StartGame, PlayMove, ViewGame {
     public Game play(GameId gameId, Move move) {
         Game game = gamesRepository.findById(gameId)
             .orElseThrow(() -> new NotFoundException("Partie %s existiert nicht".formatted(gameId.value())));
-        if (!chessEngine.isExecutable(game.currentPosition(), move, game.ruleSet())) {
+        if (!chessEngine.isLegal(game.currentPosition(), move, game.ruleSet())) {
             throw new IllegalArgumentException(
-                "Der Zug %s→%s ist in dieser Stellung nicht ausführbar".formatted(
+                "Der Zug %s→%s ist in dieser Stellung nicht legal".formatted(
                     square(move.from()), square(move.to())));
         }
         Position resulting = chessEngine.apply(game.currentPosition(), move, game.ruleSet());
