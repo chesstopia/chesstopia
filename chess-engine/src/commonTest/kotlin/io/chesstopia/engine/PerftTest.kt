@@ -2,7 +2,6 @@ package io.chesstopia.engine
 
 import io.chesstopia.engine.corpus.castlingOf
 import io.chesstopia.engine.corpus.positionFrom
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -10,10 +9,6 @@ import kotlin.test.assertEquals
  * Perft: Anzahl der Blattknoten des Zugbaums bis Tiefe n. Die Referenzzahlen
  * stammen aus dem Chess Programming Wiki und sind über Jahrzehnte verifiziert —
  * ein objektives Orakel für die Zugerzeugung (ADR-0019).
- *
- * Die tiefsten Knoten (Grundstellung Tiefe 4, Kiwipete Tiefe 3) laufen einzeln
- * über das 2-Sekunden-Limit des JS-Mocha-Runners; sie stehen darum je in einem
- * eigenen `@Ignore`-Test für den manuellen Lauf.
  */
 class PerftTest {
 
@@ -34,15 +29,6 @@ class PerftTest {
         assertEquals(20L, perft(start, 1))
         assertEquals(400L, perft(start, 2))
         assertEquals(8_902L, perft(start, 3))
-    }
-
-    // @Ignore: manueller Lauf — Grundstellung Tiefe 4 überschreitet einzeln das 2s-Limit des JS-Mocha-Runners
-    @Test @Ignore
-    fun `Perft der Grundstellung Tiefe 4`() {
-        // ARRANGE
-        val start = standardStartPosition()
-
-        // ACT & ASSERTIONS
         assertEquals(197_281L, perft(start, 4))
     }
 
@@ -53,15 +39,6 @@ class PerftTest {
         // ACT & ASSERTIONS
         assertEquals(48L, perft(kiwipete, 1))
         assertEquals(2_039L, perft(kiwipete, 2))
-    }
-
-    // @Ignore: manueller Lauf — Kiwipete Tiefe 3 überschreitet einzeln das 2s-Limit des JS-Mocha-Runners
-    @Test @Ignore
-    fun `Perft Kiwipete Tiefe 3`() {
-        // ARRANGE
-        val kiwipete = kiwipetePosition()
-
-        // ACT & ASSERTIONS
         assertEquals(97_862L, perft(kiwipete, 3))
     }
 
