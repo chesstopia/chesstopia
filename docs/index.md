@@ -20,26 +20,26 @@ Alles andere ordnet sich dem unter. `buildAll` ist der kanonische Einstiegspunkt
 
 | Modul | Rolle | Beschreibung |
 |---|---|---|
-| `chess-engine` | Schachregeln, KMP → JVM + JS | — |
+| `chess-engine` | Schachregeln, KMP → JVM + JS | [chess-engine.md](modules/chess-engine.md) |
 | `chesstopia-backend` | Spring Boot, REST + WebSocket | — |
 | `chesstopia-frontend` | React/Vite | — |
 | `openapi-client` | generierter TS-Client, gitignored | — |
 | `docs/api/openapi.yaml` | API-Kontrakt | [api-kontrakt.md](modules/api-kontrakt.md) |
 | Root-Build | Reihenfolge über vier Build-Systeme | [build-orchestrierung.md](modules/build-orchestrierung.md) |
 
-Zwei Modulbeschreibungen existieren, vier fehlen. Die beiden vorhandenen sind bewusst zuerst entstanden: Sie beschreiben die Nahtstellen, an denen eine Änderung mehrere Module gleichzeitig bewegt — das Wissen, das bisher nur in Sessionverläufen existierte. Die übrigen vier folgen; bis dahin ist der Code die Auskunft.
+Drei Modulbeschreibungen existieren, drei fehlen. Die vorhandenen sind bewusst zuerst entstanden: Sie beschreiben die Nahtstellen, an denen eine Änderung mehrere Module gleichzeitig bewegt — das Wissen, das bisher nur in Sessionverläufen existierte. Die übrigen drei folgen; bis dahin ist der Code die Auskunft.
 
 ## Stand der Umsetzung
 
 Ehrlich und knapp, weil hier der größte Abstand zwischen Absicht und Realität liegt:
 
 - **Domäne:** [context.md](context.md) beschreibt 25 Begriffe. Umgesetzt ist davon ein Bruchteil.
-- **Engine:** die Mechanik eines Zuges steht — eine Stellung wird als strukturiertes Objekt (`Position`, `Move`) genommen, fortgeschrieben und zurückgegeben, samt Rochaderechten, En-passant-Ziel und beiden Zählern; keine FEN mehr an der Grenze ([ADR-0020](adr/0020-hexagonale-architektur-und-notationsfreie-domaene.md)). Die **Regellogik fehlt**: `getLegalMoves` ist unverändert ein `TODO`.
+- **Engine:** Die Zugvalidierung ist vollständig — Gangart, Weg, Fesselung, kein Selbstschach, Rochade-/En-passant-Bedingungen; dazu Schach-, Matt-, Patt-Erkennung und die Remis-Regeln (50 Züge, ungenügendes Material, Dreifachwiederholung über `gameOutcome`). Ein Perft-Orakel und ein datei-getriebener Testkorpus sichern das ab ([ADR-0022](adr/0022-datei-getriebener-engine-testkorpus.md)). Offen bleibt allein `getLegalMoves` an der `@JsExport`-Grenze (interner Generator existiert, wird nur nicht exportiert).
 - **Backend:** Partien und ihre Züge liegen in der Datenbank; ein Zug geht durch die Engine und wird als Ereignis angehängt ([ADR-0003](adr/0003-move-event-log.md)). Das `game`-Feature ist hexagonal geschnitten — Domäne, Ports, Adapter ([ADR-0020](adr/0020-hexagonale-architektur-und-notationsfreie-domaene.md)); `hello` und `counter` bleiben klassische Durchstiche durch die Codegen-Kette.
-- **Frontend:** Brett mit Figuren, die sich per Zeiger ziehen lassen.
+- **Frontend:** Brett mit Figuren, die sich per Zeiger ziehen lassen und die vor dem Senden gegen die Engine geprüft werden; eine beendete Partie sperrt das Brett und zeigt das Ergebnis.
 - **Sicherheit und Spieler:** keine. Jede Partie ist für jeden erreichbar ([ADR-0015](adr/0015-security-von-tag-eins.md)).
 
-**Ein Zug wird nicht auf Legalität geprüft.** Das Backend nimmt jeden mechanisch ausführbaren Zug an — ein Läufer darf wie ein Turm ziehen, der König in ein Schach hinein. Das ist kein Versäumnis, sondern die Reihenfolge: Erst trägt der Weg, dann die Regel. Bis dahin ist das Gebaute ein Brett, das Zustand hält, und kein Schachspiel.
+**Ein Zug wird auf beiden Seiten auf Legalität geprüft** — das Frontend blockiert illegale Züge vor dem Senden ([frontend-engine-validierung.md](notes/frontend-engine-validierung.md)), das Backend bleibt autoritativ und setzt bei Matt/Patt/Remis den Partiestatus.
 
 Der Wert des bisher Gebauten liegt nicht in den Features, sondern in der durchgestochenen Kette: Eine Änderung an `openapi.yaml` bewegt nachweislich vier Artefakte in drei Sprachen — und seit dem 10. August 2026 wird die Engine tatsächlich gerufen, statt nur eingebunden zu sein.
 
@@ -52,6 +52,7 @@ Der Wert des bisher Gebauten liegt nicht in den Features, sondern in der durchge
 | Was bedeutet dieser Domänenbegriff? | [context.md](context.md) |
 | Wie ist das Backend eingerichtet? | [notes/backend-konventionen.md](notes/backend-konventionen.md) |
 | Wie spricht das Frontend die API an? | [notes/frontend-api-anbindung.md](notes/frontend-api-anbindung.md) |
+| Wie prüft das Frontend Züge vorab? | [notes/frontend-engine-validierung.md](notes/frontend-engine-validierung.md) |
 | Was darf ich in diesem Modul nicht tun? | [modules/](modules/) |
 | Wie ist etwas konkret eingerichtet? | [notes/](notes/) |
 | Wie sieht die API aus? | [api/openapi.yaml](api/openapi.yaml) |

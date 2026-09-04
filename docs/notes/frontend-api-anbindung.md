@@ -54,3 +54,5 @@ Der Caddyfile ist Ansible-verwaltet (`infra/roles/edge/`) und wird **nicht** von
 ## Tests
 
 Wer `@chesstopia/openapi-client` in einem Vitest-`vi.mock` ersetzt, muss `Configuration` mitmocken — `src/lib/api.ts` importiert es beim Modulladen (`useBoardState.test.ts` zeigt das Muster).
+
+Eine Komponente/Hook, die `@chesstopia/chess-engine` (direkt oder über `src/lib/engine.ts`) zieht, mockt im Vitest entweder `@/lib/engine` oder braucht das gebaute JS-Artefakt (`./gradlew buildAll`).
