@@ -62,4 +62,6 @@ interface EngineMapper {
         }
         return pieces;
     }
+
+    io.chesstopia.backend.game.domain.GameOutcome toDomain(io.chesstopia.engine.GameOutcome outcome);
 }

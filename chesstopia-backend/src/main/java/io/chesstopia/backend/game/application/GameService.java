@@ -8,6 +8,7 @@ import io.chesstopia.backend.game.application.port.out.ChessEngine;
 import io.chesstopia.backend.game.application.port.out.GamesRepository;
 import io.chesstopia.backend.game.domain.Game;
 import io.chesstopia.backend.game.domain.GameId;
+import io.chesstopia.backend.game.domain.GameOutcome;
 import io.chesstopia.backend.game.domain.Move;
 import io.chesstopia.backend.game.domain.Position;
 import io.chesstopia.backend.game.domain.RuleSet;
@@ -16,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Orchestriert die In-Ports des game-Features über die Out-Ports.
@@ -54,7 +57,14 @@ class GameService implements StartGame, PlayMove, ViewGame {
                     square(move.from()), square(move.to())));
         }
         Position resulting = chessEngine.apply(game.currentPosition(), move, game.ruleSet());
-        return gamesRepository.save(game.play(move, resulting, OffsetDateTime.now()));
+
+        List<Position> positions = new ArrayList<>();
+        positions.add(chessEngine.initialPosition(game.ruleSet()));
+        game.history().forEach(p -> positions.add(p.positionAfter()));
+        positions.add(resulting);
+        GameOutcome outcome = chessEngine.outcome(positions, game.ruleSet());
+
+        return gamesRepository.save(game.play(move, resulting, outcome, OffsetDateTime.now()));
     }
 
     @Override

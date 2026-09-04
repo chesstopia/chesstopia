@@ -27,6 +27,7 @@ class GamePersistenceAdapterIT {
         Map.of(new Square(File.E, Rank.TWO), new Piece(PieceType.KING, Color.WHITE)),
         Color.BLACK, CastlingRights.all(), null, 1, 1);
     private final Move move = new Move(new Square(File.E, Rank.ONE), new Square(File.E, Rank.TWO), null);
+    private final GameOutcome inProgress = new GameOutcome(OutcomeKind.IN_PROGRESS, null);
 
     @Test
     void eineNeuePartieUeberlebtDenRoundtrip() {
@@ -42,6 +43,7 @@ class GamePersistenceAdapterIT {
             assertThat(l.currentPosition()).isEqualTo(start);
             assertThat(l.ruleSet()).isEqualTo(RuleSet.standard());
             assertThat(l.status()).isEqualTo(GameStatus.ONGOING);
+            assertThat(l.endReason()).isNull();
             assertThat(l.history()).isEmpty();
         });
     }
@@ -53,7 +55,7 @@ class GamePersistenceAdapterIT {
         adapter.save(g);
 
         // ACT
-        adapter.save(adapter.findById(g.id()).orElseThrow().play(move, afterMove, T0.plusMinutes(1)));
+        adapter.save(adapter.findById(g.id()).orElseThrow().play(move, afterMove, inProgress, T0.plusMinutes(1)));
 
         // ASSERTIONS
         assertThat(adapter.findById(g.id())).get().satisfies(loaded -> {
@@ -63,6 +65,23 @@ class GamePersistenceAdapterIT {
                 assertThat(p.move()).isEqualTo(move);
                 assertThat(p.positionAfter()).isEqualTo(afterMove);
             });
+        });
+    }
+
+    @Test
+    void eineBeendetePartieUeberlebtDenRoundtripMitEndgrund() {
+        // ARRANGE
+        Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0);
+        adapter.save(g);
+        GameOutcome checkmate = new GameOutcome(OutcomeKind.CHECKMATE, Color.WHITE);
+
+        // ACT
+        adapter.save(adapter.findById(g.id()).orElseThrow().play(move, afterMove, checkmate, T0.plusMinutes(1)));
+
+        // ASSERTIONS
+        assertThat(adapter.findById(g.id())).get().satisfies(loaded -> {
+            assertThat(loaded.status()).isEqualTo(GameStatus.WHITE_WON);
+            assertThat(loaded.endReason()).isEqualTo(EndReason.CHECKMATE);
         });
     }
 

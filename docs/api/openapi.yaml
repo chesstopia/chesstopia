@@ -229,8 +229,13 @@ components:
         status:
           type: string
           description: Zustand der Partie
-          enum: [ONGOING, COMPLETED]
+          enum: [ONGOING, WHITE_WON, BLACK_WON, DRAW]
           example: ONGOING
+        endReason:
+          type: string
+          nullable: true
+          description: Grund des Partieendes; nur gesetzt, wenn status != ONGOING.
+          enum: [CHECKMATE, STALEMATE, FIFTY_MOVE_RULE, INSUFFICIENT_MATERIAL, THREEFOLD_REPETITION]
         moveCount:
           type: integer
           format: int32

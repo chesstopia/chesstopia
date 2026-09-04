@@ -17,6 +17,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -58,6 +59,9 @@ class GameServiceTest {
         when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
         when(chessEngine.isLegal(start, e2e4, RuleSet.standard())).thenReturn(true);
         when(chessEngine.apply(start, e2e4, RuleSet.standard())).thenReturn(afterMove);
+        when(chessEngine.initialPosition(RuleSet.standard())).thenReturn(start);
+        when(chessEngine.outcome(any(), eq(RuleSet.standard())))
+            .thenReturn(new GameOutcome(OutcomeKind.IN_PROGRESS, null));
         when(gamesRepository.save(any())).then(returnsFirstArg());
 
         // ACT
@@ -65,9 +69,30 @@ class GameServiceTest {
 
         // ASSERTIONS
         assertThat(result.currentPosition()).isEqualTo(afterMove);
+        assertThat(result.status()).isEqualTo(GameStatus.ONGOING);
         assertThat(result.history()).singleElement()
             .satisfies(p -> assertThat(p.move()).isEqualTo(e2e4));
         verify(gamesRepository).save(result);
+    }
+
+    @Test
+    void playSetztWhiteWonUndCheckmateBeiMatt() {
+        // ARRANGE
+        Game existing = Game.start(ID, RuleSet.standard(), start, T0);
+        when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
+        when(chessEngine.isLegal(any(), any(), any())).thenReturn(true);
+        when(chessEngine.apply(any(), any(), any())).thenReturn(afterMove);
+        when(chessEngine.initialPosition(RuleSet.standard())).thenReturn(start);
+        when(chessEngine.outcome(any(), any()))
+            .thenReturn(new GameOutcome(OutcomeKind.CHECKMATE, Color.WHITE));
+        when(gamesRepository.save(any())).then(returnsFirstArg());
+
+        // ACT
+        Game result = service.play(ID, e2e4);
+
+        // ASSERTIONS
+        assertThat(result.status()).isEqualTo(GameStatus.WHITE_WON);
+        assertThat(result.endReason()).isEqualTo(EndReason.CHECKMATE);
     }
 
     @Test

@@ -11,6 +11,7 @@ class GameTest {
     private final Position start = new Position(Map.of(), Color.WHITE, CastlingRights.all(), null, 0, 1);
     private final Position afterOne = new Position(Map.of(), Color.BLACK, CastlingRights.all(), null, 0, 1);
     private final Move move = new Move(new Square(File.E, Rank.TWO), new Square(File.E, Rank.FOUR), null);
+    private final GameOutcome inProgress = new GameOutcome(OutcomeKind.IN_PROGRESS, null);
 
     @Test
     void startBeginntOhneHistorieLaufendInDerGrundstellung() {
@@ -20,6 +21,7 @@ class GameTest {
         // ASSERTIONS
         assertThat(g.history()).isEmpty();
         assertThat(g.status()).isEqualTo(GameStatus.ONGOING);
+        assertThat(g.endReason()).isNull();
         assertThat(g.currentPosition()).isEqualTo(start);
         assertThat(g.createdAt()).isEqualTo(T0);
     }
@@ -28,7 +30,7 @@ class GameTest {
     void playHaengtEinenLueckenlosNummeriertenPlyAn() {
         // ACT
         Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0)
-                     .play(move, afterOne, T0.plusMinutes(1));
+                     .play(move, afterOne, inProgress, T0.plusMinutes(1));
 
         // ASSERTIONS
         assertThat(g.history()).singleElement().satisfies(p -> {
@@ -44,7 +46,7 @@ class GameTest {
     void aufeinanderfolgendePlysZaehlenHoch() {
         // ACT
         Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0)
-                     .play(move, afterOne, T0).play(move, start, T0);
+                     .play(move, afterOne, inProgress, T0).play(move, start, inProgress, T0);
 
         // ASSERTIONS
         assertThat(g.history()).extracting(Ply::number).containsExactly(1, 2);
@@ -53,19 +55,33 @@ class GameTest {
     @Test
     void dieHistorieIstNachAussenUnveraenderlich() {
         // ARRANGE
-        Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0).play(move, afterOne, T0);
+        Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0).play(move, afterOne, inProgress, T0);
 
         // ACT & ASSERTIONS
         assertThatThrownBy(() -> g.history().clear()).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
+    void playSetztBlackWonUndCheckmateBeiMatt() {
+        // ARRANGE
+        GameOutcome checkmate = new GameOutcome(OutcomeKind.CHECKMATE, Color.BLACK);
+
+        // ACT
+        Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0)
+                     .play(move, afterOne, checkmate, T0.plusMinutes(1));
+
+        // ASSERTIONS
+        assertThat(g.status()).isEqualTo(GameStatus.BLACK_WON);
+        assertThat(g.endReason()).isEqualTo(EndReason.CHECKMATE);
+    }
+
+    @Test
     void playAufEinerBeendetenPartieWirft() {
         // ARRANGE
         Game done = new Game(GameId.newId(), RuleSet.standard(), start, java.util.List.of(),
-                             GameStatus.COMPLETED, T0, T0);
+                             GameStatus.DRAW, EndReason.STALEMATE, T0, T0);
 
         // ACT & ASSERTIONS
-        assertThatThrownBy(() -> done.play(move, afterOne, T0)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> done.play(move, afterOne, inProgress, T0)).isInstanceOf(IllegalStateException.class);
     }
 }
