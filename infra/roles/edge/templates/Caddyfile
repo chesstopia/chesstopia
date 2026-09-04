@@ -1,6 +1,15 @@
 {$SITE_HOSTNAME} {
     handle /api/* {
-        reverse_proxy backend:8080
+        # Prod ist same-origin: dieselbe Origin liefert SPA und /api/* (ADR-0010).
+        # Browser hängen bei same-origin-POST trotzdem einen Origin-Header an, und
+        # Spring 7 prüft jeden Request mit Origin-Header gegen die CORS-Allowlist
+        # (SecurityConfig, nur http://localhost:5173) — sonst 403. Header hier
+        # entfernen, dann behandelt das Backend den Request als das was er ist:
+        # nicht-CORS. Bei einem künftigen Split app./api. auf getrennte Origins
+        # zurückbauen und echtes CORS im Backend konfigurieren.
+        reverse_proxy backend:8080 {
+            header_up -Origin
+        }
     }
     handle {
         reverse_proxy frontend:80
