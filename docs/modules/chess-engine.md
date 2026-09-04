@@ -33,7 +33,7 @@ Zuglogik, Legalitätsprüfung, Schach-/Matt-/Patt-Erkennung, Remis-Regeln (50 Z�
 2. **Exportierte Sammlungen sind `Array<T>`, nicht `List<T>`** (z. B. `Position.board`, `LegalMovesResult.moves`) — sauberer JS-Interop. Java-seitige Weiterverwendung konvertiert mit `.toList()` direkt am Aufruf, ausschließlich im `ChessEngineAdapter`.
 3. **Die Engine ist zustandsfrei pro Aufruf.** Jede Funktion nimmt eine `Position` (und ggf. Historie) entgegen und gibt eine neue zurück; kein interner Zustand zwischen Aufrufen.
 4. **Notationsfrei.** Keine FEN/UCI-Strings in Domäne oder API der Engine.
-5. **`getLegalMoves` ist an der `@JsExport`-Grenze noch nicht exportiert** — ein interner Generator existiert, wird aber (Stand CHESS-9) nicht nach außen gereicht.
+5. **`getLegalMoves` wirft an der `@JsExport`-Grenze weiterhin `NotImplementedError`** — der Aufruf ist exportiert, aber (Stand CHESS-9) nicht an den internen Generator angeschlossen.
 
 ## Einstiegspunkte
 

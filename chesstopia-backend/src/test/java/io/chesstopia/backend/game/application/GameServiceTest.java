@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -93,6 +94,39 @@ class GameServiceTest {
         // ASSERTIONS
         assertThat(result.status()).isEqualTo(GameStatus.WHITE_WON);
         assertThat(result.endReason()).isEqualTo(EndReason.CHECKMATE);
+    }
+
+    @Test
+    void playSetztDrawUndThreefoldRepetitionBeiEntsprechendemEngineOutcome() {
+        // ARRANGE
+        Game existing = Game.start(ID, RuleSet.standard(), start, T0);
+        when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
+        when(chessEngine.isLegal(any(), any(), any())).thenReturn(true);
+        when(chessEngine.apply(any(), any(), any())).thenReturn(afterMove);
+        when(chessEngine.initialPosition(RuleSet.standard())).thenReturn(start);
+        when(chessEngine.outcome(any(), any()))
+            .thenReturn(new GameOutcome(OutcomeKind.DRAW_THREEFOLD_REPETITION, null));
+        when(gamesRepository.save(any())).then(returnsFirstArg());
+
+        // ACT
+        Game result = service.play(ID, e2e4);
+
+        // ASSERTIONS
+        assertThat(result.status()).isEqualTo(GameStatus.DRAW);
+        assertThat(result.endReason()).isEqualTo(EndReason.THREEFOLD_REPETITION);
+    }
+
+    @Test
+    void playAufBereitsBeendeterPartieWirftIllegalArgumentStattIllegalState() {
+        // ARRANGE
+        Game finished = new Game(ID, RuleSet.standard(), start, List.of(),
+            GameStatus.DRAW, EndReason.FIFTY_MOVE_RULE, T0, T0);
+        when(gamesRepository.findById(ID)).thenReturn(Optional.of(finished));
+
+        // ACT & ASSERTIONS
+        assertThatThrownBy(() -> service.play(ID, e2e4)).isInstanceOf(IllegalArgumentException.class);
+        verify(chessEngine, never()).isLegal(any(), any(), any());
+        verify(gamesRepository, never()).save(any());
     }
 
     @Test
