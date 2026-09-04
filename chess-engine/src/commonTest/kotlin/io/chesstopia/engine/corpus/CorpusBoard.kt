@@ -51,6 +51,14 @@ internal fun squareOf(name: String): Square? =
     if (name == "-") null
     else Square(File.entries[name[0].lowercaseChar() - 'a'], Rank.entries[name[1] - '1'])
 
+internal fun castlingText(cr: CastlingRights): String {
+    val s = buildString {
+        if (cr.whiteKingSide) append('K'); if (cr.whiteQueenSide) append('Q')
+        if (cr.blackKingSide) append('k'); if (cr.blackQueenSide) append('q')
+    }
+    return s.ifEmpty { "-" }
+}
+
 internal fun positionFrom(
     rows: List<String>, side: Color, castling: CastlingRights, ep: Square?, hm: Int, fm: Int,
 ): Position = Position(parseBoard(rows).toTypedArray(), side, castling, ep, hm, fm)
