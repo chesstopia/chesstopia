@@ -7,6 +7,9 @@ vi.mock('@chesstopia/openapi-client', () => ({
   GameApi: class { createGame = createGame; playMove = playMove; getGame = vi.fn(); },
 }));
 
+const { isLegalMove } = vi.hoisted(() => ({ isLegalMove: vi.fn() }));
+vi.mock('@/lib/engine', () => ({ isLegalMove }));
+
 import { useBoardState } from '../useBoardState';
 import type { Position } from '@chesstopia/openapi-client';
 
@@ -16,12 +19,16 @@ const START: Position = {
   castlingRights: { whiteKingSide: true, whiteQueenSide: true, blackKingSide: true, blackQueenSide: true },
   halfmoveClock: 0, fullmoveNumber: 1,
 };
-const gameResponse = (position: Position) => ({ data: { id: 'p-1', position, status: 'ONGOING', moveCount: 0 } });
+const gameResponse = (position: Position) => ({
+  data: { id: 'p-1', position, status: 'ONGOING', endReason: null, moveCount: 0 },
+});
 
 describe('useBoardState', () => {
   beforeEach(() => {
     createGame.mockReset();
     playMove.mockReset();
+    isLegalMove.mockReset();
+    isLegalMove.mockReturnValue(true);
     createGame.mockResolvedValue(gameResponse(START));
   });
 
@@ -117,6 +124,52 @@ describe('useBoardState', () => {
     // ARRANGE
     createGame.mockReturnValue(new Promise(() => {}));
     const { result } = renderHook(() => useBoardState());
+
+    // ACT
+    await act(() => result.current.playMove('e2', 'e4'));
+
+    // ASSERTIONS
+    expect(playMove).not.toHaveBeenCalled();
+  });
+
+  it('schickt einen von der Engine als illegal gemeldeten Zug nicht ans Backend', async () => {
+    // ARRANGE
+    isLegalMove.mockReturnValue(false);
+    const { result } = renderHook(() => useBoardState());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // ACT
+    await act(() => result.current.playMove('e2', 'e4'));
+
+    // ASSERTIONS
+    expect(playMove).not.toHaveBeenCalled();
+    expect(result.current.error?.message).toMatch(/legal/i);
+    expect(result.current.board?.[6][4]).toBe('wP');
+  });
+
+  it('übernimmt Status und Endgrund aus der Zug-Antwort', async () => {
+    // ARRANGE
+    playMove.mockResolvedValue({
+      data: { id: 'p-1', position: START, status: 'WHITE_WON', endReason: 'CHECKMATE', moveCount: 1 },
+    });
+    const { result } = renderHook(() => useBoardState());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // ACT
+    await act(() => result.current.playMove('e2', 'e4'));
+
+    // ASSERTIONS
+    expect(result.current.status).toBe('WHITE_WON');
+    expect(result.current.endReason).toBe('CHECKMATE');
+  });
+
+  it('spielt keinen Zug mehr, wenn die Partie beendet ist', async () => {
+    // ARRANGE
+    createGame.mockResolvedValue({
+      data: { id: 'p-1', position: START, status: 'DRAW', endReason: 'STALEMATE', moveCount: 0 },
+    });
+    const { result } = renderHook(() => useBoardState());
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
     // ACT
     await act(() => result.current.playMove('e2', 'e4'));
