@@ -1,0 +1,18 @@
+description = Springer-Schach lässt sich nicht blocken — der König muss selbst ausweichen
+ruleset     = standard
+move        = e1 f1
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  . . . . . . . k             8  . . . . . . . k
+  7  . . . . . . . .             7  . . . . . . . .
+  6  . . . . . . . .             6  . . . . . . . .
+  5  . . . . . . . .             5  . . . . . . . .
+  4  . . . . . . . .             4  . . . . . . . .
+  3  . . . n . . . .             3  . . . n . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  . . . . K . . .             1  . . . . . K . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=- hm=2 fm=15             side=black castling=- ep=- hm=3 fm=15
+
+check=false checkmate=false stalemate=false

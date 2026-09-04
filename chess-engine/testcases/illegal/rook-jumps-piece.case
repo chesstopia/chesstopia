@@ -1,0 +1,19 @@
+description = Turm kann nicht über eine dazwischenstehende Figur springen
+ruleset     = standard
+move        = a1 a8
+legal       = false
+reason      = versperrt
+
+     INITIAL
+  8  k . . . . . . .
+  7  . . . . . . . .
+  6  . . . . . . . .
+  5  . . . . . . . .
+  4  N . . . . . . .
+  3  . . . . . . . .
+  2  . . . . . . . .
+  1  R . . . . K . .
+     a b c d e f g h
+  side=white castling=- ep=- hm=0 fm=1
+
+check=false checkmate=false stalemate=false

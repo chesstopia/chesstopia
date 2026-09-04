@@ -1,0 +1,18 @@
+description = König und Läufer allein reichen nicht zum Matt — Remis durch unzureichendes Material
+ruleset     = standard
+move        = c3 d4
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  k . . . . . . .             8  k . . . . . . .
+  7  . . . . . . . .             7  . . . . . . . .
+  6  . . . . . . . .             6  . . . . . . . .
+  5  . . . . . . . .             5  . . . . . . . .
+  4  . . . . . . . .             4  . . . B . . . .
+  3  . . B . . . . .             3  . . . . . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  K . . . . . . .             1  K . . . . . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=- hm=20 fm=60             side=black castling=- ep=- hm=21 fm=60
+
+check=false checkmate=false stalemate=false outcome=draw-material

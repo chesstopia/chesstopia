@@ -1,0 +1,18 @@
+description = Erstickmatt — der Springer setzt matt, weil der König vollständig von eigenen Figuren eingeschlossen ist
+ruleset     = standard
+move        = e5 f7
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  . . . . . . r k             8  . . . . . . r k
+  7  . . . . . . p p             7  . . . . . N p p
+  6  . . . . . . . .             6  . . . . . . . .
+  5  . . . . N . . .             5  . . . . . . . .
+  4  . . . . . . . .             4  . . . . . . . .
+  3  . . . . . . . .             3  . . . . . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  K . . . . . . .             1  K . . . . . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=- hm=10 fm=40             side=black castling=- ep=- hm=11 fm=40
+
+check=true checkmate=true stalemate=false outcome=checkmate

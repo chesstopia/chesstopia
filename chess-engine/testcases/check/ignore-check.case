@@ -1,0 +1,19 @@
+description = Ein Zug, der das eigene Schach ignoriert, ist illegal, selbst wenn er sonst der Gangart entspricht
+ruleset     = standard
+move        = b1 c3
+legal       = false
+reason      = schach
+
+     INITIAL
+  8  k . . . r . . .
+  7  . . . . . . . .
+  6  . . . . . . . .
+  5  . . . . . . . .
+  4  . . . . . . . .
+  3  . . . . . . . .
+  2  . . . . . . . .
+  1  . N . . K . . .
+     a b c d e f g h
+  side=white castling=- ep=- hm=2 fm=15
+
+check=true checkmate=false stalemate=false

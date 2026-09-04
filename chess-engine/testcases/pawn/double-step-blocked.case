@@ -1,0 +1,19 @@
+description = Doppelschritt ist illegal, wenn das Zwischenfeld besetzt ist
+ruleset     = standard
+move        = e2 e4
+legal       = false
+reason      = versperrt
+
+     INITIAL
+  8  k . . . . . . .
+  7  . . . . . . . .
+  6  . . . . . . . .
+  5  . . . . . . . .
+  4  . . . . . . . .
+  3  . . . . n . . .
+  2  . . . . P . . .
+  1  K . . . . . . .
+     a b c d e f g h
+  side=white castling=- ep=- hm=0 fm=1
+
+check=false checkmate=false stalemate=false
