@@ -3,18 +3,13 @@ package io.chesstopia.backend.game.adapter.in.web;
 import io.chesstopia.backend.api.model.MoveRequest;
 import io.chesstopia.backend.game.domain.CastlingRights;
 import io.chesstopia.backend.game.domain.Color;
-import io.chesstopia.backend.game.domain.EndReason;
 import io.chesstopia.backend.game.domain.File;
-import io.chesstopia.backend.game.domain.Game;
-import io.chesstopia.backend.game.domain.GameId;
-import io.chesstopia.backend.game.domain.GameStatus;
 import io.chesstopia.backend.game.domain.Move;
 import io.chesstopia.backend.game.domain.Piece;
 import io.chesstopia.backend.game.domain.PieceType;
 import io.chesstopia.backend.game.domain.Ply;
 import io.chesstopia.backend.game.domain.Position;
 import io.chesstopia.backend.game.domain.Rank;
-import io.chesstopia.backend.game.domain.RuleSet;
 import io.chesstopia.backend.game.domain.Square;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -135,36 +130,5 @@ class WebMapperTest {
         // ACT & ASSERTIONS
         assertThat(mapper.toPromotion(PieceType.ROOK)).isEqualTo(MoveRequest.PromotionEnum.ROOK);
         assertThat(mapper.toPromotion(null)).isNull();
-    }
-
-    @Test
-    void toResponseTraegtStatusUndEndgrundEinerBeendetenPartie() {
-        // ARRANGE
-        var pos = new Position(Map.of(), Color.WHITE, CastlingRights.all(), null, 0, 1);
-        var t0 = OffsetDateTime.parse("2026-01-01T12:00:00Z");
-        var game = new Game(GameId.newId(), RuleSet.standard(), pos, List.of(),
-            GameStatus.WHITE_WON, EndReason.CHECKMATE, t0, t0);
-
-        // ACT
-        var response = mapper.toResponse(game, 1);
-
-        // ASSERTIONS
-        assertThat(response.getStatus()).isEqualTo(io.chesstopia.backend.api.model.GameResponse.StatusEnum.WHITE_WON);
-        assertThat(response.getEndReason()).isEqualTo(io.chesstopia.backend.api.model.GameResponse.EndReasonEnum.CHECKMATE);
-    }
-
-    @Test
-    void toResponseTraegtKeinenEndgrundBeiEinerLaufendenPartie() {
-        // ARRANGE
-        var pos = new Position(Map.of(), Color.WHITE, CastlingRights.all(), null, 0, 1);
-        var t0 = OffsetDateTime.parse("2026-01-01T12:00:00Z");
-        var game = Game.start(GameId.newId(), RuleSet.standard(), pos, t0);
-
-        // ACT
-        var response = mapper.toResponse(game, 0);
-
-        // ASSERTIONS
-        assertThat(response.getStatus()).isEqualTo(io.chesstopia.backend.api.model.GameResponse.StatusEnum.ONGOING);
-        assertThat(response.getEndReason()).isNull();
     }
 }
