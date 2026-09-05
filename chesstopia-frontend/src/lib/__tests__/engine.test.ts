@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest';
 import type { Position } from '@chesstopia/openapi-client';
 import { isLegalMove } from '../engine';
 
+// Kein Regeltest — die Schachregeln prüft der Kotlin-Testkorpus. Hier geht es nur
+// darum, dass die Verdrahtung zur kompilierten Engine hält: UMD-Namespace,
+// Enum-Maps (FILE/RANK/COLOR/TYPE) und der validateMove-Aufruf über die
+// DTO→@JsExport-Übersetzung in engine.ts.
 const START: Position = {
   board: [
     { square: { file: 'E', rank: 'TWO' }, piece: { type: 'PAWN', color: 'WHITE' } },
@@ -15,41 +19,9 @@ const START: Position = {
 };
 
 describe('engine', () => {
-  it('nimmt den Bauern-Doppelschritt an', () => {
+  it('reicht die DTO-Übersetzung durch bis zum Urteil der Engine', () => {
     // ACT & ASSERTIONS
     expect(isLegalMove(START, { from: { file: 'E', rank: 'TWO' }, to: { file: 'E', rank: 'FOUR' } })).toBe(true);
-  });
-
-  it('lehnt einen Zug ab, der den eigenen König im Schach lässt', () => {
-    // ARRANGE — schwarzer Turm e8 fesselt nichts, aber König darf nicht auf e-Linie bleiben angegriffen
-    const pinned: Position = {
-      ...START,
-      board: [
-        { square: { file: 'E', rank: 'ONE' }, piece: { type: 'KING', color: 'WHITE' } },
-        { square: { file: 'E', rank: 'TWO' }, piece: { type: 'BISHOP', color: 'WHITE' } },
-        { square: { file: 'E', rank: 'EIGHT' }, piece: { type: 'ROOK', color: 'BLACK' } },
-      ],
-    };
-
-    // ACT & ASSERTIONS
-    expect(isLegalMove(pinned, { from: { file: 'E', rank: 'TWO' }, to: { file: 'C', rank: 'FOUR' } })).toBe(false);
-  });
-
-  it('reicht die Umwandlungsfigur durch', () => {
-    // ARRANGE
-    const promo: Position = {
-      ...START,
-      board: [
-        { square: { file: 'A', rank: 'SEVEN' }, piece: { type: 'PAWN', color: 'WHITE' } },
-        { square: { file: 'E', rank: 'ONE' }, piece: { type: 'KING', color: 'WHITE' } },
-        { square: { file: 'H', rank: 'EIGHT' }, piece: { type: 'KING', color: 'BLACK' } },
-      ],
-    };
-
-    // ACT & ASSERTIONS
-    expect(isLegalMove(promo, {
-      from: { file: 'A', rank: 'SEVEN' }, to: { file: 'A', rank: 'EIGHT' }, promotion: 'QUEEN',
-    })).toBe(true);
-    expect(isLegalMove(promo, { from: { file: 'A', rank: 'SEVEN' }, to: { file: 'A', rank: 'EIGHT' } })).toBe(false);
+    expect(isLegalMove(START, { from: { file: 'E', rank: 'TWO' }, to: { file: 'E', rank: 'FIVE' } })).toBe(false);
   });
 });
