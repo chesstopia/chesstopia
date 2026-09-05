@@ -1,0 +1,18 @@
+description = Turm zieht vertikal über die Linie
+ruleset     = standard
+move        = a2 a7
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  k . . . . . . .             8  k . . . . . . .
+  7  . . . . . . . .             7  R . . . . . . .
+  6  . . . . . . . .             6  . . . . . . . .
+  5  . . . . . . . .             5  . . . . . . . .
+  4  . . . . . . . .             4  . . . . . . . .
+  3  . . . . . . . .             3  . . . . . . . .
+  2  R . . . . . . .             2  . . . . . . . .
+  1  . . . . K . . .             1  . . . . K . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=- hm=0 fm=1             side=black castling=- ep=- hm=1 fm=1
+
+check=true checkmate=false stalemate=false

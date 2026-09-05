@@ -1,0 +1,19 @@
+description = Springer kann nicht auf eine eigene Figur ziehen
+ruleset     = standard
+move        = d4 f5
+legal       = false
+reason      = eigene
+
+     INITIAL
+  8  k . . . . . . .
+  7  . . . . . . . .
+  6  . . . . . . . .
+  5  . . . . . P . .
+  4  . . . N . . . .
+  3  . . . . . . . .
+  2  . . . . . . . .
+  1  . . . . K . . .
+     a b c d e f g h
+  side=white castling=- ep=- hm=0 fm=1
+
+check=false checkmate=false stalemate=false

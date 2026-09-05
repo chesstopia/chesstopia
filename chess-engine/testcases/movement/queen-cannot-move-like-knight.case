@@ -1,0 +1,19 @@
+description = Dame kann nicht springerartig ziehen
+ruleset     = standard
+move        = e4 f6
+legal       = false
+reason      = gangart
+
+     INITIAL
+  8  k . . . . . . .
+  7  . . . . . . . .
+  6  . . . . . . . .
+  5  . . . . . . . .
+  4  . . . . Q . . .
+  3  . . . . . . . .
+  2  . . . . . . . .
+  1  . . . . K . . .
+     a b c d e f g h
+  side=white castling=- ep=- hm=0 fm=1
+
+check=false checkmate=false stalemate=false
