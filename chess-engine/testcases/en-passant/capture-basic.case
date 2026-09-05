@@ -1,0 +1,18 @@
+description = Weißer Bauer schlägt einen schwarzen Doppelschritt-Bauern en passant
+ruleset     = standard
+move        = e5 d6
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  k . . . . . . .             8  k . . . . . . .
+  7  . . . . . . . .             7  . . . . . . . .
+  6  . . . . . . . .             6  . . . P . . . .
+  5  . . . p P . . .             5  . . . . . . . .
+  4  . . . . . . . .             4  . . . . . . . .
+  3  . . . . . . . .             3  . . . . . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  K . . . . . . .             1  K . . . . . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=d6 hm=0 fm=3             side=black castling=- ep=- hm=0 fm=3
+
+check=false checkmate=false stalemate=false

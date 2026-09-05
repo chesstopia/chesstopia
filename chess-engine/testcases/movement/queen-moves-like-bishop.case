@@ -1,0 +1,18 @@
+description = Dame zieht wie ein Läufer über die Diagonale
+ruleset     = standard
+move        = c1 a3
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  . . . . k . . .             8  . . . . k . . .
+  7  . . . . . . . .             7  . . . . . . . .
+  6  . . . . . . . .             6  . . . . . . . .
+  5  . . . . . . . .             5  . . . . . . . .
+  4  . . . . . . . .             4  . . . . . . . .
+  3  . . . . . . . .             3  Q . . . . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  . . Q . K . . .             1  . . . . K . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=- hm=0 fm=1             side=black castling=- ep=- hm=1 fm=1
+
+check=false checkmate=false stalemate=false

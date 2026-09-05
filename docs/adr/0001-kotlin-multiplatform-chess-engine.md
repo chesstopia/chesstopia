@@ -2,7 +2,7 @@
 type: adr
 status: partially-superseded
 implementation: partial
-updated: 2026-08-10
+updated: 2026-09-04
 supersedes: []
 verifies:
   - 'settings.gradle.kts :: includeBuild("chess-engine")'

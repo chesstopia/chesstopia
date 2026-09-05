@@ -1,7 +1,10 @@
 package io.chesstopia.backend.game.adapter.out.engine;
 
 import io.chesstopia.backend.game.domain.Color;
+import io.chesstopia.backend.game.domain.EndReason;
 import io.chesstopia.backend.game.domain.File;
+import io.chesstopia.backend.game.domain.GameConclusion;
+import io.chesstopia.backend.game.domain.GameStatus;
 import io.chesstopia.backend.game.domain.Piece;
 import io.chesstopia.backend.game.domain.PieceType;
 import io.chesstopia.backend.game.domain.Rank;
@@ -57,5 +60,45 @@ class EngineMapperTest {
 
         // ACT & ASSERTIONS
         assertThat(mapper.toDomainBoard(mapper.toEngineBoard(original))).isEqualTo(original);
+    }
+
+    @Test
+    void toDomainFaltetMattAufGewinnerUndGrund() {
+        // ACT
+        var white = mapper.toDomain(new io.chesstopia.engine.GameOutcome(
+            io.chesstopia.engine.OutcomeKind.CHECKMATE, io.chesstopia.engine.Color.WHITE));
+        var black = mapper.toDomain(new io.chesstopia.engine.GameOutcome(
+            io.chesstopia.engine.OutcomeKind.CHECKMATE, io.chesstopia.engine.Color.BLACK));
+
+        // ASSERTIONS
+        assertThat(white).isEqualTo(new GameConclusion(GameStatus.WHITE_WON, EndReason.CHECKMATE));
+        assertThat(black).isEqualTo(new GameConclusion(GameStatus.BLACK_WON, EndReason.CHECKMATE));
+    }
+
+    @Test
+    void toDomainFaltetEinenLaufendenAusgangAufOngoingOhneGrund() {
+        // ACT
+        var conclusion = mapper.toDomain(
+            new io.chesstopia.engine.GameOutcome(io.chesstopia.engine.OutcomeKind.IN_PROGRESS, null));
+
+        // ASSERTIONS
+        assertThat(conclusion).isEqualTo(new GameConclusion(GameStatus.ONGOING, null));
+    }
+
+    @Test
+    void toDomainFaltetJedeRemisartAufDrawMitEigenemGrund() {
+        // ACT & ASSERTIONS
+        assertThat(mapper.toDomain(new io.chesstopia.engine.GameOutcome(
+            io.chesstopia.engine.OutcomeKind.STALEMATE, null)))
+            .isEqualTo(new GameConclusion(GameStatus.DRAW, EndReason.STALEMATE));
+        assertThat(mapper.toDomain(new io.chesstopia.engine.GameOutcome(
+            io.chesstopia.engine.OutcomeKind.DRAW_FIFTY_MOVE, null)))
+            .isEqualTo(new GameConclusion(GameStatus.DRAW, EndReason.FIFTY_MOVE_RULE));
+        assertThat(mapper.toDomain(new io.chesstopia.engine.GameOutcome(
+            io.chesstopia.engine.OutcomeKind.DRAW_INSUFFICIENT_MATERIAL, null)))
+            .isEqualTo(new GameConclusion(GameStatus.DRAW, EndReason.INSUFFICIENT_MATERIAL));
+        assertThat(mapper.toDomain(new io.chesstopia.engine.GameOutcome(
+            io.chesstopia.engine.OutcomeKind.DRAW_THREEFOLD_REPETITION, null)))
+            .isEqualTo(new GameConclusion(GameStatus.DRAW, EndReason.THREEFOLD_REPETITION));
     }
 }

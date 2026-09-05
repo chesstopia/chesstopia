@@ -1,6 +1,9 @@
 package io.chesstopia.backend.game.adapter.out.engine;
 
 import io.chesstopia.backend.game.domain.CastlingRights;
+import io.chesstopia.backend.game.domain.EndReason;
+import io.chesstopia.backend.game.domain.GameConclusion;
+import io.chesstopia.backend.game.domain.GameStatus;
 import io.chesstopia.backend.game.domain.Move;
 import io.chesstopia.backend.game.domain.Piece;
 import io.chesstopia.backend.game.domain.Position;
@@ -17,8 +20,9 @@ import org.mapstruct.Mapping;
  * <p>MapStruct-Interface: die Engine-Typen sind Kotlin-{@code data class}es, deren
  * JVM-Getter und Primärkonstruktor MapStruct liest (der Engine-JVM-Build trägt
  * {@code -java-parameters}). Enum-zu-Enum trägt über gleiche Konstantennamen —
- * ein Engine-Enum-Wert ohne Domänen-Pendant ist ein Compile-Fehler. Einzige
- * Handarbeit ist die Brücke {@code Map<Square,Piece>} ↔ {@code PlacedPiece[]}.
+ * ein Engine-Enum-Wert ohne Domänen-Pendant ist ein Compile-Fehler. Handarbeit
+ * ist die Brücke {@code Map<Square,Piece>} ↔ {@code PlacedPiece[]} und die
+ * Übersetzung des Engine-Ausgangs in {@link GameStatus} + {@link EndReason}.
  */
 @Mapper(componentModel = "spring")
 interface EngineMapper {
@@ -61,5 +65,25 @@ interface EngineMapper {
             pieces.put(toDomain(placed.getSquare()), toDomain(placed.getPiece()));
         }
         return pieces;
+    }
+
+    /**
+     * Faltet den Engine-Ausgang (sechs {@code OutcomeKind} + Gewinnerfarbe) auf die
+     * zwei Domänenachsen {@link GameStatus} (wer) und {@link EndReason} (warum). Der
+     * {@code switch} ist erschöpfend — ein neuer Engine-{@code OutcomeKind} bricht den Build.
+     */
+    default GameConclusion toDomain(io.chesstopia.engine.GameOutcome outcome) {
+        return switch (outcome.getKind()) {
+            case IN_PROGRESS -> new GameConclusion(GameStatus.ONGOING, null);
+            case CHECKMATE -> outcome.getWinner() == io.chesstopia.engine.Color.WHITE
+                ? new GameConclusion(GameStatus.WHITE_WON, EndReason.CHECKMATE)
+                : new GameConclusion(GameStatus.BLACK_WON, EndReason.CHECKMATE);
+            case STALEMATE -> new GameConclusion(GameStatus.DRAW, EndReason.STALEMATE);
+            case DRAW_FIFTY_MOVE -> new GameConclusion(GameStatus.DRAW, EndReason.FIFTY_MOVE_RULE);
+            case DRAW_INSUFFICIENT_MATERIAL ->
+                new GameConclusion(GameStatus.DRAW, EndReason.INSUFFICIENT_MATERIAL);
+            case DRAW_THREEFOLD_REPETITION ->
+                new GameConclusion(GameStatus.DRAW, EndReason.THREEFOLD_REPETITION);
+        };
     }
 }

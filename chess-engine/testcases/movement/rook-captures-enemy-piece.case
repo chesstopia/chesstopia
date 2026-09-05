@@ -1,0 +1,18 @@
+description = Turm schlägt eine gegnerische Figur am Ende der Linie
+ruleset     = standard
+move        = a1 a8
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  n . . . . . . k             8  R . . . . . . k
+  7  . . . . . . . .             7  . . . . . . . .
+  6  . . . . . . . .             6  . . . . . . . .
+  5  . . . . . . . .             5  . . . . . . . .
+  4  . . . . . . . .             4  . . . . . . . .
+  3  . . . . . . . .             3  . . . . . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  R . . . K . . .             1  . . . . K . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=- hm=0 fm=1             side=black castling=- ep=- hm=0 fm=1
+
+check=true checkmate=false stalemate=false

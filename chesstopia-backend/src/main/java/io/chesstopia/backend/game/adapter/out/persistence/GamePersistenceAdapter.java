@@ -58,6 +58,7 @@ class GamePersistenceAdapter implements GamesRepository {
         pe.setEnPassantEnabled(rules.enPassantEnabled());
         pe.setCastlingEnabled(rules.castlingEnabled());
         pe.setStatus(game.status());
+        pe.setEndReason(game.endReason());
         pe.setPositionSnapshot(positionJsonMapper.toJson(game.currentPosition()));
         pe.setUpdatedAt(game.updatedAt());
         partieRepo.save(pe);
@@ -86,6 +87,6 @@ class GamePersistenceAdapter implements GamesRepository {
         List<Ply> history = zuege.stream().map(entityMapper::toPly).toList();
         Position current = positionJsonMapper.toDomain(pe.getPositionSnapshot());
         return new Game(new GameId(pe.getId()), rules, current, history,
-            pe.getStatus(), pe.getCreatedAt(), pe.getUpdatedAt());
+            pe.getStatus(), pe.getEndReason(), pe.getCreatedAt(), pe.getUpdatedAt());
     }
 }

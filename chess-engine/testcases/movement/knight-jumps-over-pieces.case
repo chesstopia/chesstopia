@@ -1,0 +1,18 @@
+description = Springer überspringt umliegende Figuren
+ruleset     = standard
+move        = d4 f5
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  k . . . . . . .             8  k . . . . . . .
+  7  . . . . . . . .             7  . . . . . . . .
+  6  . . . . . . . .             6  . . . . . . . .
+  5  . . . P . . . .             5  . . . P . N . .
+  4  . . P N P . . .             4  . . P . P . . .
+  3  . . . P . . . .             3  . . . P . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  . . . . K . . .             1  . . . . K . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=- hm=0 fm=1             side=black castling=- ep=- hm=1 fm=1
+
+check=false checkmate=false stalemate=false

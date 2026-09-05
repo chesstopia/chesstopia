@@ -1,0 +1,18 @@
+description = Der letzte Schlag räumt das Brett bis auf beide Könige — Remis durch unzureichendes Material
+ruleset     = standard
+move        = a1 b2
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  . . . . . . . k             8  . . . . . . . k
+  7  . . . . . . . .             7  . . . . . . . .
+  6  . . . . . . . .             6  . . . . . . . .
+  5  . . . . . . . .             5  . . . . . . . .
+  4  . . . . . . . .             4  . . . . . . . .
+  3  . . . . . . . .             3  . . . . . . . .
+  2  . n . . . . . .             2  . K . . . . . .
+  1  K . . . . . . .             1  . . . . . . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=- hm=12 fm=60             side=black castling=- ep=- hm=0 fm=60
+
+check=false checkmate=false stalemate=false outcome=draw-material

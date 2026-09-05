@@ -1,0 +1,19 @@
+description = En-passant-Schlag ist illegal, weil er eine Fesselung entlang der Reihe aufdeckt
+ruleset     = standard
+move        = d5 c6
+legal       = false
+reason      = schach
+
+     INITIAL
+  8  . . . . . . . k
+  7  . . . . . . . .
+  6  . . . . . . . .
+  5  r . p P K . . .
+  4  . . . . . . . .
+  3  . . . . . . . .
+  2  . . . . . . . .
+  1  . . . . . . . .
+     a b c d e f g h
+  side=white castling=- ep=c6 hm=0 fm=5
+
+check=false checkmate=false stalemate=false

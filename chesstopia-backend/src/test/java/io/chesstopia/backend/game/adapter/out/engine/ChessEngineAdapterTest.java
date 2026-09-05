@@ -1,6 +1,7 @@
 package io.chesstopia.backend.game.adapter.out.engine;
 
 import io.chesstopia.backend.game.domain.*;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.*;
 
@@ -22,14 +23,14 @@ class ChessEngineAdapterTest {
     }
 
     @Test
-    void isExecutableNimmtE2E4AnUndLehntDenZugDerFalschenSeiteAb() {
+    void isLegalNimmtE2E4AnUndLehntDenZugDerFalschenSeiteAb() {
         // ARRANGE
         Position start = adapter.initialPosition(rules);
 
         // ACT & ASSERTIONS
-        assertThat(adapter.isExecutable(start,
+        assertThat(adapter.isLegal(start,
             new Move(new Square(File.E, Rank.TWO), new Square(File.E, Rank.FOUR), null), rules)).isTrue();
-        assertThat(adapter.isExecutable(start,
+        assertThat(adapter.isLegal(start,
             new Move(new Square(File.E, Rank.SEVEN), new Square(File.E, Rank.FIVE), null), rules)).isFalse();
     }
 
@@ -59,6 +60,39 @@ class ChessEngineAdapterTest {
         assertThatThrownBy(() -> adapter.apply(start,
             new Move(new Square(File.E, Rank.SEVEN), new Square(File.E, Rank.FIVE), null), rules))
             .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void outcomeFaltetDasNarrenmattAufSchwarzenSiegDurchMatt() {
+        // ARRANGE
+        Position p0 = adapter.initialPosition(rules);
+        Position p1 = adapter.apply(p0, move(File.F, Rank.TWO, File.F, Rank.THREE), rules);
+        Position p2 = adapter.apply(p1, move(File.E, Rank.SEVEN, File.E, Rank.FIVE), rules);
+        Position p3 = adapter.apply(p2, move(File.G, Rank.TWO, File.G, Rank.FOUR), rules);
+        Position p4 = adapter.apply(p3, move(File.D, Rank.EIGHT, File.H, Rank.FOUR), rules);
+
+        // ACT
+        GameConclusion conclusion = adapter.outcome(List.of(p0, p1, p2, p3, p4), rules);
+
+        // ASSERTIONS
+        assertThat(conclusion).isEqualTo(new GameConclusion(GameStatus.BLACK_WON, EndReason.CHECKMATE));
+    }
+
+    @Test
+    void outcomeFaltetEineLaufendePartieAufOngoing() {
+        // ARRANGE
+        Position p0 = adapter.initialPosition(rules);
+        Position p1 = adapter.apply(p0, move(File.E, Rank.TWO, File.E, Rank.FOUR), rules);
+
+        // ACT
+        GameConclusion conclusion = adapter.outcome(List.of(p0, p1), rules);
+
+        // ASSERTIONS
+        assertThat(conclusion).isEqualTo(new GameConclusion(GameStatus.ONGOING, null));
+    }
+
+    private Move move(File fromFile, Rank fromRank, File toFile, Rank toRank) {
+        return new Move(new Square(fromFile, fromRank), new Square(toFile, toRank), null);
     }
 
     @Test

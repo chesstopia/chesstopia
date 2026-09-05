@@ -1,0 +1,19 @@
+description = Bauer kann nicht vorwärts ziehen, wenn die eigene Figur das Zielfeld besetzt
+ruleset     = standard
+move        = e2 e3
+legal       = false
+reason      = eigene
+
+     INITIAL
+  8  k . . . . . . .
+  7  . . . . . . . .
+  6  . . . . . . . .
+  5  . . . . . . . .
+  4  . . . . . . . .
+  3  . . . . N . . .
+  2  . . . . P . . .
+  1  K . . . . . . .
+     a b c d e f g h
+  side=white castling=- ep=- hm=0 fm=1
+
+check=false checkmate=false stalemate=false

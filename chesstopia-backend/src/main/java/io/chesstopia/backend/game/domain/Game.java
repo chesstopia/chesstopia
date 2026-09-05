@@ -17,6 +17,7 @@ public record Game(
     Position currentPosition,
     List<Ply> history,
     GameStatus status,
+    EndReason endReason,        // null solange status == ONGOING
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt
 ) {
@@ -25,15 +26,16 @@ public record Game(
     }
 
     public static Game start(GameId id, RuleSet ruleSet, Position initialPosition, OffsetDateTime now) {
-        return new Game(id, ruleSet, initialPosition, List.of(), GameStatus.ONGOING, now, now);
+        return new Game(id, ruleSet, initialPosition, List.of(), GameStatus.ONGOING, null, now, now);
     }
 
-    public Game play(Move move, Position resultingPosition, OffsetDateTime now) {
-        if (status == GameStatus.COMPLETED) {
+    public Game play(Move move, Position resultingPosition, GameConclusion conclusion, OffsetDateTime now) {
+        if (status != GameStatus.ONGOING) {
             throw new IllegalStateException("Partie %s ist beendet".formatted(id.value()));
         }
         var next = new ArrayList<>(history);
         next.add(new Ply(next.size() + 1, move, resultingPosition, now));
-        return new Game(id, ruleSet, resultingPosition, next, status, createdAt, now);
+        return new Game(id, ruleSet, resultingPosition, next,
+            conclusion.status(), conclusion.endReason(), createdAt, now);
     }
 }

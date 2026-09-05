@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { GameApi } from '@chesstopia/openapi-client';
-import type { MoveRequest, Position } from '@chesstopia/openapi-client';
+import type { GameResponse, MoveRequest, Position } from '@chesstopia/openapi-client';
 import { apiConfig } from '@/lib/api';
+import { isLegalMove } from '@/lib/engine';
 import { parseSquare, sideOf, toBoard } from '@/lib/position';
 import type { Board, Side } from '@/lib/position';
 import { fromSquare } from '@/lib/squares';
@@ -25,6 +26,8 @@ export function useBoardState() {
   const [error, setError] = useState<Error | null>(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
+  const [status, setStatus] = useState<GameResponse['status']>('ONGOING');
+  const [endReason, setEndReason] = useState<GameResponse['endReason'] | null>(null);
 
   useEffect(() => {
     gameApi
@@ -32,6 +35,8 @@ export function useBoardState() {
       .then((res) => {
         setGameId(res.data.id);
         setPosition(res.data.position);
+        setStatus(res.data.status);
+        setEndReason(res.data.endReason ?? null);
       })
       .catch((err: unknown) => setError(asError(err)))
       .finally(() => setLoading(false));
@@ -43,6 +48,7 @@ export function useBoardState() {
   const playMove = useCallback(
     async (from: string, to: string) => {
       if (gameId === null || position === null) return;
+      if (status !== 'ONGOING') return;
 
       // Die Wahl der Umwandlungsfigur ist eine Eingabe, keine Regel: Dass ein
       // Bauer auf der Grundreihe umwandeln *muss*, erzwingt die Engine — sie
@@ -57,19 +63,26 @@ export function useBoardState() {
         promotion: isPawn && promotes ? 'QUEEN' : undefined,
       };
 
+      if (!isLegalMove(position, move)) {
+        setError(new Error('Dieser Zug ist nicht legal.'));
+        return;
+      }
+
       setPending(true);
       setError(null);
       try {
         const res = await gameApi.playMove(gameId, move);
         setPosition(res.data.position);
+        setStatus(res.data.status);
+        setEndReason(res.data.endReason ?? null);
       } catch (err: unknown) {
         setError(asError(err));
       } finally {
         setPending(false);
       }
     },
-    [gameId, position],
+    [gameId, position, status],
   );
 
-  return { board, position, gameId, sideToMove, error, loading, pending, playMove };
+  return { board, position, gameId, sideToMove, status, endReason, error, loading, pending, playMove };
 }

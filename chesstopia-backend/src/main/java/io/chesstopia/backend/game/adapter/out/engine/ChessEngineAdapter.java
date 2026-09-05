@@ -1,10 +1,12 @@
 package io.chesstopia.backend.game.adapter.out.engine;
 
 import io.chesstopia.backend.game.application.port.out.ChessEngine;
+import io.chesstopia.backend.game.domain.GameConclusion;
 import io.chesstopia.backend.game.domain.Move;
 import io.chesstopia.backend.game.domain.Position;
 import io.chesstopia.backend.game.domain.RuleSet;
 import io.chesstopia.engine.ChessEngineKt;
+import java.util.List;
 import org.springframework.stereotype.Component;
 
 /**
@@ -27,7 +29,7 @@ class ChessEngineAdapter implements ChessEngine {
     }
 
     @Override
-    public boolean isExecutable(Position position, Move move, RuleSet ruleSet) {
+    public boolean isLegal(Position position, Move move, RuleSet ruleSet) {
         return ChessEngineKt.validateMove(
             mapper.toEngine(position), mapper.toEngine(move), mapper.toEngine(ruleSet));
     }
@@ -36,5 +38,14 @@ class ChessEngineAdapter implements ChessEngine {
     public Position apply(Position position, Move move, RuleSet ruleSet) {
         return mapper.toDomain(ChessEngineKt.applyMove(
             mapper.toEngine(position), mapper.toEngine(move), mapper.toEngine(ruleSet)));
+    }
+
+    @Override
+    public GameConclusion outcome(List<Position> history, RuleSet ruleSet) {
+        io.chesstopia.engine.Position[] engineHistory = history.stream()
+            .map(mapper::toEngine)
+            .toArray(io.chesstopia.engine.Position[]::new);
+        return mapper.toDomain(
+            ChessEngineKt.gameOutcome(engineHistory, mapper.toEngine(ruleSet)));
     }
 }

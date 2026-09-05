@@ -1,0 +1,18 @@
+description = Patt, weil der eigene Bauer durch den gegnerischen Bauern komplett blockiert ist und der König keine freie Nachbarschaft hat
+ruleset     = standard
+move        = f6 f7
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  . . . . . . . k             8  . . . . . . . k
+  7  . . . . . . . p             7  . . . . . K . p
+  6  . . . . . K . P             6  . . . . . . . P
+  5  . . . . . . . .             5  . . . . . . . .
+  4  . . . . . . . .             4  . . . . . . . .
+  3  . . . . . . . .             3  . . . . . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  . . . . . . . .             1  . . . . . . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=- hm=8 fm=50             side=black castling=- ep=- hm=9 fm=50
+
+check=false checkmate=false stalemate=true outcome=stalemate

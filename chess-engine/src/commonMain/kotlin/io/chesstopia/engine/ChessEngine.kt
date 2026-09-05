@@ -52,20 +52,54 @@ fun getLegalMoves(position: Position, ruleSet: RuleSet): LegalMovesResult {
     TODO("Chess rule logic not yet implemented — tracked in CHESS-2")
 }
 
-/**
- * Ob der Zug in dieser Stellung MECHANISCH ausführbar ist — nicht, ob er legal ist.
- * Gangart, Fesselung und Schach werden nicht geprüft (CHESS-2).
- */
 @JsExport
-fun validateMove(position: Position, move: Move, ruleSet: RuleSet): Boolean =
-    position.rejectReason(move) == null
+enum class OutcomeKind {
+    IN_PROGRESS,
+    CHECKMATE,
+    STALEMATE,
+    DRAW_FIFTY_MOVE,
+    DRAW_INSUFFICIENT_MATERIAL,
+    DRAW_THREEFOLD_REPETITION,
+}
+
+@JsExport
+data class GameOutcome(val kind: OutcomeKind, val winner: Color?)
 
 /**
- * Führt den Zug aus und liefert die neue Stellung. Prüft die Legalität nicht.
- * @throws IllegalArgumentException wenn der Zug nicht mechanisch ausführbar ist.
+ * Der Zustand der Partie nach der letzten Stellung in [history].
+ * Nimmt die Historie, weil die Dreifachwiederholung sie braucht; das letzte
+ * Element ist die aktuelle Stellung.
+ */
+@JsExport
+fun gameOutcome(history: Array<Position>, ruleSet: RuleSet): GameOutcome {
+    require(history.isNotEmpty()) { "history darf nicht leer sein" }
+    val pos = history.last()
+    if (pos.legalMoves(ruleSet).isEmpty()) {
+        return if (pos.isCheck()) GameOutcome(OutcomeKind.CHECKMATE, pos.sideToMove.opposite())
+        else GameOutcome(OutcomeKind.STALEMATE, null)
+    }
+    return when {
+        pos.isFiftyMoveReached() -> GameOutcome(OutcomeKind.DRAW_FIFTY_MOVE, null)
+        pos.hasInsufficientMaterial() -> GameOutcome(OutcomeKind.DRAW_INSUFFICIENT_MATERIAL, null)
+        threefoldRepetition(history) -> GameOutcome(OutcomeKind.DRAW_THREEFOLD_REPETITION, null)
+        else -> GameOutcome(OutcomeKind.IN_PROGRESS, null)
+    }
+}
+
+/** Ob der Zug in dieser Stellung nach den Regeln legal ist (Gangart, Weg, Fesselung, Schach). */
+@JsExport
+fun validateMove(position: Position, move: Move, ruleSet: RuleSet): Boolean =
+    position.isLegalMove(move, ruleSet)
+
+/**
+ * Führt den legalen Zug aus und liefert die neue Stellung.
+ * @throws IllegalArgumentException wenn der Zug nicht legal ist — mit dem Grund im Klartext.
  */
 @JsExport
 fun applyMove(position: Position, move: Move, ruleSet: RuleSet): Position {
     position.rejectReason(move)?.let { throw IllegalArgumentException(it) }
+    if (!position.isLegalMove(move, ruleSet)) {
+        throw IllegalArgumentException(position.illegalReason(move, ruleSet))
+    }
     return position.play(move)
 }

@@ -1,0 +1,18 @@
+description = En-passant-Schlag entfernt den geschlagenen Bauern von seinem eigentlichen Feld, nicht vom Zielfeld
+ruleset     = standard
+move        = e5 f6
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  k . . . . . . .             8  k . . . . . . .
+  7  . . . . . . . .             7  . . . . . . . .
+  6  . . . . . . . .             6  . . . . . P . .
+  5  . . . . P p . .             5  . . . . . . . .
+  4  . . . . . . . .             4  . . . . . . . .
+  3  . . . . . . . .             3  . . . . . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  K . . . . . . .             1  K . . . . . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=f6 hm=0 fm=3             side=black castling=- ep=- hm=0 fm=3
+
+check=false checkmate=false stalemate=false
