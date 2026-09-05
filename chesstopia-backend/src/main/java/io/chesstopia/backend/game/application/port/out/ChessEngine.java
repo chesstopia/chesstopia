@@ -1,6 +1,6 @@
 package io.chesstopia.backend.game.application.port.out;
 
-import io.chesstopia.backend.game.domain.GameOutcome;
+import io.chesstopia.backend.game.domain.GameConclusion;
 import io.chesstopia.backend.game.domain.Move;
 import io.chesstopia.backend.game.domain.Position;
 import io.chesstopia.backend.game.domain.RuleSet;
@@ -15,5 +15,5 @@ public interface ChessEngine {
     Position apply(Position position, Move move, RuleSet ruleSet);
 
     /** Zustand der Partie nach der letzten Stellung in {@code history} (erstes Element = Anfangsstellung). */
-    GameOutcome outcome(List<Position> history, RuleSet ruleSet);
+    GameConclusion outcome(List<Position> history, RuleSet ruleSet);
 }

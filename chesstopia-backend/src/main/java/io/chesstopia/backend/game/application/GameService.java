@@ -7,8 +7,8 @@ import io.chesstopia.backend.game.application.port.in.ViewGame;
 import io.chesstopia.backend.game.application.port.out.ChessEngine;
 import io.chesstopia.backend.game.application.port.out.GamesRepository;
 import io.chesstopia.backend.game.domain.Game;
+import io.chesstopia.backend.game.domain.GameConclusion;
 import io.chesstopia.backend.game.domain.GameId;
-import io.chesstopia.backend.game.domain.GameOutcome;
 import io.chesstopia.backend.game.domain.GameStatus;
 import io.chesstopia.backend.game.domain.Move;
 import io.chesstopia.backend.game.domain.Position;
@@ -66,9 +66,9 @@ class GameService implements StartGame, PlayMove, ViewGame {
         positions.add(chessEngine.initialPosition(game.ruleSet()));
         game.history().forEach(p -> positions.add(p.positionAfter()));
         positions.add(resulting);
-        GameOutcome outcome = chessEngine.outcome(positions, game.ruleSet());
+        GameConclusion conclusion = chessEngine.outcome(positions, game.ruleSet());
 
-        return gamesRepository.save(game.play(move, resulting, outcome, OffsetDateTime.now()));
+        return gamesRepository.save(game.play(move, resulting, conclusion, OffsetDateTime.now()));
     }
 
     @Override

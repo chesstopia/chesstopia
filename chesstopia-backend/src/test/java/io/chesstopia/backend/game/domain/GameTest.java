@@ -11,7 +11,7 @@ class GameTest {
     private final Position start = new Position(Map.of(), Color.WHITE, CastlingRights.all(), null, 0, 1);
     private final Position afterOne = new Position(Map.of(), Color.BLACK, CastlingRights.all(), null, 0, 1);
     private final Move move = new Move(new Square(File.E, Rank.TWO), new Square(File.E, Rank.FOUR), null);
-    private final GameOutcome inProgress = new GameOutcome(OutcomeKind.IN_PROGRESS, null);
+    private final GameConclusion inProgress = new GameConclusion(GameStatus.ONGOING, null);
 
     @Test
     void startBeginntOhneHistorieLaufendInDerGrundstellung() {
@@ -62,13 +62,13 @@ class GameTest {
     }
 
     @Test
-    void playSetztBlackWonUndCheckmateBeiMatt() {
+    void playUebernimmtStatusUndEndgrundAusDerConclusion() {
         // ARRANGE
-        GameOutcome checkmate = new GameOutcome(OutcomeKind.CHECKMATE, Color.BLACK);
+        GameConclusion blackWon = new GameConclusion(GameStatus.BLACK_WON, EndReason.CHECKMATE);
 
         // ACT
         Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0)
-                     .play(move, afterOne, checkmate, T0.plusMinutes(1));
+                     .play(move, afterOne, blackWon, T0.plusMinutes(1));
 
         // ASSERTIONS
         assertThat(g.status()).isEqualTo(GameStatus.BLACK_WON);

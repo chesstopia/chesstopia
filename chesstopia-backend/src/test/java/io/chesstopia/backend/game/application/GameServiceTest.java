@@ -62,7 +62,7 @@ class GameServiceTest {
         when(chessEngine.apply(start, e2e4, RuleSet.standard())).thenReturn(afterMove);
         when(chessEngine.initialPosition(RuleSet.standard())).thenReturn(start);
         when(chessEngine.outcome(any(), eq(RuleSet.standard())))
-            .thenReturn(new GameOutcome(OutcomeKind.IN_PROGRESS, null));
+            .thenReturn(new GameConclusion(GameStatus.ONGOING, null));
         when(gamesRepository.save(any())).then(returnsFirstArg());
 
         // ACT
@@ -85,7 +85,7 @@ class GameServiceTest {
         when(chessEngine.apply(any(), any(), any())).thenReturn(afterMove);
         when(chessEngine.initialPosition(RuleSet.standard())).thenReturn(start);
         when(chessEngine.outcome(any(), any()))
-            .thenReturn(new GameOutcome(OutcomeKind.CHECKMATE, Color.WHITE));
+            .thenReturn(new GameConclusion(GameStatus.WHITE_WON, EndReason.CHECKMATE));
         when(gamesRepository.save(any())).then(returnsFirstArg());
 
         // ACT
@@ -105,7 +105,7 @@ class GameServiceTest {
         when(chessEngine.apply(any(), any(), any())).thenReturn(afterMove);
         when(chessEngine.initialPosition(RuleSet.standard())).thenReturn(start);
         when(chessEngine.outcome(any(), any()))
-            .thenReturn(new GameOutcome(OutcomeKind.DRAW_THREEFOLD_REPETITION, null));
+            .thenReturn(new GameConclusion(GameStatus.DRAW, EndReason.THREEFOLD_REPETITION));
         when(gamesRepository.save(any())).then(returnsFirstArg());
 
         // ACT

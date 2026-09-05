@@ -27,7 +27,7 @@ class GamePersistenceAdapterIT {
         Map.of(new Square(File.E, Rank.TWO), new Piece(PieceType.KING, Color.WHITE)),
         Color.BLACK, CastlingRights.all(), null, 1, 1);
     private final Move move = new Move(new Square(File.E, Rank.ONE), new Square(File.E, Rank.TWO), null);
-    private final GameOutcome inProgress = new GameOutcome(OutcomeKind.IN_PROGRESS, null);
+    private final GameConclusion inProgress = new GameConclusion(GameStatus.ONGOING, null);
 
     @Test
     void eineNeuePartieUeberlebtDenRoundtrip() {
@@ -73,7 +73,7 @@ class GamePersistenceAdapterIT {
         // ARRANGE
         Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0);
         adapter.save(g);
-        GameOutcome checkmate = new GameOutcome(OutcomeKind.CHECKMATE, Color.WHITE);
+        GameConclusion checkmate = new GameConclusion(GameStatus.WHITE_WON, EndReason.CHECKMATE);
 
         // ACT
         adapter.save(adapter.findById(g.id()).orElseThrow().play(move, afterMove, checkmate, T0.plusMinutes(1)));
