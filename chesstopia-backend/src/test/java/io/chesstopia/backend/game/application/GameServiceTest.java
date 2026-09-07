@@ -3,6 +3,7 @@ package io.chesstopia.backend.game.application;
 import io.chesstopia.backend.error.ForbiddenException;
 import io.chesstopia.backend.error.NotFoundException;
 import io.chesstopia.backend.game.application.port.out.ChessEngine;
+import io.chesstopia.backend.game.application.port.out.GameEvents;
 import io.chesstopia.backend.game.application.port.out.GamesRepository;
 import io.chesstopia.backend.game.domain.*;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ class GameServiceTest {
 
     @Mock private GamesRepository gamesRepository;
     @Mock private ChessEngine chessEngine;
+    @Mock private GameEvents gameEvents;
     @InjectMocks private GameService service;
 
     private static final GameId ID = GameId.newId();
@@ -76,6 +78,7 @@ class GameServiceTest {
         assertThat(result.history()).singleElement()
             .satisfies(p -> assertThat(p.move()).isEqualTo(e2e4));
         verify(gamesRepository).save(result);
+        verify(gameEvents).moveWasPlayed(result);
     }
 
     @Test
@@ -107,6 +110,7 @@ class GameServiceTest {
         assertThatThrownBy(() -> service.play(ID, e2e4, null)).isInstanceOf(ForbiddenException.class);
         verify(chessEngine, never()).isLegal(any(), any(), any());
         verify(gamesRepository, never()).save(any());
+        verify(gameEvents, never()).moveWasPlayed(any());
     }
 
     @Test
@@ -119,6 +123,7 @@ class GameServiceTest {
         assertThatThrownBy(() -> service.play(ID, e2e4, PlayerToken.newToken()))
             .isInstanceOf(ForbiddenException.class);
         verify(gamesRepository, never()).save(any());
+        verify(gameEvents, never()).moveWasPlayed(any());
     }
 
     @Test
@@ -131,6 +136,7 @@ class GameServiceTest {
         assertThatThrownBy(() -> service.play(ID, e2e4, existing.inviteToken()))
             .isInstanceOf(ForbiddenException.class);
         verify(chessEngine, never()).isLegal(any(), any(), any());
+        verify(gameEvents, never()).moveWasPlayed(any());
     }
 
     @Test
@@ -185,6 +191,7 @@ class GameServiceTest {
             .isInstanceOf(IllegalArgumentException.class);
         verify(chessEngine, never()).isLegal(any(), any(), any());
         verify(gamesRepository, never()).save(any());
+        verify(gameEvents, never()).moveWasPlayed(any());
     }
 
     @Test
@@ -199,6 +206,7 @@ class GameServiceTest {
             .isInstanceOf(IllegalArgumentException.class);
         verify(chessEngine, never()).apply(any(), any(), any());
         verify(gamesRepository, never()).save(any());
+        verify(gameEvents, never()).moveWasPlayed(any());
     }
 
     @Test

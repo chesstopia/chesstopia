@@ -6,6 +6,7 @@ import io.chesstopia.backend.game.application.port.in.PlayMove;
 import io.chesstopia.backend.game.application.port.in.StartGame;
 import io.chesstopia.backend.game.application.port.in.ViewGame;
 import io.chesstopia.backend.game.application.port.out.ChessEngine;
+import io.chesstopia.backend.game.application.port.out.GameEvents;
 import io.chesstopia.backend.game.application.port.out.GamesRepository;
 import io.chesstopia.backend.game.domain.Color;
 import io.chesstopia.backend.game.domain.Game;
@@ -36,10 +37,12 @@ class GameService implements StartGame, PlayMove, ViewGame {
 
     private final GamesRepository gamesRepository;
     private final ChessEngine chessEngine;
+    private final GameEvents gameEvents;
 
-    GameService(GamesRepository gamesRepository, ChessEngine chessEngine) {
+    GameService(GamesRepository gamesRepository, ChessEngine chessEngine, GameEvents gameEvents) {
         this.gamesRepository = gamesRepository;
         this.chessEngine = chessEngine;
+        this.gameEvents = gameEvents;
     }
 
     @Override
@@ -76,7 +79,9 @@ class GameService implements StartGame, PlayMove, ViewGame {
         positions.add(resulting);
         GameConclusion conclusion = chessEngine.outcome(positions, game.ruleSet());
 
-        return gamesRepository.save(game.play(move, resulting, conclusion, OffsetDateTime.now()));
+        Game saved = gamesRepository.save(game.play(move, resulting, conclusion, OffsetDateTime.now()));
+        gameEvents.moveWasPlayed(saved);
+        return saved;
     }
 
     @Override
