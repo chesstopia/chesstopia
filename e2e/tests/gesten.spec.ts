@@ -1,22 +1,13 @@
 import { test, expect } from '@playwright/test';
 import { dragPiece } from './support/drag';
 
-test.describe('Zug spielen', () => {
-  test('ein legaler Zug bewegt die Figur und gibt den Zug an Schwarz weiter', async ({ page }) => {
-    // ARRANGE
-    await page.goto('/');
-    await expect(page.locator('[data-square="e1"] [data-piece="wK"]')).toBeVisible();
-    await expect(page.getByText('Weiß am Zug')).toBeVisible();
-
-    // ACT
-    await dragPiece(page, 'e2', 'e4');
-
-    // ASSERTIONS
-    await expect(page.locator('[data-square="e4"] [data-piece="wP"]')).toBeVisible();
-    await expect(page.locator('[data-square="e2"] [data-piece]')).toHaveCount(0);
-    await expect(page.getByText('Schwarz am Zug')).toBeVisible();
-  });
-
+/**
+ * Zeigergesten, die keine Schachsituation sind und deshalb nicht in den Korpus
+ * gehören. Die Entsprechung auf Ebene 2 (`Chessboard.test.tsx`) fährt
+ * synthetische Events in jsdom — dass die Verweigerung auch eine echte
+ * Pointer-Geste im Browser überlebt, prüft ausschließlich dieser Test.
+ */
+test.describe('Gesten', () => {
   test('eine Figur der nicht ziehenden Seite lässt sich nicht aufnehmen', async ({ page }) => {
     // ARRANGE — Weiß ist am Zug, e7 gehört Schwarz.
     await page.goto('/');
