@@ -1,0 +1,14 @@
+description = en passant nimmt den Bauern, der nicht auf dem Zielfeld steht
+moves       = e2e4 g8f6 e4e5 d7d5 e5d6
+turn        = black
+
+     BOARD
+  8  r n b q k b . r
+  7  p p p . p p p p
+  6  . . . P . n . .
+  5  . . . . . . . .
+  4  . . . . . . . .
+  3  . . . . . . . .
+  2  P P P P . P P P
+  1  R N B Q K B N R
+     a b c d e f g h
