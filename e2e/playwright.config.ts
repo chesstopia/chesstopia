@@ -42,7 +42,11 @@ export default defineConfig({
           timeout: 60_000,
         },
         {
-          command: 'pnpm --filter chesstopia-frontend run preview -- --port 4173 --strictPort',
+          // Kein `--` vor den Flags: pnpm reicht es wörtlich weiter, Vites CLI
+          // wertet alles danach als Positionsargument und ignoriert --port und
+          // --strictPort stillschweigend. Gemessen: mit `--` startet der Server
+          // auf dem nächsten freien Port statt zu scheitern.
+          command: 'pnpm --filter chesstopia-frontend run preview --port 4173 --strictPort',
           url: 'http://localhost:4173',
           cwd: '..',
           reuseExistingServer: !process.env.CI,
