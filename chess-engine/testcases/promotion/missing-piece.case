@@ -1,0 +1,19 @@
+description = Zug auf die letzte Reihe ohne Umwandlungsfigur ist illegal
+ruleset     = standard
+move        = e7 e8
+legal       = false
+reason      = zielfigur
+
+     INITIAL
+  8  . . . . . . . k
+  7  . . . . P . . .
+  6  . . . . . . . .
+  5  . . . . . . . .
+  4  . . . . . . . .
+  3  . . . . . . . .
+  2  . . . . . . . .
+  1  . . . . K . . .
+     a b c d e f g h
+  side=white castling=- ep=- hm=0 fm=20
+
+check=false checkmate=false stalemate=false

@@ -69,6 +69,16 @@ class GameControllerIT {
             .expectStatus().isOk();
     }
 
+    private GameResponse playMoveAndGet(UUID id, Map<String, Object> body) {
+        return webTestClient.post()
+            .uri("/api/v1/games/{id}/moves", id)
+            .bodyValue(body)
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody(GameResponse.class)
+            .returnResult().getResponseBody();
+    }
+
     private static boolean hasPiece(Position position, Square.FileEnum file, Square.RankEnum rank,
                                     Piece.TypeEnum type, Piece.ColorEnum color) {
         return position.getBoard().stream().anyMatch(pp ->
@@ -219,5 +229,40 @@ class GameControllerIT {
             .expectStatus().isBadRequest();
 
         assertThat(getGame(id).getMoveCount()).isZero();
+    }
+
+    @Test
+    void playMove_laeuferVerstellt_wird400UndStellungBleibtUnveraendert() {
+        // ARRANGE
+        UUID id = createGame().getId();
+
+        // ACT & ASSERTIONS
+        // Läufer f1 kann in der Grundstellung nicht ziehen (durch eigenen Bauern auf e2 verstellt)
+        webTestClient.post()
+            .uri("/api/v1/games/{id}/moves", id)
+            .bodyValue(move("F", "ONE", "B", "FIVE"))
+            .exchange()
+            .expectStatus().isBadRequest();
+
+        GameResponse unchanged = getGame(id);
+        assertThat(unchanged.getStatus()).isEqualTo(GameResponse.StatusEnum.ONGOING);
+        assertThat(unchanged.getMoveCount()).isZero();
+    }
+
+    @Test
+    void narrenmatt_beendetDiePartieMitBlackWonUndCheckmate() {
+        // ARRANGE
+        UUID id = createGame().getId();
+        // 1. f2-f3  e7-e5  2. g2-g4  Qd8-h4#
+        playMove(id, move("F", "TWO", "F", "THREE"));
+        playMove(id, move("E", "SEVEN", "E", "FIVE"));
+        playMove(id, move("G", "TWO", "G", "FOUR"));
+
+        // ACT
+        GameResponse afterMate = playMoveAndGet(id, move("D", "EIGHT", "H", "FOUR"));
+
+        // ASSERTIONS
+        assertThat(afterMate.getStatus()).isEqualTo(GameResponse.StatusEnum.BLACK_WON);
+        assertThat(afterMate.getEndReason()).isEqualTo(GameResponse.EndReasonEnum.CHECKMATE);
     }
 }

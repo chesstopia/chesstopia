@@ -1,0 +1,19 @@
+description = En-passant-Ziel ist gesetzt, aber der ziehende Bauer steht eine Reihe zu weit zurück, um es zu erreichen
+ruleset     = standard
+move        = e4 d6
+legal       = false
+reason      = gangart
+
+     INITIAL
+  8  k . . . . . . .
+  7  . . . . . . . .
+  6  . . . . . . . .
+  5  . . . p . . . .
+  4  . . . . P . . .
+  3  . . . . . . . .
+  2  . . . . . . . .
+  1  K . . . . . . .
+     a b c d e f g h
+  side=white castling=- ep=d6 hm=0 fm=3
+
+check=false checkmate=false stalemate=false

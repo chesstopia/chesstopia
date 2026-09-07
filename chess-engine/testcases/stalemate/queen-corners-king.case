@@ -1,0 +1,18 @@
+description = Die Dame rückt zu nah heran und pattsetzt den gegnerischen König, statt ihn schachzubieten
+ruleset     = standard
+move        = g5 g6
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  . . . . . . . k             8  . . . . . . . k
+  7  . . . . . K . .             7  . . . . . K . .
+  6  . . . . . . . .             6  . . . . . . Q .
+  5  . . . . . . Q .             5  . . . . . . . .
+  4  . . . . . . . .             4  . . . . . . . .
+  3  . . . . . . . .             3  . . . . . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  . . . . . . . .             1  . . . . . . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=- hm=5 fm=50             side=black castling=- ep=- hm=6 fm=50
+
+check=false checkmate=false stalemate=true outcome=stalemate

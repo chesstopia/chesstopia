@@ -1,0 +1,18 @@
+description = Bauer erreicht die letzte Reihe und wandelt sich in einen Turm um
+ruleset     = standard
+move        = e7 e8=R
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  . . . . . . . .             8  . . . . R . . .
+  7  . . . . P . . .             7  . . . . . . . .
+  6  k . . . . . . .             6  k . . . . . . .
+  5  . . . . . . . .             5  . . . . . . . .
+  4  . . . . . . . .             4  . . . . . . . .
+  3  . . . . . . . .             3  . . . . . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  . . . . K . . .             1  . . . . K . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=- hm=0 fm=20             side=black castling=- ep=- hm=0 fm=20
+
+check=false checkmate=false stalemate=false

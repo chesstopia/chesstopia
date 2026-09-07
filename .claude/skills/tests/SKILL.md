@@ -52,7 +52,11 @@ En-passant-Feld (`-`) · Halbzug- und Vollzugzähler · syntaktisch kaputte FEN.
 En passant nur unmittelbar nach dem Doppelschritt · Rochade nicht aus, durch
 oder in ein Schach, nicht mit bewegtem König oder Turm · Unterverwandlung nach
 Turm, Läufer, Springer · Umwandlung auf der letzten Reihe · gefesselte Figur ·
-Zug, der den eigenen König im Schach lässt.
+Zug, der den eigenen König im Schach lässt. Der ausführbare Katalog liegt
+inzwischen in `chess-engine/testcases/`
+([ADR-0022](../../../docs/adr/0022-datei-getriebener-engine-testkorpus.md)) —
+eine neue Schachsituation wird eine neue `.case`-Datei, eine Verzweigung im
+Regelcode ein gezielter Unit-Test daneben.
 
 **Partieende**
 Matt gegen Patt · 50-Züge-Regel · dreifache Stellungswiederholung · ungenügendes
@@ -87,7 +91,9 @@ Annotation läuft der Test gegen die echte Datenbank.
 **Engine.** `kotlin.test` in `commonTest`, damit der Test auf beiden Zielen
 läuft. Die vorhandenen Tests behaupten `NotImplementedError`; wer eine Funktion
 implementiert, ersetzt den zugehörigen Platzhaltertest, statt einen zweiten
-danebenzustellen.
+danebenzustellen. Der `getLegalMoves`-Platzhaltertest bleibt bestehen, die von
+`validateMove`/`applyMove` sind ersetzt. Eine Perft-Abweichung ist immer ein
+Zugerzeugungs-Fehler, nie eine falsche Erwartung.
 
 ## 4. Gegenprobe
 

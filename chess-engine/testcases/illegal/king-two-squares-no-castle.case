@@ -1,0 +1,19 @@
+description = König zieht zwei Felder mitten im Brett — das ist keine Rochade und keine gültige Königs-Gangart
+ruleset     = standard
+move        = d4 f4
+legal       = false
+reason      = gangart
+
+     INITIAL
+  8  k . . . . . . .
+  7  . . . . . . . .
+  6  . . . . . . . .
+  5  . . . . . . . .
+  4  . . . K . . . .
+  3  . . . . . . . .
+  2  . . . . . . . .
+  1  . . . . . . . .
+     a b c d e f g h
+  side=white castling=- ep=- hm=0 fm=1
+
+check=false checkmate=false stalemate=false

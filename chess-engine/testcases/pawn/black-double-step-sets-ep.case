@@ -1,0 +1,18 @@
+description = Schwarzer Bauer zieht von der Grundreihe zwei Felder und setzt das En-passant-Ziel
+ruleset     = standard
+move        = e7 e5
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  k . . . . . . .             8  k . . . . . . .
+  7  . . . . p . . .             7  . . . . . . . .
+  6  . . . . . . . .             6  . . . . . . . .
+  5  . . . . . . . .             5  . . . . p . . .
+  4  . . . . . . . .             4  . . . . . . . .
+  3  . . . . . . . .             3  . . . . . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  K . . . . . . .             1  K . . . . . . .
+     a b c d e f g h                a b c d e f g h
+  side=black castling=- ep=- hm=0 fm=1             side=white castling=- ep=e6 hm=0 fm=2
+
+check=false checkmate=false stalemate=false

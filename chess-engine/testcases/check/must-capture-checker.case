@@ -1,0 +1,18 @@
+description = König im Schach kann sich retten, indem eine eigene Figur die angreifende Figur schlägt
+ruleset     = standard
+move        = a5 c3
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  . . . . . . . .             8  . . . . . . . .
+  7  . . . . . . . .             7  . . . . . . . .
+  6  . . . . . . . .             6  . . . . . . . .
+  5  B . . . . . . .             5  . . . . . . . .
+  4  k . . . . . . .             4  k . . . . . . .
+  3  . . q . . . . .             3  . . B . . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  . . . . K . . .             1  . . . . K . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=- hm=5 fm=15             side=black castling=- ep=- hm=0 fm=15
+
+check=false checkmate=false stalemate=false

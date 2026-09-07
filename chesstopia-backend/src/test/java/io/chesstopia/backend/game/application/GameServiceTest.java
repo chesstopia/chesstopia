@@ -11,12 +11,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -56,8 +58,11 @@ class GameServiceTest {
         // ARRANGE
         Game existing = Game.start(ID, RuleSet.standard(), start, T0);
         when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
-        when(chessEngine.isExecutable(start, e2e4, RuleSet.standard())).thenReturn(true);
+        when(chessEngine.isLegal(start, e2e4, RuleSet.standard())).thenReturn(true);
         when(chessEngine.apply(start, e2e4, RuleSet.standard())).thenReturn(afterMove);
+        when(chessEngine.initialPosition(RuleSet.standard())).thenReturn(start);
+        when(chessEngine.outcome(any(), eq(RuleSet.standard())))
+            .thenReturn(new GameConclusion(GameStatus.ONGOING, null));
         when(gamesRepository.save(any())).then(returnsFirstArg());
 
         // ACT
@@ -65,16 +70,70 @@ class GameServiceTest {
 
         // ASSERTIONS
         assertThat(result.currentPosition()).isEqualTo(afterMove);
+        assertThat(result.status()).isEqualTo(GameStatus.ONGOING);
         assertThat(result.history()).singleElement()
             .satisfies(p -> assertThat(p.move()).isEqualTo(e2e4));
         verify(gamesRepository).save(result);
     }
 
     @Test
-    void playLehntEinenNichtAusfuehrbarenZugAbUndSchreibtNichts() {
+    void playSetztWhiteWonUndCheckmateBeiMatt() {
+        // ARRANGE
+        Game existing = Game.start(ID, RuleSet.standard(), start, T0);
+        when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
+        when(chessEngine.isLegal(any(), any(), any())).thenReturn(true);
+        when(chessEngine.apply(any(), any(), any())).thenReturn(afterMove);
+        when(chessEngine.initialPosition(RuleSet.standard())).thenReturn(start);
+        when(chessEngine.outcome(any(), any()))
+            .thenReturn(new GameConclusion(GameStatus.WHITE_WON, EndReason.CHECKMATE));
+        when(gamesRepository.save(any())).then(returnsFirstArg());
+
+        // ACT
+        Game result = service.play(ID, e2e4);
+
+        // ASSERTIONS
+        assertThat(result.status()).isEqualTo(GameStatus.WHITE_WON);
+        assertThat(result.endReason()).isEqualTo(EndReason.CHECKMATE);
+    }
+
+    @Test
+    void playSetztDrawUndThreefoldRepetitionBeiEntsprechendemEngineOutcome() {
+        // ARRANGE
+        Game existing = Game.start(ID, RuleSet.standard(), start, T0);
+        when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
+        when(chessEngine.isLegal(any(), any(), any())).thenReturn(true);
+        when(chessEngine.apply(any(), any(), any())).thenReturn(afterMove);
+        when(chessEngine.initialPosition(RuleSet.standard())).thenReturn(start);
+        when(chessEngine.outcome(any(), any()))
+            .thenReturn(new GameConclusion(GameStatus.DRAW, EndReason.THREEFOLD_REPETITION));
+        when(gamesRepository.save(any())).then(returnsFirstArg());
+
+        // ACT
+        Game result = service.play(ID, e2e4);
+
+        // ASSERTIONS
+        assertThat(result.status()).isEqualTo(GameStatus.DRAW);
+        assertThat(result.endReason()).isEqualTo(EndReason.THREEFOLD_REPETITION);
+    }
+
+    @Test
+    void playAufBereitsBeendeterPartieWirftIllegalArgumentStattIllegalState() {
+        // ARRANGE
+        Game finished = new Game(ID, RuleSet.standard(), start, List.of(),
+            GameStatus.DRAW, EndReason.FIFTY_MOVE_RULE, T0, T0);
+        when(gamesRepository.findById(ID)).thenReturn(Optional.of(finished));
+
+        // ACT & ASSERTIONS
+        assertThatThrownBy(() -> service.play(ID, e2e4)).isInstanceOf(IllegalArgumentException.class);
+        verify(chessEngine, never()).isLegal(any(), any(), any());
+        verify(gamesRepository, never()).save(any());
+    }
+
+    @Test
+    void playLehntEinenIllegalenZugAbUndSchreibtNichts() {
         // ARRANGE
         when(gamesRepository.findById(ID)).thenReturn(Optional.of(Game.start(ID, RuleSet.standard(), start, T0)));
-        when(chessEngine.isExecutable(any(), any(), any())).thenReturn(false);
+        when(chessEngine.isLegal(any(), any(), any())).thenReturn(false);
 
         // ACT & ASSERTIONS
         assertThatThrownBy(() -> service.play(ID, e2e4)).isInstanceOf(IllegalArgumentException.class);

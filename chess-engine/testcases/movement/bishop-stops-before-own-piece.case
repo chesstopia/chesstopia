@@ -1,0 +1,19 @@
+description = Läufer kann nicht über eine eigene Figur hinwegziehen
+ruleset     = standard
+move        = a1 f6
+legal       = false
+reason      = versperrt
+
+     INITIAL
+  8  k . . . . . . .
+  7  . . . . . . . .
+  6  . . . . . . . .
+  5  . . . . . . . .
+  4  . . . P . . . .
+  3  . . . . . . . .
+  2  . . . . . . . .
+  1  B . . . K . . .
+     a b c d e f g h
+  side=white castling=- ep=- hm=0 fm=1
+
+check=false checkmate=false stalemate=false

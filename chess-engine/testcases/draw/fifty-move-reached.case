@@ -1,0 +1,18 @@
+description = Ein ruhiger Zug erreicht die 100 Halbzüge der Fünfzig-Züge-Regel — Remis durch Zugzahl
+ruleset     = standard
+move        = a1 b1
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  . . . . . . . k             8  . . . . . . . k
+  7  . . . . . . . .             7  . . . . . . . .
+  6  . . . . . . . .             6  . . . . . . . .
+  5  . . . . . . . .             5  . . . . . . . .
+  4  . . . . . . . .             4  . . . . . . . .
+  3  . . . . . . . .             3  . . . . . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  K . . . . . . .             1  . K . . . . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=- hm=99 fm=80             side=black castling=- ep=- hm=100 fm=80
+
+check=false checkmate=false stalemate=false outcome=draw-fifty

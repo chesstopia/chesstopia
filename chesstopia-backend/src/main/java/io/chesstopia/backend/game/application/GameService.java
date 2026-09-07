@@ -7,7 +7,9 @@ import io.chesstopia.backend.game.application.port.in.ViewGame;
 import io.chesstopia.backend.game.application.port.out.ChessEngine;
 import io.chesstopia.backend.game.application.port.out.GamesRepository;
 import io.chesstopia.backend.game.domain.Game;
+import io.chesstopia.backend.game.domain.GameConclusion;
 import io.chesstopia.backend.game.domain.GameId;
+import io.chesstopia.backend.game.domain.GameStatus;
 import io.chesstopia.backend.game.domain.Move;
 import io.chesstopia.backend.game.domain.Position;
 import io.chesstopia.backend.game.domain.RuleSet;
@@ -16,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Orchestriert die In-Ports des game-Features über die Out-Ports.
@@ -48,13 +52,23 @@ class GameService implements StartGame, PlayMove, ViewGame {
     public Game play(GameId gameId, Move move) {
         Game game = gamesRepository.findById(gameId)
             .orElseThrow(() -> new NotFoundException("Partie %s existiert nicht".formatted(gameId.value())));
-        if (!chessEngine.isExecutable(game.currentPosition(), move, game.ruleSet())) {
+        if (game.status() != GameStatus.ONGOING) {
+            throw new IllegalArgumentException("Partie %s ist bereits beendet".formatted(gameId.value()));
+        }
+        if (!chessEngine.isLegal(game.currentPosition(), move, game.ruleSet())) {
             throw new IllegalArgumentException(
-                "Der Zug %s→%s ist in dieser Stellung nicht ausführbar".formatted(
+                "Der Zug %s→%s ist in dieser Stellung nicht legal".formatted(
                     square(move.from()), square(move.to())));
         }
         Position resulting = chessEngine.apply(game.currentPosition(), move, game.ruleSet());
-        return gamesRepository.save(game.play(move, resulting, OffsetDateTime.now()));
+
+        List<Position> positions = new ArrayList<>();
+        positions.add(chessEngine.initialPosition(game.ruleSet()));
+        game.history().forEach(p -> positions.add(p.positionAfter()));
+        positions.add(resulting);
+        GameConclusion conclusion = chessEngine.outcome(positions, game.ruleSet());
+
+        return gamesRepository.save(game.play(move, resulting, conclusion, OffsetDateTime.now()));
     }
 
     @Override

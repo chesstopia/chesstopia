@@ -41,6 +41,9 @@ TEST*.xml
 # ── Local planning docs (not for version control) ─────────────────────────────
 docs/local/
 
+# ── Subagent-driven-development scratch (ledger, briefs, review packages) ──────
+.superpowers/
+
 # ── Claude Code ───────────────────────────────────────────────────────────────
 # Agenten und Skills sind versioniert — sie tragen Projektwissen.
 # Persönliche Berechtigungen sind es nicht.

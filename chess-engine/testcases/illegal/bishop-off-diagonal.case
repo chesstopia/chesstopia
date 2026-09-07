@@ -1,0 +1,19 @@
+description = Läufer zieht nicht diagonal
+ruleset     = standard
+move        = c1 c5
+legal       = false
+reason      = gangart
+
+     INITIAL
+  8  k . . . . . . .
+  7  . . . . . . . .
+  6  . . . . . . . .
+  5  . . . . . . . .
+  4  . . . . . . . .
+  3  . . . . . . . .
+  2  . . . . . . . .
+  1  . . B . . K . .
+     a b c d e f g h
+  side=white castling=- ep=- hm=0 fm=1
+
+check=false checkmate=false stalemate=false

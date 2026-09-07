@@ -1,5 +1,6 @@
 package io.chesstopia.backend.game.adapter.out.persistence.entities;
 
+import io.chesstopia.backend.game.domain.EndReason;
 import io.chesstopia.backend.game.domain.GameStatus;
 import io.chesstopia.backend.game.domain.Variant;
 import jakarta.persistence.Column;
@@ -38,6 +39,10 @@ public class PartieEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private GameStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "end_reason")
+    private EndReason endReason;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "position_snapshot", nullable = false, columnDefinition = "jsonb")
@@ -89,6 +94,14 @@ public class PartieEntity {
 
     public void setStatus(GameStatus status) {
         this.status = status;
+    }
+
+    public EndReason getEndReason() {
+        return endReason;
+    }
+
+    public void setEndReason(EndReason endReason) {
+        this.endReason = endReason;
     }
 
     public PositionJson getPositionSnapshot() {

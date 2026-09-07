@@ -1,0 +1,19 @@
+description = Rochade ist illegal, wenn der König danach im Schach stünde, obwohl Start- und Durchzugsfeld sicher sind
+ruleset     = standard
+move        = e1 g1
+legal       = false
+reason      = schach
+
+     INITIAL
+  8  k . . . . . r .
+  7  . . . . . . . .
+  6  . . . . . . . .
+  5  . . . . . . . .
+  4  . . . . . . . .
+  3  . . . . . . . .
+  2  . . . . . . . .
+  1  . . . . K . . R
+     a b c d e f g h
+  side=white castling=K ep=- hm=0 fm=10
+
+check=false checkmate=false stalemate=false

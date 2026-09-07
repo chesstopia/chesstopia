@@ -1,0 +1,18 @@
+description = Umwandlung setzt den gegnerischen König unmittelbar Schach
+ruleset     = standard
+move        = e7 e8=Q
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  . . . . . . k .             8  . . . . Q . k .
+  7  . . . . P . . .             7  . . . . . . . .
+  6  . . . . . . . .             6  . . . . . . . .
+  5  . . . . . . . .             5  . . . . . . . .
+  4  . . . . . . . .             4  . . . . . . . .
+  3  . . . . . . . .             3  . . . . . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  K . . . . . . .             1  K . . . . . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=- hm=0 fm=25             side=black castling=- ep=- hm=0 fm=25
+
+check=true checkmate=false stalemate=false

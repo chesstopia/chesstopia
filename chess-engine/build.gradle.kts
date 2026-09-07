@@ -40,7 +40,10 @@ kotlin {
         }
         nodejs {
             // JS tests run in Node.js — no browser install required
-            testTask { testLogging { events("passed", "failed", "skipped") } }
+            testTask {
+                testLogging { events("passed", "failed", "skipped") }
+                useMocha { timeout = "60s" }
+            }
         }
         // Library mode: produces chess-engine.js + chess-engine.d.ts
         // Output: build/dist/js/productionLibrary/
@@ -62,3 +65,41 @@ kotlin {
         // Platform-specific code goes here only if truly necessary.
     }
 }
+
+val corpusDir = layout.projectDirectory.dir("testcases")
+val generatedCorpusDir = layout.buildDirectory.dir("generated-corpus/kotlin")
+
+val generateCorpusTests by tasks.registering {
+    description = "Erzeugt je testcases/**/*.case eine @Test-Methode in GeneratedCorpusTest"
+    inputs.dir(corpusDir).withPropertyName("cases")
+    outputs.dir(generatedCorpusDir).withPropertyName("generated")
+    doLast {
+        val root = corpusDir.asFile
+        val pkgDir = generatedCorpusDir.get().asFile.resolve("io/chesstopia/engine/corpus").apply { mkdirs() }
+        fun esc(s: String) = s
+            .replace("\\", "\\\\").replace("\"", "\\\"")
+            .replace("\$", "\\\$").replace("\r", "").replace("\n", "\\n")
+
+        val cases = if (root.isDirectory)
+            root.walkTopDown().filter { it.isFile && it.extension == "case" }.sortedBy { it.invariantSeparatorsPath }.toList()
+        else emptyList()
+
+        val methods = cases.joinToString("\n\n") { file ->
+            val rel = file.relativeTo(root).invariantSeparatorsPath
+            val name = rel.removeSuffix(".case").replace("/", " · ")
+            "    @kotlin.test.Test\n" +
+                "    fun `$name`() = CorpusRunner.run(\"${esc(file.readText())}\", \"$rel\")"
+        }
+
+        pkgDir.resolve("GeneratedCorpusTest.kt").writeText(
+            "// GENERIERT von generateCorpusTests — nicht editieren, nicht committen (build/ ist gitignored)\n" +
+                "package io.chesstopia.engine.corpus\n\n" +
+                "class GeneratedCorpusTest {\n\n$methods\n}\n"
+        )
+    }
+}
+
+tasks.matching { it.name == "compileTestKotlinJvm" || it.name == "compileTestKotlinJs" }
+    .configureEach { dependsOn(generateCorpusTests) }
+
+kotlin.sourceSets.named("commonTest") { kotlin.srcDir(generatedCorpusDir) }

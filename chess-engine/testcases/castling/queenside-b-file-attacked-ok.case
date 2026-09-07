@@ -1,0 +1,18 @@
+description = Angriff auf b1 verhindert die lange Rochade nicht — nur c1 und d1 müssen sicher sein
+ruleset     = standard
+move        = e1 c1
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  . r . . . . . k             8  . r . . . . . k
+  7  . . . . . . . .             7  . . . . . . . .
+  6  . . . . . . . .             6  . . . . . . . .
+  5  . . . . . . . .             5  . . . . . . . .
+  4  . . . . . . . .             4  . . . . . . . .
+  3  . . . . . . . .             3  . . . . . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  R . . . K . . .             1  . . K R . . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=Q ep=- hm=0 fm=10             side=black castling=- ep=- hm=1 fm=10
+
+check=false checkmate=false stalemate=false

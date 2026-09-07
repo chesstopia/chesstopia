@@ -1,0 +1,19 @@
+description = Im Doppelschach genügt das Schlagen eines Angreifers nicht — der zweite Angreifer hält das Schach weiter aufrecht
+ruleset     = standard
+move        = g7 f6
+legal       = false
+reason      = schach
+
+     INITIAL
+  8  . . . . k . . .
+  7  . . . . . . p .
+  6  . . . . . N . .
+  5  . . . . . . . .
+  4  . . . . . . . .
+  3  . . . . . . . .
+  2  . . . . . . . .
+  1  K . . . R . . .
+     a b c d e f g h
+  side=black castling=- ep=- hm=2 fm=20
+
+check=true checkmate=false stalemate=false

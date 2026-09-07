@@ -1,0 +1,19 @@
+description = Absolut gefesselter Springer darf nicht ziehen, weil sein König sonst im Schach stünde
+ruleset     = standard
+move        = d4 f5
+legal       = false
+reason      = schach
+
+     INITIAL
+  8  . . . . . . . k
+  7  . . . . . . b .
+  6  . . . . . . . .
+  5  . . . . . . . .
+  4  . . . N . . . .
+  3  . . . . . . . .
+  2  . . . . . . . .
+  1  K . . . . . . .
+     a b c d e f g h
+  side=white castling=- ep=- hm=2 fm=25
+
+check=false checkmate=false stalemate=false

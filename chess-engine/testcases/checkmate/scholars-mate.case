@@ -1,0 +1,18 @@
+description = Läufermatt-Motiv (Schäfermatt) — Dame schlägt den f7-Bauern, vom Läufer auf c4 gedeckt
+ruleset     = standard
+move        = h5 f7
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  . . . q k . . .             8  . . . q k . . .
+  7  . . . . . p . .             7  . . . . . Q . .
+  6  . . . . . . . .             6  . . . . . . . .
+  5  . . . . . . . Q             5  . . . . . . . .
+  4  . . B . . . . .             4  . . B . . . . .
+  3  . . . . . . . .             3  . . . . . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  . . . . . . K .             1  . . . . . . K .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=- hm=4 fm=3             side=black castling=- ep=- hm=0 fm=3
+
+check=true checkmate=true stalemate=false outcome=checkmate

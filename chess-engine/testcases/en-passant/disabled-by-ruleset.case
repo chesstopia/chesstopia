@@ -1,0 +1,19 @@
+description = En passant ist im RuleSet abgeschaltet, obwohl die Stellung sonst eine gültige Gelegenheit wäre
+ruleset     = standard no-ep
+move        = e5 d6
+legal       = false
+reason      = gangart
+
+     INITIAL
+  8  k . . . . . . .
+  7  . . . . . . . .
+  6  . . . . . . . .
+  5  . . . p P . . .
+  4  . . . . . . . .
+  3  . . . . . . . .
+  2  . . . . . . . .
+  1  K . . . . . . .
+     a b c d e f g h
+  side=white castling=- ep=d6 hm=0 fm=3
+
+check=false checkmate=false stalemate=false

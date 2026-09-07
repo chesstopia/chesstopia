@@ -1,0 +1,18 @@
+description = Ein wegziehender Springer deckt den Angriff des eigenen Turms auf den gegnerischen König auf
+ruleset     = standard
+move        = e4 d6
+legal       = true
+
+     INITIAL                        EXPECTED
+  8  . . . . k . . .             8  . . . . k . . .
+  7  . . . . . . . .             7  . . . . . . . .
+  6  . . . . . . . .             6  . . . N . . . .
+  5  . . . . . . . .             5  . . . . . . . .
+  4  . . . . N . . .             4  . . . . . . . .
+  3  . . . . . . . .             3  . . . . . . . .
+  2  . . . . . . . .             2  . . . . . . . .
+  1  K . . . R . . .             1  K . . . R . . .
+     a b c d e f g h                a b c d e f g h
+  side=white castling=- ep=- hm=1 fm=15             side=black castling=- ep=- hm=2 fm=15
+
+check=true checkmate=false stalemate=false
