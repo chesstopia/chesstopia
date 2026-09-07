@@ -1,13 +1,18 @@
 # Chesstopia CI — build, test, and (on main) publish the container images.
 # See docs/adr/0011-migration-nach-github-actions.md.
 #
-# Topology: the three component jobs run FAN-OUT (no `needs:`). Each of them builds
+# Topology: the four component jobs run FAN-OUT (no `needs:`). Each of them builds
 # the chess-engine transitively — backend through the composite build, frontend
 # through the pnpmInstall → jsBrowserProductionLibraryDistribution chain (ADR-0006).
 # That redundancy is deliberate: on a public repo the minutes are free and the jobs
 # run on separate VMs, so three parallel builds finish sooner than a serial
 # cache-warming stage would, and there is no cross-job cache key that can silently
 # miss. ADR-0009 sequenced them the other way because Bitbucket billed per minute.
+#
+# e2e (level 4, ADR-0019) is the fourth of them: it builds the backend jar and the
+# frontend bundle itself and lets Playwright start both against a Postgres service
+# container. `images` waits on it too — a red end-to-end run should not produce an
+# image — which is the one place this topology is deliberately serialised.
 name: CI
 
 on:
@@ -96,11 +101,64 @@ jobs:
           path: chesstopia-frontend/dist
           retention-days: 1
 
+  e2e:
+    name: e2e (Playwright)
+    runs-on: ubuntu-latest
+    services:
+      # Ebene 4 fährt gegen eine echte Datenbank. Zugangsdaten identisch zu
+      # docker-compose.yml, damit application.yml unverändert trifft — es gibt
+      # kein eigenes E2E-Profil.
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: chesstopia_dev
+          POSTGRES_USER: chesstopia
+          POSTGRES_PASSWORD: chesstopia
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Cache node/pnpm toolchain + pnpm store
+        uses: actions/cache@v4
+        with:
+          path: |
+            .gradle/nodejs
+            .gradle/pnpm
+            ~/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'build.gradle.kts') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      # Browser über Gradle, nicht über ein blankes `pnpm` — pnpm liegt unter
+      # .gradle/pnpm und ist auf dem Runner nicht auf dem PATH. Die PnpmTask
+      # legt ihn für ihre Kindprozesse selbst dorthin, weshalb Playwrights
+      # webServer-Kommando weiter unten `pnpm` findet.
+      - run: ./gradlew playwrightInstallBrowsers
+      - run: ./gradlew pnpmE2eTest
+        env:
+          CI: true
+
   images:
     name: package & push images
     # Images are built ONLY on main — no throwaway images from feature branches or PRs.
     if: github.ref == 'refs/heads/main'
-    needs: [chess-engine, backend, frontend]
+    # e2e bremst hier bewusst als einziger Job zusätzlich: ein roter Durchstich
+    # verdient kein Image. Das serialisiert die sonst reine Fan-out-Topologie
+    # aus ADR-0011 an genau dieser Stelle.
+    needs: [chess-engine, backend, frontend, e2e]
     runs-on: ubuntu-latest
     permissions:
       contents: read
