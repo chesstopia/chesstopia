@@ -119,8 +119,8 @@ class GameServiceTest {
     @Test
     void playAufBereitsBeendeterPartieWirftIllegalArgumentStattIllegalState() {
         // ARRANGE
-        Game finished = new Game(ID, RuleSet.standard(), start, List.of(),
-            GameStatus.DRAW, EndReason.FIFTY_MOVE_RULE, T0, T0);
+        Game finished = new Game(ID, PlayerToken.newToken(), PlayerToken.newToken(), RuleSet.standard(), start,
+            List.of(), GameStatus.DRAW, EndReason.FIFTY_MOVE_RULE, T0, T0);
         when(gamesRepository.findById(ID)).thenReturn(Optional.of(finished));
 
         // ACT & ASSERTIONS
