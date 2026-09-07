@@ -18,7 +18,7 @@ describe('routing', () => {
     render(<RouterProvider router={router} />);
 
     // ASSERTIONS
-    expect(screen.getByText('StartPage')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Chesstopia' })).toBeInTheDocument();
   });
 
   it('rendert die GamePage mit gameId unter /game/:gameId', () => {

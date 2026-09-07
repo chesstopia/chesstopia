@@ -268,21 +268,51 @@ components:
       description: >
         Antwort auf die Partie-Erstellung. Trägt zusätzlich zu GameResponse die
         beiden Spieler-Tokens — der einzige Ort, an dem sie den Server verlassen.
-      allOf:
-        - $ref: "#/components/schemas/GameResponse"
-        - type: object
-          required:
-            - ownerToken
-            - inviteToken
-          properties:
-            ownerToken:
-              type: string
-              format: uuid
-              description: Nachweis für die weiße Seite (Ersteller). Nie erneut abrufbar.
-            inviteToken:
-              type: string
-              format: uuid
-              description: Nachweis für die schwarze Seite. Teil des Einladungslinks.
+        Bewusst als eigenständiges Objektschema statt per allOf-Komposition über
+        GameResponse: der TypeScript-Axios-Generator (Version siehe
+        `openapi-client/openapitools.json`) kollabiert ein `$ref` +
+        inline-Objekt-`allOf` hier zu einem reinen Typalias auf GameResponse und
+        verliert ownerToken/inviteToken dabei vollständig — der Spring-Generator
+        ist davon nicht betroffen, aber beide Generatoren laufen von derselben
+        Datei (ADR-0006), also muss die Struktur für beide funktionieren. Siehe
+        ADR-0024.
+      type: object
+      required:
+        - id
+        - position
+        - status
+        - moveCount
+        - ownerToken
+        - inviteToken
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID der Partie
+        position: { $ref: "#/components/schemas/Position" }
+        status:
+          type: string
+          description: Zustand der Partie
+          enum: [ONGOING, WHITE_WON, BLACK_WON, DRAW]
+          example: ONGOING
+        endReason:
+          type: string
+          nullable: true
+          description: Grund des Partieendes; nur gesetzt, wenn status != ONGOING.
+          enum: [CHECKMATE, STALEMATE, FIFTY_MOVE_RULE, INSUFFICIENT_MATERIAL, THREEFOLD_REPETITION]
+        moveCount:
+          type: integer
+          format: int32
+          description: Anzahl der bisher gespielten Halbzüge
+          example: 0
+        ownerToken:
+          type: string
+          format: uuid
+          description: Nachweis für die weiße Seite (Ersteller). Nie erneut abrufbar.
+        inviteToken:
+          type: string
+          format: uuid
+          description: Nachweis für die schwarze Seite. Teil des Einladungslinks.
 
     MoveRequest:
       type: object

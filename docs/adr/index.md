@@ -33,6 +33,7 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 | [0021](0021-mapstruct-fuer-adapter-mappings.md) | MapStruct für die Adapter-Mappings | Accepted | complete |
 | [0022](0022-datei-getriebener-engine-testkorpus.md) | Datei-getriebener Engine-Testkorpus | Accepted | complete |
 | [0023](0023-engine-outcome-mit-stellungshistorie.md) | Engine-Outcome nimmt die Stellungshistorie | Accepted | complete |
+| [0024](0024-flache-schemas-statt-allof-fuer-typescript-client.md) | Flache Objektschemas statt `allOf`-Komposition für Schemas, die der TypeScript-Axios-Client konsumiert | Accepted | complete |
 
 ¹ Die `SecurityFilterChain`-Bean existiert, das vorgesehene JWT-Filter-Skelett nicht — dort steht ein `TODO`.
 
