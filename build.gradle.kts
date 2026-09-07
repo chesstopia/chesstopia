@@ -78,6 +78,23 @@ tasks.register<PnpmTask>("pnpmE2eTest") {
     args.set(listOf("--filter", "e2e", "exec", "playwright", "test", "--project=chromium"))
 }
 
+// Der Smoke aus ADR-0019 gegen eine bereits laufende Umgebung. Ohne
+// bootJar/pnpmFrontendBuild-Abhängigkeit: PLAYWRIGHT_BASE_URL schaltet in
+// e2e/playwright.config.ts die webServer-Einträge ab, es wird nichts lokal
+// gestartet und deshalb auch nichts lokal gebaut.
+// Nebenwirkung, bewusst in Kauf genommen: der Lauf legt in der Zielumgebung
+// eine Partie an und spielt einen Zug — nach jedem Deploy eine Zeile mehr in
+// `partie` und `zug`. Anonyme Partien ohne Aufräumendpunkt; wer das nicht will,
+// braucht einen Löschpfad, nicht einen schwächeren Smoke.
+tasks.register<PnpmTask>("playwrightSmoke") {
+    dependsOn("pnpmInstall")
+    args.set(
+        listOf(
+            "--filter", "e2e", "exec", "playwright", "test", "smoke.spec.ts", "--project=chromium",
+        ),
+    )
+}
+
 // Generate the TypeScript Axios client from docs/api/openapi.yaml
 tasks.register<PnpmTask>("generateOpenApiClient") {
     group = "openapi"
