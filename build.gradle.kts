@@ -69,13 +69,25 @@ tasks.register<PnpmTask>("playwrightInstallBrowsers") {
 // Nur chromium: playwrightInstallBrowsers holt auch nur den. Firefox und WebKit
 // sind in playwright.config.ts konfiguriert und lokal per direktem
 // `playwright test --project=firefox` erreichbar, laufen aber nicht in CI.
+// Das zweite Projekt `mechanik` ist browserlos — es prüft die Korpus-Mechanik
+// selbst und braucht deshalb keine Browserinstallation.
 // Eine Datenbank startet dieser Task nicht — lokal `docker compose up -d postgres`,
 // in CI der Service-Container im e2e-Job.
 tasks.register<PnpmTask>("pnpmE2eTest") {
     dependsOn("generateOpenApiClient", ":chesstopia-backend:bootJar", "pnpmFrontendBuild")
     // `exec` statt `test`: bei der Skript-Kurzform beansprucht pnpm --project
     // für sich und bricht mit "Unknown option: 'project'" ab.
-    args.set(listOf("--filter", "e2e", "exec", "playwright", "test", "--project=chromium"))
+    //
+    // Zwei Projekte: `chromium` fährt die Specs und den Korpus im Browser,
+    // `mechanik` prüft den Korpus-Läufer selbst (Parser, Brettleser,
+    // Driftwächter). Ohne den zweiten Eintrag liefe die Prüfmechanik in CI
+    // nicht mit — eine Mechanik, die nie rot war, prüft nichts.
+    args.set(
+        listOf(
+            "--filter", "e2e", "exec", "playwright", "test",
+            "--project=chromium", "--project=mechanik",
+        ),
+    )
 }
 
 // Der Smoke aus ADR-0019 gegen eine bereits laufende Umgebung. Ohne
