@@ -1,16 +1,19 @@
 package io.chesstopia.backend.game.application;
 
+import io.chesstopia.backend.error.ForbiddenException;
 import io.chesstopia.backend.error.NotFoundException;
 import io.chesstopia.backend.game.application.port.in.PlayMove;
 import io.chesstopia.backend.game.application.port.in.StartGame;
 import io.chesstopia.backend.game.application.port.in.ViewGame;
 import io.chesstopia.backend.game.application.port.out.ChessEngine;
 import io.chesstopia.backend.game.application.port.out.GamesRepository;
+import io.chesstopia.backend.game.domain.Color;
 import io.chesstopia.backend.game.domain.Game;
 import io.chesstopia.backend.game.domain.GameConclusion;
 import io.chesstopia.backend.game.domain.GameId;
 import io.chesstopia.backend.game.domain.GameStatus;
 import io.chesstopia.backend.game.domain.Move;
+import io.chesstopia.backend.game.domain.PlayerToken;
 import io.chesstopia.backend.game.domain.Position;
 import io.chesstopia.backend.game.domain.RuleSet;
 import io.chesstopia.backend.game.domain.Square;
@@ -49,11 +52,16 @@ class GameService implements StartGame, PlayMove, ViewGame {
 
     @Override
     @Transactional
-    public Game play(GameId gameId, Move move) {
+    public Game play(GameId gameId, Move move, PlayerToken playerToken) {
         Game game = gamesRepository.findById(gameId)
             .orElseThrow(() -> new NotFoundException("Partie %s existiert nicht".formatted(gameId.value())));
         if (game.status() != GameStatus.ONGOING) {
             throw new IllegalArgumentException("Partie %s ist bereits beendet".formatted(gameId.value()));
+        }
+        Color role = game.roleOf(playerToken)
+            .orElseThrow(() -> new ForbiddenException("Kein gültiges Spieler-Token für diese Partie"));
+        if (role != game.currentPosition().sideToMove()) {
+            throw new ForbiddenException("Du bist nicht am Zug");
         }
         if (!chessEngine.isLegal(game.currentPosition(), move, game.ruleSet())) {
             throw new IllegalArgumentException(

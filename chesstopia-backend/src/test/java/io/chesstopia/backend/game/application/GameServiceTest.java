@@ -1,5 +1,6 @@
 package io.chesstopia.backend.game.application;
 
+import io.chesstopia.backend.error.ForbiddenException;
 import io.chesstopia.backend.error.NotFoundException;
 import io.chesstopia.backend.game.application.port.out.ChessEngine;
 import io.chesstopia.backend.game.application.port.out.GamesRepository;
@@ -36,6 +37,7 @@ class GameServiceTest {
     private final Position start = new Position(Map.of(), Color.WHITE, CastlingRights.all(), null, 0, 1);
     private final Position afterMove = new Position(Map.of(), Color.BLACK, CastlingRights.all(), null, 0, 1);
     private final Move e2e4 = new Move(new Square(File.E, Rank.TWO), new Square(File.E, Rank.FOUR), null);
+    private final Move e7e5 = new Move(new Square(File.E, Rank.SEVEN), new Square(File.E, Rank.FIVE), null);
 
     @Test
     void startLegtEineLaufendePartieInDerAnfangsstellungAn() {
@@ -54,7 +56,7 @@ class GameServiceTest {
     }
 
     @Test
-    void playPrueftMitDerEngineHaengtDenZugAnUndSpeichert() {
+    void playMitOwnerTokenPrueftMitDerEngineHaengtDenZugAnUndSpeichert() {
         // ARRANGE
         Game existing = Game.start(ID, RuleSet.standard(), start, T0);
         when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
@@ -66,7 +68,7 @@ class GameServiceTest {
         when(gamesRepository.save(any())).then(returnsFirstArg());
 
         // ACT
-        Game result = service.play(ID, e2e4);
+        Game result = service.play(ID, e2e4, existing.ownerToken());
 
         // ASSERTIONS
         assertThat(result.currentPosition()).isEqualTo(afterMove);
@@ -74,6 +76,61 @@ class GameServiceTest {
         assertThat(result.history()).singleElement()
             .satisfies(p -> assertThat(p.move()).isEqualTo(e2e4));
         verify(gamesRepository).save(result);
+    }
+
+    @Test
+    void playMitInviteTokenWennSchwarzAmZugIstWirdAusgefuehrt() {
+        // ARRANGE — Stellung mit Schwarz am Zug; das Einladungs-Token darf jetzt ziehen.
+        Game existing = Game.start(ID, RuleSet.standard(), afterMove, T0);
+        when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
+        when(chessEngine.isLegal(afterMove, e7e5, RuleSet.standard())).thenReturn(true);
+        when(chessEngine.apply(afterMove, e7e5, RuleSet.standard())).thenReturn(start);
+        when(chessEngine.initialPosition(RuleSet.standard())).thenReturn(start);
+        when(chessEngine.outcome(any(), eq(RuleSet.standard())))
+            .thenReturn(new GameConclusion(GameStatus.ONGOING, null));
+        when(gamesRepository.save(any())).then(returnsFirstArg());
+
+        // ACT
+        Game result = service.play(ID, e7e5, existing.inviteToken());
+
+        // ASSERTIONS
+        assertThat(result.currentPosition()).isEqualTo(start);
+    }
+
+    @Test
+    void playOhneTokenWirftForbiddenUndSchreibtNichts() {
+        // ARRANGE
+        Game existing = Game.start(ID, RuleSet.standard(), start, T0);
+        when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
+
+        // ACT & ASSERTIONS
+        assertThatThrownBy(() -> service.play(ID, e2e4, null)).isInstanceOf(ForbiddenException.class);
+        verify(chessEngine, never()).isLegal(any(), any(), any());
+        verify(gamesRepository, never()).save(any());
+    }
+
+    @Test
+    void playMitUngueltigemTokenWirftForbidden() {
+        // ARRANGE
+        Game existing = Game.start(ID, RuleSet.standard(), start, T0);
+        when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
+
+        // ACT & ASSERTIONS
+        assertThatThrownBy(() -> service.play(ID, e2e4, PlayerToken.newToken()))
+            .isInstanceOf(ForbiddenException.class);
+        verify(gamesRepository, never()).save(any());
+    }
+
+    @Test
+    void playMitInviteTokenWennWeissAmZugIstWirftForbidden() {
+        // ARRANGE — Weiß ist am Zug, aber vorgelegt wird das Schwarz-Token.
+        Game existing = Game.start(ID, RuleSet.standard(), start, T0);
+        when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
+
+        // ACT & ASSERTIONS
+        assertThatThrownBy(() -> service.play(ID, e2e4, existing.inviteToken()))
+            .isInstanceOf(ForbiddenException.class);
+        verify(chessEngine, never()).isLegal(any(), any(), any());
     }
 
     @Test
@@ -89,7 +146,7 @@ class GameServiceTest {
         when(gamesRepository.save(any())).then(returnsFirstArg());
 
         // ACT
-        Game result = service.play(ID, e2e4);
+        Game result = service.play(ID, e2e4, existing.ownerToken());
 
         // ASSERTIONS
         assertThat(result.status()).isEqualTo(GameStatus.WHITE_WON);
@@ -109,7 +166,7 @@ class GameServiceTest {
         when(gamesRepository.save(any())).then(returnsFirstArg());
 
         // ACT
-        Game result = service.play(ID, e2e4);
+        Game result = service.play(ID, e2e4, existing.ownerToken());
 
         // ASSERTIONS
         assertThat(result.status()).isEqualTo(GameStatus.DRAW);
@@ -124,7 +181,8 @@ class GameServiceTest {
         when(gamesRepository.findById(ID)).thenReturn(Optional.of(finished));
 
         // ACT & ASSERTIONS
-        assertThatThrownBy(() -> service.play(ID, e2e4)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.play(ID, e2e4, finished.ownerToken()))
+            .isInstanceOf(IllegalArgumentException.class);
         verify(chessEngine, never()).isLegal(any(), any(), any());
         verify(gamesRepository, never()).save(any());
     }
@@ -132,11 +190,13 @@ class GameServiceTest {
     @Test
     void playLehntEinenIllegalenZugAbUndSchreibtNichts() {
         // ARRANGE
-        when(gamesRepository.findById(ID)).thenReturn(Optional.of(Game.start(ID, RuleSet.standard(), start, T0)));
+        Game existing = Game.start(ID, RuleSet.standard(), start, T0);
+        when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
         when(chessEngine.isLegal(any(), any(), any())).thenReturn(false);
 
         // ACT & ASSERTIONS
-        assertThatThrownBy(() -> service.play(ID, e2e4)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.play(ID, e2e4, existing.ownerToken()))
+            .isInstanceOf(IllegalArgumentException.class);
         verify(chessEngine, never()).apply(any(), any(), any());
         verify(gamesRepository, never()).save(any());
     }
@@ -144,7 +204,8 @@ class GameServiceTest {
     @Test
     void playAufUnbekannterPartieWirftNotFound() {
         // ACT & ASSERTIONS
-        assertThatThrownBy(() -> service.play(GameId.newId(), e2e4)).isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> service.play(GameId.newId(), e2e4, PlayerToken.newToken()))
+            .isInstanceOf(NotFoundException.class);
     }
 
     @Test
