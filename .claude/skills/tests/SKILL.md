@@ -21,17 +21,19 @@ und ein Gedächtnis, keine Vollständigkeitsgarantie.
 | 1 Unit | neben die Datei: `foo.test.ts`, `commonTest/`, `src/test/java/` | Vitest · `kotlin.test` · JUnit |
 | 2 Komponente | neben die Komponente: `Chessboard.test.tsx` | Vitest (jsdom) + Testing Library |
 | 3 Integration | `chesstopia-backend/src/test/java/…` | `WebTestClient` + Zonky |
-| 4 E2E · Smoke | **noch nicht gebaut, aber fällig** — der Auslöser ist eingetreten | Playwright |
+| 4 E2E · Smoke | `e2e/tests/` für Specs, `e2e/testcases/` für den Korpus | Playwright |
 
 Ein Feature, das Frontend und Backend zugleich berührt, braucht Ebene 4. Solange
 sie fehlt, wird das **benannt und nicht ersatzweise auf Ebene 3 nachgestellt** —
 ein Integrationstest, der so tut, als sei er ein Durchstich, verdeckt genau die
 Naht, um die es geht.
 
-**Der Auslöser aus [ADR-0019](../../../docs/adr/0019-teststrategie.md) ist am
-9. August 2026 mit dem Merge von PR #2 eingetreten**; `.github/workflows/ci.yml`
-und die Compose-Dateien liegen auf `main`. Playwright ist damit kein Wartestand
-mehr, sondern Rückstand — hier ist nicht länger zu warten, sondern zu bauen.
+**Ebene 4 steht.** Ein Feature, das Frontend und Backend zugleich berührt, wird
+eine `.case`-Datei unter `e2e/testcases/`, wenn es eine Schachsituation ist, und
+eine handgeschriebene Spec unter `e2e/tests/`, wenn nicht
+([ADR-0024](../../../docs/adr/0024-datei-getriebener-e2e-korpus.md)). Was die
+Ebene ausdrücklich **nicht** trägt und wo es stattdessen liegt, steht ebenfalls
+dort — nachlesen, bevor ein teurer Fall entsteht.
 
 **Nicht getestet wird:** generierter Code (`openapi-client/src/`,
 `build/generated/openapi/` — Verbot 1), Framework-Verhalten, und Zusicherungen,
@@ -56,7 +58,10 @@ Zug, der den eigenen König im Schach lässt. Der ausführbare Katalog liegt
 inzwischen in `chess-engine/testcases/`
 ([ADR-0022](../../../docs/adr/0022-datei-getriebener-engine-testkorpus.md)) —
 eine neue Schachsituation wird eine neue `.case`-Datei, eine Verzweigung im
-Regelcode ein gezielter Unit-Test daneben.
+Regelcode ein gezielter Unit-Test daneben. Auf Ebene 4 gibt es einen zweiten
+ausführbaren Katalog derselben Bauart unter `e2e/testcases/`
+([ADR-0024](../../../docs/adr/0024-datei-getriebener-e2e-korpus.md)); er prüft
+nicht die Regel, sondern was die Oberfläche daraus zeigt.
 
 **Partieende**
 Matt gegen Patt · 50-Züge-Regel · dreifache Stellungswiederholung · ungenügendes

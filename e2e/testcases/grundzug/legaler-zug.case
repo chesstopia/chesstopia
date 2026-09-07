@@ -1,0 +1,14 @@
+description = ein legaler Zug bewegt die Figur und gibt den Zug an Schwarz weiter
+moves       = e2e4
+turn        = black
+
+     BOARD
+  8  r n b q k b n r
+  7  p p p p p p p p
+  6  . . . . . . . .
+  5  . . . . . . . .
+  4  . . . . P . . .
+  3  . . . . . . . .
+  2  P P P P . P P P
+  1  R N B Q K B N R
+     a b c d e f g h

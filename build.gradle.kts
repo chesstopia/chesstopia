@@ -46,6 +46,67 @@ tasks.register<PnpmTask>("pnpmFrontendTest") {
     args.set(listOf("--filter", "chesstopia-frontend", "test"))
 }
 
+// Playwright-Browser holen. Eigener Task statt eines blanken `pnpm`-Aufrufs im
+// Workflow: Node und pnpm liegen unter .gradle/, nicht auf dem PATH des Runners.
+// Bewusst NICHT in pnpmE2eTest verdrahtet — `--with-deps` ruft `sudo apt-get`
+// und hätte lokal bei jedem Testlauf eine Passwortabfrage.
+tasks.register<PnpmTask>("playwrightInstallBrowsers") {
+    dependsOn("pnpmInstall")
+    args.set(listOf("--filter", "e2e", "exec", "playwright", "install", "--with-deps", "chromium"))
+}
+
+// Playwright E2E-Tests für Ebene 4 (ADR-0019). Bewusst NICHT in buildAll —
+// Ebene 3 und 4 laufen nicht bei jedem Speichern, sondern in CI und vor dem Merge.
+// Playwright startet den Stack selbst über die webServer-Einträge in
+// e2e/playwright.config.ts; die beiden Artefakte müssen dafür vorliegen:
+//   bootJar             → chesstopia-backend/build/libs/app.jar
+//   pnpmFrontendBuild   → chesstopia-frontend/dist
+// bootJar statt build: die Backend-Tests laufen bereits im eigenen CI-Job, ein
+// zweiter Zonky-Durchlauf hier kostet nur Zeit.
+// generateOpenApiClient ist Pflicht, nicht Kosmetik: pnpmFrontendBuild hängt
+// nicht daran, und auf einem frischen Checkout ist openapi-client/src leer
+// (gitignored) — `tsc -b` bricht dann ab.
+// Nur chromium: playwrightInstallBrowsers holt auch nur den. Firefox und WebKit
+// sind in playwright.config.ts konfiguriert und lokal per direktem
+// `playwright test --project=firefox` erreichbar, laufen aber nicht in CI.
+// Das zweite Projekt `mechanik` ist browserlos — es prüft die Korpus-Mechanik
+// selbst und braucht deshalb keine Browserinstallation.
+// Eine Datenbank startet dieser Task nicht — lokal `docker compose up -d postgres`,
+// in CI der Service-Container im e2e-Job.
+tasks.register<PnpmTask>("pnpmE2eTest") {
+    dependsOn("generateOpenApiClient", ":chesstopia-backend:bootJar", "pnpmFrontendBuild")
+    // `exec` statt `test`: bei der Skript-Kurzform beansprucht pnpm --project
+    // für sich und bricht mit "Unknown option: 'project'" ab.
+    //
+    // Zwei Projekte: `chromium` fährt die Specs und den Korpus im Browser,
+    // `mechanik` prüft den Korpus-Läufer selbst (Parser, Brettleser,
+    // Driftwächter). Ohne den zweiten Eintrag liefe die Prüfmechanik in CI
+    // nicht mit — eine Mechanik, die nie rot war, prüft nichts.
+    args.set(
+        listOf(
+            "--filter", "e2e", "exec", "playwright", "test",
+            "--project=chromium", "--project=mechanik",
+        ),
+    )
+}
+
+// Der Smoke aus ADR-0019 gegen eine bereits laufende Umgebung. Ohne
+// bootJar/pnpmFrontendBuild-Abhängigkeit: PLAYWRIGHT_BASE_URL schaltet in
+// e2e/playwright.config.ts die webServer-Einträge ab, es wird nichts lokal
+// gestartet und deshalb auch nichts lokal gebaut.
+// Nebenwirkung, bewusst in Kauf genommen: der Lauf legt in der Zielumgebung
+// eine Partie an und spielt einen Zug — nach jedem Deploy eine Zeile mehr in
+// `partie` und `zug`. Anonyme Partien ohne Aufräumendpunkt; wer das nicht will,
+// braucht einen Löschpfad, nicht einen schwächeren Smoke.
+tasks.register<PnpmTask>("playwrightSmoke") {
+    dependsOn("pnpmInstall")
+    args.set(
+        listOf(
+            "--filter", "e2e", "exec", "playwright", "test", "smoke.spec.ts", "--project=chromium",
+        ),
+    )
+}
+
 // Generate the TypeScript Axios client from docs/api/openapi.yaml
 tasks.register<PnpmTask>("generateOpenApiClient") {
     group = "openapi"

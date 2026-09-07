@@ -1,0 +1,14 @@
+description = Schäfermatt zeigt Weiß als Sieger
+moves       = e2e4 e7e5 f1c4 b8c6 d1h5 g8f6 h5f7
+banner      = Schachmatt — Weiß gewinnt
+
+     BOARD
+  8  r . b q k b . r
+  7  p p p p . Q p p
+  6  . . n . . n . .
+  5  . . . . p . . .
+  4  . . B . P . . .
+  3  . . . . . . . .
+  2  P P P P . P P P
+  1  R N B . K . N R
+     a b c d e f g h
