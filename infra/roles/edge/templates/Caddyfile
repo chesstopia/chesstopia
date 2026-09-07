@@ -11,6 +11,13 @@
             header_up -Origin
         }
     }
+    handle /ws/* {
+        # STOMP/WebSocket-Endpunkt — dieselbe same-origin-Begründung wie /api/*.
+        # Caddys reverse_proxy handelt den WS-Upgrade automatisch.
+        reverse_proxy backend:8080 {
+            header_up -Origin
+        }
+    }
     handle {
         reverse_proxy frontend:80
     }

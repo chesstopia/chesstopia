@@ -18,6 +18,7 @@ export default defineConfig({
     // In Prod routet Caddy /api/* ans Backend; im Dev übernimmt das dieser Proxy.
     proxy: {
       "/api": "http://localhost:8080",
+      "/ws": { target: "http://localhost:8080", ws: true },
     },
   },
   test: {
