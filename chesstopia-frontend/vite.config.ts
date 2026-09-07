@@ -20,6 +20,13 @@ export default defineConfig({
       "/api": "http://localhost:8080",
     },
   },
+  // Derselbe Proxy für `vite preview` — Ebene 4 (ADR-0019) prüft das gebaute
+  // Bundle, nicht den Dev-Server, und braucht denselben same-origin-Pfad.
+  preview: {
+    proxy: {
+      "/api": "http://localhost:8080",
+    },
+  },
   test: {
     // Ebene 2 aus ADR-0019 braucht ein DOM. Reine Unit-Tests (lib/__tests__/position.test.ts)
     // laufen unter jsdom unverändert; der Aufpreis rechtfertigt keine zweite Projektdatei.
