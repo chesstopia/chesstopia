@@ -105,15 +105,22 @@ jobs:
     name: e2e (Playwright)
     runs-on: ubuntu-latest
     services:
-      # Ebene 4 fährt gegen eine echte Datenbank. Zugangsdaten identisch zu
-      # docker-compose.yml, damit application.yml unverändert trifft — es gibt
-      # kein eigenes E2E-Profil.
+      # Level 4 runs against a real database. Database and role match
+      # docker-compose.yml so application.yml fits unchanged — there is no
+      # separate E2E profile.
+      #
+      # No POSTGRES_PASSWORD on purpose. Regel 10 in gradle/check-docs.gradle.kts
+      # rejects literal credentials anywhere under .github/workflows/, and it is
+      # right to: a workflow is no place to learn which literals are harmless.
+      # `trust` removes the credential instead of hiding it — the container is
+      # reachable only from this job's network and dies with the job, and the
+      # password application.yml sends is accepted whatever it is.
       postgres:
         image: postgres:17
         env:
           POSTGRES_DB: chesstopia_dev
           POSTGRES_USER: chesstopia
-          POSTGRES_PASSWORD: chesstopia
+          POSTGRES_HOST_AUTH_METHOD: trust
         ports:
           - 5432:5432
         options: >-

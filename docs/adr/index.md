@@ -28,7 +28,7 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 | [0016](0016-agenten-topologie.md) | Agenten-Topologie — zwei Subagenten, zwei Skills, drei Schwellen | Accepted | partial ² |
 | [0017](0017-produktionskonfiguration-im-repo.md) | Produktionskonfiguration im Repo — verboten ist der Wert, nicht die Datei | Accepted | complete |
 | [0018](0018-status-partially-superseded.md) | Vierter Statuswert `partially-superseded` für ADRs | Accepted | complete |
-| [0019](0019-teststrategie.md) | Teststrategie — vier Ebenen, zwei davon mit benanntem Auslöser | Accepted | partial ³ |
+| [0019](0019-teststrategie.md) | Teststrategie — vier Ebenen, zwei davon mit benanntem Auslöser | Accepted | complete ³ |
 | [0020](0020-hexagonale-architektur-und-notationsfreie-domaene.md) | Hexagonale Architektur im game-Feature + notationsfreie Domäne | Accepted | partial |
 | [0021](0021-mapstruct-fuer-adapter-mappings.md) | MapStruct für die Adapter-Mappings | Accepted | complete |
 | [0022](0022-datei-getriebener-engine-testkorpus.md) | Datei-getriebener Engine-Testkorpus | Accepted | complete |
@@ -38,7 +38,7 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 
 ² Die Werkzeuge für *jetzt* stehen unter `.claude/`; `/tests` ist seit [ADR-0019](0019-teststrategie.md) dazugekommen. Die drei Agenten mit benanntem Auslöser sind absichtlich nicht angelegt — `partial` heißt hier „planmäßig unvollständig", nicht „Rückstand".
 
-³ Ebene 1, 2 und 3 stehen. **Der benannte Auslöser für Ebene 4 — der Merge von PR #2 — ist am 9. August 2026 eingetreten.** `partial` heißt hier ab sofort „Rückstand", nicht mehr „planmäßig unvollständig"; Playwright ist ausstehend und bekommt ein eigenes Ticket, damit dieser PR bei der Wissensverwaltung bleibt.
+³ Ebene 1, 2 und 3 stehen. **Der benannte Auslöser für Ebene 4 — der Merge von PR #2 — ist am 9. August 2026 eingetreten.** `partial` hieß ab da „Rückstand", nicht mehr „planmäßig unvollständig"; Playwright war ausstehend und bekam ein eigenes Ticket, damit jener PR bei der Wissensverwaltung blieb. **Der Rückstand ist am 7. September 2026 aufgelöst:** Ebene 4 steht als eigenes Workspace-Paket `e2e/` mit Smoke und drei funktionalen Szenarien, verdrahtet in CI und im Deploy — siehe [E2E-Aufbau](../notes/e2e-aufbau.md).
 
 ⁴ Die Plattform ist weg, die Begründung nicht. Welcher Teil weiterhin gilt, steht im `## Status`-Abschnitt des jeweiligen ADR ([ADR-0018](0018-status-partially-superseded.md)); [ADR-0011](0011-migration-nach-github-actions.md) benennt die entfallenen Prämissen einzeln.
 
