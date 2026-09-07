@@ -30,6 +30,13 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    // Die Prüfmechanik des Korpus — Brettleser, Parser, Driftwächter. Kein
+    // Browser: diese Tests benutzen die `page`-Fixture nicht. Eigenes Projekt
+    // statt Vitest, weil das weder eine Abhängigkeit noch eine zweite
+    // Konfiguration noch einen zusätzlichen CI-Schritt kostet. Preis: die
+    // webServer-Einträge fahren auch für sie hoch, obwohl sie sie nicht
+    // brauchen.
+    { name: 'mechanik', testDir: './corpus/__tests__' },
   ],
   webServer: remoteBaseURL
     ? undefined
