@@ -8,6 +8,9 @@ verifies:
   - 'chesstopia-backend/src/main/resources/application.yml :: chesstopia_dev'
   - 'chesstopia-backend/src/main/java/io/chesstopia/backend/config/SecurityConfig.java :: http://localhost:4173'
   - 'build.gradle.kts :: pnpmE2eTest'
+  - 'e2e/playwright.config.ts :: mechanik'
+  - 'build.gradle.kts :: --project=mechanik'
+  - 'e2e/corpus/runner.ts :: runCase'
 ---
 
 # E2E-Aufbau
@@ -53,3 +56,15 @@ Ein Zugversuch auf beendeter Partie wird an zwei Stellen gestoppt: `App.tsx` rei
 ## Deploy-Smoke ohne eigenen Stack
 
 Mit gesetzter Umgebungsvariable `PLAYWRIGHT_BASE_URL` überspringt die Config die `webServer`-Einträge komplett; `deploy.yml` nutzt das, um nach jedem Rollout nur `smoke.spec.ts` gegen die echte Umgebung laufen zu lassen. Der Lauf ist nicht folgenlos: er legt dort eine Partie an und spielt einen Zug. Nach jedem Deploy steht also eine Zeile mehr in `partie` und `zug` — bewusst in Kauf genommen, weil ein Smoke, der die Datenbank nicht anfasst, die Datenbank auch nicht prüft.
+
+## Der Korpus
+
+Schachsituationen stehen als Dateien unter `e2e/testcases/<kategorie>/<name>.case` — eine Situation je Datei, eine Zeile je Datei im Report. Das *Warum* steht in [ADR-0024](../adr/0024-datei-getriebener-e2e-korpus.md); hier steht, wie man damit arbeitet.
+
+Eine neue Datei hinlegen genügt. `e2e/tests/corpus.spec.ts` liest das Verzeichnis beim Laden rekursiv und erzeugt je `.case` ein `test()`. Es gibt keinen Codegen und keinen Sync-Schritt — anders als beim Engine-Korpus ([ADR-0022](../adr/0022-datei-getriebener-engine-testkorpus.md)), wo `commonTest` keinen Laufzeit-Dateizugriff hat.
+
+Die Prüfmechanik — Brettleser, Parser, Driftwächter unter `e2e/corpus/` — läuft als eigenes Playwright-Projekt `mechanik`; `pnpmE2eTest` startet beide Projekte. Ohne den zweiten Eintrag liefe sie in CI nicht mit, und eine Mechanik, die nie rot war, prüft nichts.
+
+Preis dieser Lösung: Die Mechaniktests fahren die `webServer`-Einträge mit hoch, obwohl sie weder Browser noch Backend brauchen. Bewusst in Kauf genommen; die Alternative wäre eine zweite Werkzeugkette neben Playwright.
+
+Zwei Kostenzahlen, damit die nächste Entscheidung über einen teuren Fall nicht wieder gemessen werden muss — seriell, ein Worker, lokal: Grundkosten rund 300 ms je Fall, Grenzkosten rund 165 ms je Halbzug. Der teuerste Fall (Patt, 19 Halbzüge) liegt bei rund 3,4 s. Die Rüstzeit des CI-Jobs übersteigt die Prüfzeit um ein Vielfaches — wer Laufzeit sparen will, sucht dort, nicht bei den Fällen.
