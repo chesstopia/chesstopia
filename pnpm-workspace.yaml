@@ -5,6 +5,10 @@ packages:
   - 'openapi-client'
   # React/Vite frontend — consumes @chesstopia/chess-engine and @chesstopia/openapi-client
   - 'chesstopia-frontend'
+  # Ebene 4 aus ADR-0019 — eigenes Paket, damit Playwright-Browser nicht in jede
+  # Frontend-Installation gezogen werden und die Specs nicht mit Vitests
+  # src/**/*.test.{ts,tsx}-Glob kollidieren.
+  - 'e2e'
 # Disable pnpm's auto-install before "pnpm run"/"pnpm exec". The workspace packages
 # @chesstopia/chess-engine and @chesstopia/openapi-client are produced by Gradle
 # (KMP build / OpenAPI codegen), not by pnpm. Auto-installing at script-run time
