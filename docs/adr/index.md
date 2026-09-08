@@ -34,6 +34,8 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 | [0022](0022-datei-getriebener-engine-testkorpus.md) | Datei-getriebener Engine-Testkorpus | Accepted | complete |
 | [0023](0023-engine-outcome-mit-stellungshistorie.md) | Engine-Outcome nimmt die Stellungshistorie | Accepted | complete |
 | [0024](0024-flache-schemas-statt-allof-fuer-typescript-client.md) | Flache Objektschemas statt `allOf`-Komposition für Schemas, die der TypeScript-Axios-Client konsumiert | Accepted | complete |
+| [0025](0025-owner-invite-token-als-partie-identitaet.md) | Owner-/Invite-Token als Partie-Identität ohne Login | Accepted | complete |
+| [0026](0026-stomp-websocket-statt-rsocket-fuer-zug-push.md) | Bestehendes STOMP/WebSocket für den Zug-Push statt RSocket | Accepted | complete |
 
 ¹ Die `SecurityFilterChain`-Bean existiert, das vorgesehene JWT-Filter-Skelett nicht — dort steht ein `TODO`.
 

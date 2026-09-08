@@ -4,7 +4,7 @@ status: current
 updated: 2026-09-04
 verifies:
   - "chesstopia-frontend/src/lib/engine.ts :: validateMove"
-  - "chesstopia-frontend/src/hooks/useBoardState.ts :: isLegalMove"
+  - "chesstopia-frontend/src/hooks/useGameState.ts :: isLegalMove"
 ---
 
 # Frontend-Validierung gegen die Engine
@@ -21,4 +21,4 @@ Das TypeScript-Pendant zum `EngineMapper`: Es übersetzt die openapi-client-Type
 
 ## Tests
 
-`useBoardState.test.ts` mockt `@/lib/engine` (nicht das Roh-Paket `@chesstopia/chess-engine`); `engine.test.ts` läuft gegen das echte JS-Artefakt und braucht vorher `./gradlew buildAll`.
+`useGameState.test.ts` mockt `@/lib/engine` (nicht das Roh-Paket `@chesstopia/chess-engine`); `engine.test.ts` läuft gegen das echte JS-Artefakt und braucht vorher `./gradlew buildAll`.
