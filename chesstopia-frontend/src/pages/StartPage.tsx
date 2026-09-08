@@ -26,6 +26,7 @@ export function StartPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<Row[]>([]);
   const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,10 +49,13 @@ export function StartPage() {
 
   const createGame = async () => {
     setCreating(true);
+    setError(null);
     try {
       const res = await gameApi.createGame();
       addOwnedGame(res.data.id, res.data.ownerToken, res.data.inviteToken);
       navigate(`/game/${res.data.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Partie konnte nicht angelegt werden'));
     } finally {
       setCreating(false);
     }
@@ -63,6 +67,7 @@ export function StartPage() {
       <Button onClick={createGame} disabled={creating}>
         Neue Partie starten
       </Button>
+      {error && <p className="text-red-400">Fehler: {error.message}</p>}
       {rows.length > 0 && (
         <ul className="flex flex-col gap-2">
           {rows.map((row) => (

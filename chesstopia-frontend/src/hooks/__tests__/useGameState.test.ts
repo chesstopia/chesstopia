@@ -88,6 +88,22 @@ describe('useGameState', () => {
     expect(result.current.entry).toEqual({ gameId: 'g-2', role: 'INVITED', inviteToken: 'invite-tok' });
   });
 
+  it('überschreibt einen bestehenden Owner-Eintrag nicht mit einem fremden Invite-Parameter aus der URL', async () => {
+    // ARRANGE
+    addOwnedGame('g-1', 'owner-tok', 'invite-tok');
+
+    // ACT
+    const { result } = renderHook(() => useGameState('g-1', 'fremdes-token'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // ASSERTIONS
+    expect(result.current.role).toBe('w');
+    const stored = JSON.parse(localStorage.getItem('chesstopia.games') ?? '[]');
+    expect(stored).toEqual([
+      { gameId: 'g-1', role: 'OWNER', ownerToken: 'owner-tok', inviteToken: 'invite-tok' },
+    ]);
+  });
+
   it('ist Zuschauer ohne Eintrag und ohne Invite-Parameter', async () => {
     // ACT
     const { result } = renderHook(() => useGameState('g-3', null));

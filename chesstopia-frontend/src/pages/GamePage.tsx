@@ -18,7 +18,7 @@ export function GamePage() {
   const spectatorLink = `${location.origin}/game/${gameId}`;
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-stone-900">
+    <main key={gameId} className="flex min-h-screen flex-col items-center justify-center gap-4 bg-stone-900">
       <Link to="/" className="text-stone-400 underline">
         Zur Übersicht
       </Link>

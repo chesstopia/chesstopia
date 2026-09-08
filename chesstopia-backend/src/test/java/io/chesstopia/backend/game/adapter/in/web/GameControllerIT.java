@@ -240,17 +240,20 @@ class GameControllerIT {
     }
 
     @Test
-    void playMove_falscheSeiteZuerst_wird400MitProblemJson() {
+    void playMove_illegalerZugMitPassendemToken_wird400MitProblemJson() {
         // ARRANGE
         GameCreatedResponse created = createGame();
 
         // ACT & ASSERTIONS
         webTestClient.post()
             .uri("/api/v1/games/{id}/moves", created.getId())
-            .header("X-Player-Token", created.getInviteToken().toString())
-            .bodyValue(move("E", "SEVEN", "E", "FIVE"))
+            .header("X-Player-Token", created.getOwnerToken().toString())
+            .bodyValue(move("E", "TWO", "E", "FIVE"))
             .exchange()
-            .expectStatus().isForbidden();
+            .expectStatus().isBadRequest()
+            .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
+            .expectBody()
+            .jsonPath("$.detail").value(detail -> assertThat((String) detail).isNotEmpty());
     }
 
     @Test

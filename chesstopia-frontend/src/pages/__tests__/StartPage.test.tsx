@@ -45,6 +45,19 @@ describe('StartPage', () => {
     expect(stored).toEqual([{ gameId: 'g-neu', role: 'OWNER', ownerToken: 'owner-x', inviteToken: 'invite-x' }]);
   });
 
+  it('zeigt einen Fehler, wenn das Anlegen der Partie fehlschlägt', async () => {
+    // ARRANGE
+    createGame.mockRejectedValue(new Error('Netzwerkfehler'));
+    render(<StartPage />, { wrapper: MemoryRouter });
+
+    // ACT
+    await userEvent.click(screen.getByRole('button', { name: 'Neue Partie starten' }));
+
+    // ASSERTIONS
+    expect(await screen.findByText(/Fehler: Netzwerkfehler/)).toBeInTheDocument();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
   it('zeigt eine Zeile pro eigener Partie mit ihrem Status', async () => {
     // ARRANGE
     addOwnedGame('g-1', 'o1', 'i1');
