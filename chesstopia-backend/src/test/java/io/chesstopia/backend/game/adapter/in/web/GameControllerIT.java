@@ -265,4 +265,24 @@ class GameControllerIT {
         assertThat(afterMate.getStatus()).isEqualTo(GameResponse.StatusEnum.BLACK_WON);
         assertThat(afterMate.getEndReason()).isEqualTo(GameResponse.EndReasonEnum.CHECKMATE);
     }
+
+    @Test
+    void unvollstaendigerZugkoerper_wird400MitProblemJson() {
+        // ARRANGE
+        UUID id = createGame().getId();
+
+        // ACT & ASSERTIONS
+        // Der Kontrakt kennt für playMove nur 200, 400 und 404. `from` und `to`
+        // sind Pflichtfelder — ein Körper ohne sie muss deshalb als 400 heraus-
+        // kommen, nicht als 422, das der Kontrakt nirgends deklariert. Welcher
+        // Handler das liefert, ist Sache der Konfiguration; dass es 400 ist,
+        // ist Zusicherung der API.
+        webTestClient.post()
+            .uri("/api/v1/games/{id}/moves", id)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(Map.of())
+            .exchange()
+            .expectStatus().isBadRequest()
+            .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON);
+    }
 }
