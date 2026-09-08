@@ -26,6 +26,12 @@ public class PartieEntity {
     @Id
     private UUID id;
 
+    @Column(name = "owner_token", nullable = false)
+    private UUID ownerToken;
+
+    @Column(name = "invite_token", nullable = false)
+    private UUID inviteToken;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Variant variant;
@@ -62,6 +68,22 @@ public class PartieEntity {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public UUID getOwnerToken() {
+        return ownerToken;
+    }
+
+    public void setOwnerToken(UUID ownerToken) {
+        this.ownerToken = ownerToken;
+    }
+
+    public UUID getInviteToken() {
+        return inviteToken;
+    }
+
+    public void setInviteToken(UUID inviteToken) {
+        this.inviteToken = inviteToken;
     }
 
     public Variant getVariant() {

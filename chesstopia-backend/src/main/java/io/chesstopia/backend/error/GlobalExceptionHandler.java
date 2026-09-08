@@ -40,6 +40,12 @@ public class GlobalExceptionHandler {
         );
     }
 
+    // Kein gültiges Spieler-Token, oder falsche Farbe am Zug — 403, kein Logging.
+    @ExceptionHandler(ForbiddenException.class)
+    public ProblemDetail handleForbidden(ForbiddenException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
         // 4xx — kein Logging, kein Stack Trace an den Client

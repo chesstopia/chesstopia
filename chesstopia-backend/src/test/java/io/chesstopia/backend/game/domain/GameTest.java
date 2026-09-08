@@ -78,10 +78,34 @@ class GameTest {
     @Test
     void playAufEinerBeendetenPartieWirft() {
         // ARRANGE
-        Game done = new Game(GameId.newId(), RuleSet.standard(), start, java.util.List.of(),
+        Game done = new Game(GameId.newId(), PlayerToken.newToken(), PlayerToken.newToken(),
+                             RuleSet.standard(), start, java.util.List.of(),
                              GameStatus.DRAW, EndReason.STALEMATE, T0, T0);
 
         // ACT & ASSERTIONS
         assertThatThrownBy(() -> done.play(move, afterOne, inProgress, T0)).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void roleOfLoestOwnerAufWeissUndInviteAufSchwarzAuf() {
+        // ARRANGE
+        Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0);
+
+        // ACT & ASSERTIONS
+        assertThat(g.roleOf(g.ownerToken())).contains(Color.WHITE);
+        assertThat(g.roleOf(g.inviteToken())).contains(Color.BLACK);
+        assertThat(g.roleOf(PlayerToken.newToken())).isEmpty();
+        assertThat(g.roleOf(null)).isEmpty();
+    }
+
+    @Test
+    void startVergibtZweiVerschiedeneTokens() {
+        // ACT
+        Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0);
+
+        // ASSERTIONS
+        assertThat(g.ownerToken()).isNotNull();
+        assertThat(g.inviteToken()).isNotNull();
+        assertThat(g.ownerToken()).isNotEqualTo(g.inviteToken());
     }
 }

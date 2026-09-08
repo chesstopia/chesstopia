@@ -31,8 +31,9 @@ paths:
       operationId: createGame
       summary: Neue Partie anlegen
       description: >
-        Legt eine Partie in der Grundstellung an und gibt sie mitsamt ihrer ID
-        zurück. Spieler werden noch nicht zugeordnet — es gibt keine Nutzer.
+        Legt eine Partie in der Grundstellung an und gibt sie mitsamt ihrer ID,
+        dem Ersteller-Token (Weiß) und dem Einladungs-Token (Schwarz) zurück.
+        Beide Tokens verlassen den Server ausschließlich hier.
       tags:
         - game
       responses:
@@ -41,7 +42,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GameResponse"
+                $ref: "#/components/schemas/GameCreatedResponse"
 
   /api/v1/games/{gameId}:
     get:
@@ -88,13 +89,13 @@ paths:
       description: >
         Führt einen Zug aus, schreibt ihn in den Move-Event-Log und gibt die
         Partie mit der neuen Stellung zurück. Der Zug wird als Ausgangs- und
-        Zielfeld angegeben, bei einer Umwandlung zusätzlich die Zielfigur. Die
-        Legalität wird noch **nicht** geprüft — die Schach-Engine kennt derzeit
-        nur die Mechanik eines Zuges und entscheidet allein über ihre Gültigkeit.
+        Zielfeld angegeben, bei einer Umwandlung zusätzlich die Zielfigur.
+        `X-Player-Token` muss auf die Farbe auflösen, die gerade am Zug ist.
       tags:
         - game
       parameters:
         - $ref: "#/components/parameters/GameId"
+        - $ref: "#/components/parameters/PlayerToken"
       requestBody:
         required: true
         content:
@@ -114,6 +115,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -143,9 +146,28 @@ components:
         type: string
         format: uuid
 
+    PlayerToken:
+      name: X-Player-Token
+      in: header
+      required: false
+      description: >
+        Nachweis, welche Farbe der Aufrufer steuert — der Ersteller-Token
+        (Weiß) oder der Einladungs-Token (Schwarz). Fehlt er oder passt er
+        nicht zur Farbe, die am Zug ist, antwortet der Server mit 403.
+      schema:
+        type: string
+        format: uuid
+
   responses:
     NotFound:
       description: Die Partie existiert nicht
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+
+    Forbidden:
+      description: Kein gültiges Spieler-Token, oder die aufgelöste Farbe ist nicht am Zug
       content:
         application/problem+json:
           schema:
@@ -241,6 +263,56 @@ components:
           format: int32
           description: Anzahl der bisher gespielten Halbzüge
           example: 0
+
+    GameCreatedResponse:
+      description: >
+        Antwort auf die Partie-Erstellung. Trägt zusätzlich zu GameResponse die
+        beiden Spieler-Tokens — der einzige Ort, an dem sie den Server verlassen.
+        Bewusst als eigenständiges Objektschema statt per allOf-Komposition über
+        GameResponse: der TypeScript-Axios-Generator (Version siehe
+        `openapi-client/openapitools.json`) kollabiert ein `$ref` +
+        inline-Objekt-`allOf` hier zu einem reinen Typalias auf GameResponse und
+        verliert ownerToken/inviteToken dabei vollständig — der Spring-Generator
+        ist davon nicht betroffen, aber beide Generatoren laufen von derselben
+        Datei (ADR-0006), also muss die Struktur für beide funktionieren. Siehe
+        ADR-0024.
+      type: object
+      required:
+        - id
+        - position
+        - status
+        - moveCount
+        - ownerToken
+        - inviteToken
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID der Partie
+        position: { $ref: "#/components/schemas/Position" }
+        status:
+          type: string
+          description: Zustand der Partie
+          enum: [ONGOING, WHITE_WON, BLACK_WON, DRAW]
+          example: ONGOING
+        endReason:
+          type: string
+          nullable: true
+          description: Grund des Partieendes; nur gesetzt, wenn status != ONGOING.
+          enum: [CHECKMATE, STALEMATE, FIFTY_MOVE_RULE, INSUFFICIENT_MATERIAL, THREEFOLD_REPETITION]
+        moveCount:
+          type: integer
+          format: int32
+          description: Anzahl der bisher gespielten Halbzüge
+          example: 0
+        ownerToken:
+          type: string
+          format: uuid
+          description: Nachweis für die weiße Seite (Ersteller). Nie erneut abrufbar.
+        inviteToken:
+          type: string
+          format: uuid
+          description: Nachweis für die schwarze Seite. Teil des Einladungslinks.
 
     MoveRequest:
       type: object

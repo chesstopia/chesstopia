@@ -45,6 +45,8 @@ class GamePersistenceAdapterIT {
             assertThat(l.status()).isEqualTo(GameStatus.ONGOING);
             assertThat(l.endReason()).isNull();
             assertThat(l.history()).isEmpty();
+            assertThat(l.ownerToken()).isEqualTo(g.ownerToken());
+            assertThat(l.inviteToken()).isEqualTo(g.inviteToken());
         });
     }
 
