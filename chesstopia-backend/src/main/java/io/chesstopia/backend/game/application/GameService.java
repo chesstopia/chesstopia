@@ -20,8 +20,6 @@ import io.chesstopia.backend.game.domain.RuleSet;
 import io.chesstopia.backend.game.domain.Square;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -82,19 +80,7 @@ class GameService implements StartGame, PlayMove, ViewGame {
         GameConclusion conclusion = chessEngine.outcome(positions, game.ruleSet());
 
         Game saved = gamesRepository.save(game.play(move, resulting, conclusion, OffsetDateTime.now()));
-        // Erst nach dem Commit broadcasten: sonst kann ein Abonnent auf einen Zug reagieren,
-        // der bei einem Rollback nie stattgefunden hat — und der moveCount-Guard auf dem
-        // Client würde die danach folgende korrekte (niedrigere) Stellung dann verwerfen.
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    gameEvents.moveWasPlayed(saved);
-                }
-            });
-        } else {
-            gameEvents.moveWasPlayed(saved);
-        }
+        gameEvents.moveWasPlayed(saved);
         return saved;
     }
 
