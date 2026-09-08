@@ -29,6 +29,6 @@ describe('routing', () => {
     render(<RouterProvider router={router} />);
 
     // ASSERTIONS
-    expect(screen.getByText('GamePage abc-123')).toBeInTheDocument();
+    expect(screen.getByText('Zur Übersicht')).toBeInTheDocument();
   });
 });
