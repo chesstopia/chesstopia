@@ -1,18 +1,30 @@
 # Chesstopia CI — build, test, and (on main) publish the container images.
-# See docs/adr/0011-migration-nach-github-actions.md.
+# Siehe docs/adr/0027-integrationsjob-baut-und-testet-die-images.md.
 #
-# Topology: the four component jobs run FAN-OUT (no `needs:`). Each of them builds
-# the chess-engine transitively — backend through the composite build, frontend
-# through the pnpmInstall → jsBrowserProductionLibraryDistribution chain (ADR-0006).
-# That redundancy is deliberate: on a public repo the minutes are free and the jobs
-# run on separate VMs, so three parallel builds finish sooner than a serial
-# cache-warming stage would, and there is no cross-job cache key that can silently
-# miss. ADR-0009 sequenced them the other way because Bitbucket billed per minute.
+# Topologie:
 #
-# e2e (level 4, ADR-0019) is the fourth of them: it builds the backend jar and the
-# frontend bundle itself and lets Playwright start both against a Postgres service
-# container. `images` waits on it too — a red end-to-end run should not produce an
-# image — which is the one place this topology is deliberately serialised.
+#   t=0   chess-engine ‖ backend ‖ frontend        reine Prüfjobs, ~60 s
+#         integration                              kritischer Pfad, ~205 s
+#           E2E → beide Images bauen → (nur main) provisorisch pushen
+#         └─► push (nur main, needs: alle vier)    promotet auf den endgültigen Tag
+#
+# Die drei Prüfjobs bauen die chess-engine transitiv jeder für sich — Backend über
+# den Composite Build, Frontend über die pnpmInstall → jsBrowserProductionLibrary-
+# Distribution-Kette (ADR-0006). Die Redundanz ist Absicht: auf einem public Repo
+# sind die Minuten frei, die Jobs laufen auf getrennten VMs, und es gibt keinen
+# jobübergreifenden Cache-Schlüssel, der still danebengreifen kann. ADR-0009
+# sequenzierte anders herum, weil Bitbucket pro Minute abrechnete.
+#
+# Neu gegenüber ADR-0011: Die Images entstehen NICHT mehr in einem eigenen Job aus
+# heruntergeladenen Artefakten, sondern im Integrationsjob aus demselben Workspace,
+# in dem E2E gerade gelaufen ist. Das getestete und das ausgelieferte Jar sind damit
+# dieselbe Datei — ein Boot-Jar ist nicht bit-reproduzierbar, zwei Builds ergeben
+# zwei verschiedene Artefakte. Gebaut wird auf jedem Branch (das fängt ein kaputtes
+# Dockerfile im PR), gepusht nur auf main.
+#
+# "Ein roter Durchstich verdient kein Image" gilt weiter, wandert aber von `needs:`
+# in die Schrittreihenfolge: Der Image-Build steht hinter dem E2E-Schritt, ein roter
+# E2E-Lauf bricht den Job vorher ab.
 name: CI
 
 on:
@@ -60,13 +72,6 @@ jobs:
       # initdb refuses to run as root. GitHub runners are already the unprivileged
       # `runner` user, so the useradd dance the Bitbucket pipeline needed is gone.
       - run: ./gradlew :chesstopia-backend:build
-      - name: Upload bootJar
-        if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-jar
-          path: chesstopia-backend/build/libs/app.jar
-          retention-days: 1
 
   frontend:
     name: frontend (lint + test + build)
@@ -93,17 +98,16 @@ jobs:
       # latent dependency: the task lived only in `buildAll`, so the pipeline would
       # have gone red the moment the frontend actually imports @chesstopia/openapi-client.
       - run: ./gradlew generateOpenApiClient pnpmFrontendLint pnpmFrontendTest pnpmFrontendBuild
-      - name: Upload SPA bundle
-        if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: chesstopia-frontend/dist
-          retention-days: 1
 
-  e2e:
-    name: e2e (Playwright)
+  integration:
+    name: integration (E2E + Images)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Wird nur von den Push-Schritten ganz unten gebraucht, die an
+      # `if: github.ref == 'refs/heads/main'` hängen. Bei einem PR aus einem Fork
+      # ist das GITHUB_TOKEN read-only — dort laufen diese Schritte nie.
+      packages: write
     services:
       # Level 4 runs against a real database. Database and role match
       # docker-compose.yml so application.yml fits unchanged — there is no
@@ -158,56 +162,32 @@ jobs:
         env:
           CI: true
 
-  images:
-    name: package & push images
-    # Images are built ONLY on main — no throwaway images from feature branches or PRs.
-    if: github.ref == 'refs/heads/main'
-    # e2e bremst hier bewusst als einziger Job zusätzlich: ein roter Durchstich
-    # verdient kein Image. Das serialisiert die sonst reine Fan-out-Topologie
-    # aus ADR-0011 an genau dieser Stelle.
-    needs: [chess-engine, backend, frontend, e2e]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-
-      # Both Dockerfiles are artefact-copy only (COPY the finished jar / dist —
-      # no Gradle, no pnpm inside the Docker layer), so the build context needs
-      # the artefacts from the jobs above.
-      - uses: actions/download-artifact@v4
-        with:
-          name: backend-jar
-          path: chesstopia-backend/build/libs
-      - uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: chesstopia-frontend/dist
-
-      # Image tag is the git short hash and nothing else — no moving `latest`, so
-      # every deploy and rollback pins exactly one commit (ADR-0010).
+      # ── Ab hier: Images. Bewusst NACH dem E2E-Schritt — ein roter Durchstich
+      # bricht den Job ab, bevor irgendetwas gebaut oder gepusht wird.
       - name: Resolve image tag
         id: meta
+        # Image-Tag ist der Git-Short-Hash und nichts sonst — kein wanderndes
+        # `latest`, damit jeder Deploy und jeder Rollback genau einen Commit
+        # festnagelt (ADR-0010).
         run: echo "tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          # The automatic per-run token is enough to push to GHCR — no PAT anywhere.
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Build & push backend
+      # Beide Dockerfiles sind reine Artefakt-Kopien (COPY des fertigen Jars bzw.
+      # dist-Ordners — kein Gradle, kein pnpm in der Docker-Schicht). Der
+      # Build-Kontext ist deshalb genau der Workspace, in dem E2E gerade lief.
+      - name: Build backend image
         uses: docker/build-push-action@v6
         with:
           context: chesstopia-backend
-          push: true
+          push: false
+          load: true
           tags: ghcr.io/chesstopia/chesstopia-backend:${{ steps.meta.outputs.tag }}
 
-      - name: Build & push frontend
+      - name: Build frontend image
         uses: docker/build-push-action@v6
         with:
           context: chesstopia-frontend
-          push: true
+          push: false
+          load: true
           tags: ghcr.io/chesstopia/chesstopia-frontend:${{ steps.meta.outputs.tag }}
