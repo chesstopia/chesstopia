@@ -3,7 +3,7 @@
 # No Gradle build runs inside this Docker layer.
 FROM eclipse-temurin:25-jre
 WORKDIR /app
-COPY build/libs/application.jar app.jar
+COPY build/libs/app.jar app.jar
 RUN useradd -r -u 1001 spring
 USER spring
 EXPOSE 8080
