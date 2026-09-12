@@ -2,7 +2,7 @@
 type: adr
 status: accepted
 implementation: complete
-updated: 2026-09-07
+updated: 2026-09-12
 supersedes: []
 verifies:
   - 'chesstopia-frontend/package.json :: vitest'
@@ -13,7 +13,7 @@ verifies:
   - '.claude/skills/tests/SKILL.md :: name: tests'
   - 'gradle/check-docs.gradle.kts :: Regel 11'
   - 'e2e/playwright.config.ts :: webServer'
-  - '.github/workflows/ci.yml :: e2e'
+  - '.github/workflows/ci.yml :: integration (E2E + Images)'
 ---
 
 # ADR-0019: Teststrategie — vier Ebenen, zwei davon mit benanntem Auslöser
