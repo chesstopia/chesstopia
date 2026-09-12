@@ -47,9 +47,24 @@ jobs:
 
       - name: Resolve image tag
         id: meta
+        env:
+          # Über env statt direkt ins Skript interpoliert: ein workflow_dispatch-
+          # Input ist Nutzereingabe und hat in einer Shell-Zeile nichts verloren,
+          # auch wenn ihn nur Write-Berechtigte setzen können.
+          INPUT_TAG: ${{ inputs.tag }}
         run: |
-          TAG="${{ inputs.tag }}"
+          set -euo pipefail
+          TAG="$INPUT_TAG"
           [ -n "$TAG" ] || TAG="${GITHUB_SHA::7}"
+          # Deploybar ist ausschliesslich der endgültige Tag: sieben Hex-Zeichen.
+          # ci.yml pusht auf main zusätzlich `ci-<40-stelliger-SHA>`, der das Gate
+          # der vier Jobs noch nicht passiert hat. Diese Prüfung schliesst ihn aus
+          # — `docker manifest inspect` weiter unten könnte ihn nicht von einem
+          # freigegebenen Image unterscheiden, es prüft nur Existenz.
+          case "$TAG" in
+            [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;;
+            *) echo "::error::Tag '$TAG' ist kein 7-stelliger Git-Short-SHA"; exit 1 ;;
+          esac
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - uses: docker/login-action@v3
