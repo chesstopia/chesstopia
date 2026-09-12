@@ -140,13 +140,16 @@ tasks.register("buildAll") {
 }
 
 /**
- * CI stage 1: build and test the chess-engine standalone (JVM jar + JS library, incl. tests).
- * Runs first so its task outputs populate the Gradle build cache; the parallel backend and
- * frontend stages then get cache hits for the same chess-engine tasks instead of rebuilding.
- * chess-engine has no standalone wrapper, so it is driven through the composite build here.
+ * Baut und testet die chess-engine allein (JVM-Jar + JS-Library, inkl. Tests).
+ * Dies ist die EINZIGE Stelle, an der die Testsuite der Engine läuft — der
+ * Backend-Build konsumiert nur ihre Jar-Task, der Frontend-Build nur ihre
+ * JS-Distribution. Beide bauen die Engine transitiv und gleichzeitig mit
+ * (Composite Build bzw. pnpmInstall-Kette, ADR-0006); dieser Task baut sie
+ * NICHT für sie vor. chess-engine hat keinen eigenen Wrapper und wird deshalb
+ * über den Composite Build angesteuert.
  */
 tasks.register("chessEngineBuild") {
     group = "build"
-    description = "Builds and tests the chess-engine (JVM + JS) — CI stage 1, warms the build cache"
+    description = "Baut und testet die chess-engine (JVM + JS) — die einzige Stelle, an der ihre Testsuite läuft"
     dependsOn(gradle.includedBuild("chess-engine").task(":build"))
 }
