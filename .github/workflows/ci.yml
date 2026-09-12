@@ -191,3 +191,77 @@ jobs:
           push: false
           load: true
           tags: ghcr.io/chesstopia/chesstopia-frontend:${{ steps.meta.outputs.tag }}
+
+      # ── Nur main: provisorisch pushen. Der Tag trägt den VOLLEN 40-stelligen
+      # SHA mit Präfix `ci-` und ist damit nach Konstruktion kein gültiger
+      # Deploy-Tag (deploy.yml verlangt genau sieben Hex-Zeichen). Erst der
+      # push-Job unten, der auf alle vier Jobs wartet, macht daraus den
+      # endgültigen Tag. Der Umweg existiert, damit die schnelle Rückmeldung auf
+      # Branches erhalten bleibt: mit `needs:` am Integrationsjob würde er auf
+      # jedem Branch ~70 s auf die Prüfjobs warten.
+      - uses: docker/login-action@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          # Das automatische Run-Token reicht für GHCR — kein PAT irgendwo.
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Provisorische Tags pushen
+        if: github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          for img in backend frontend; do
+            docker tag "ghcr.io/chesstopia/chesstopia-$img:${{ steps.meta.outputs.tag }}" \
+                       "ghcr.io/chesstopia/chesstopia-$img:ci-${GITHUB_SHA}"
+            docker push "ghcr.io/chesstopia/chesstopia-$img:ci-${GITHUB_SHA}"
+          done
+
+  push:
+    name: push images
+    # Bilder gibt es nur für main — keine Wegwerf-Images aus Feature-Branches oder PRs.
+    if: github.ref == 'refs/heads/main'
+    # Das eigentliche Gate: erst wenn ALLE vier Jobs grün sind, bekommt der Tag
+    # seine deploybare Form. `integration` allein reicht nicht — es baut nur
+    # `bootJar`; die Backend-Testsuite läuft im Job `backend`.
+    needs: [chess-engine, backend, frontend, integration]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Registry-seitige Promotion: ein neues Manifest auf dieselben Blobs.
+      # Es wird kein Layer übertragen und nichts neu gebaut — das ausgelieferte
+      # Image ist byteweise dasselbe, das der Integrationsjob getestet hat.
+      - name: Provisorische Tags auf den Deploy-Tag promoten
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_SHA::7}"
+          for img in backend frontend; do
+            docker buildx imagetools create \
+              --tag "ghcr.io/chesstopia/chesstopia-$img:$TAG" \
+              "ghcr.io/chesstopia/chesstopia-$img:ci-${GITHUB_SHA}"
+          done
+          echo "Promotet: \`$TAG\`" >> "$GITHUB_STEP_SUMMARY"
+
+      # Kosmetik, kein Teil der Garantie: der promotete Tag hängt nicht am
+      # provisorischen, beide zeigen unabhängig auf dieselben Blobs. Schlägt das
+      # fehl (Berechtigung, API-Form), bleibt ein Fremdtag stehen — deploybar
+      # wird er dadurch nicht.
+      - name: Provisorische Tags aufräumen
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for img in backend frontend; do
+            VERSION_ID=$(gh api "/orgs/chesstopia/packages/container/chesstopia-$img/versions" \
+              --jq ".[] | select(.metadata.container.tags[]? == \"ci-${GITHUB_SHA}\") | .id" | head -1)
+            [ -n "$VERSION_ID" ] || continue
+            gh api --method DELETE "/orgs/chesstopia/packages/container/chesstopia-$img/versions/$VERSION_ID"
+          done
