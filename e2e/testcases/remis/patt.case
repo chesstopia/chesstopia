@@ -1,0 +1,14 @@
+description = Patt beendet die Partie remis
+moves       = e2e3 a7a5 d1h5 a8a6 h5a5 h7h5 a5c7 a6h6 h2h4 f7f6 c7d7 e8f7 d7b7 d8d3 b7b8 d3h7 b8c8 f7g6 c8e6
+banner      = Remis (Patt)
+
+     BOARD
+  8  . . . . . b n r
+  7  . . . . p . p q
+  6  . . . . Q p k r
+  5  . . . . . . . p
+  4  . . . . . . . P
+  3  . . . . P . . .
+  2  P P P P . P P .
+  1  R N B . K B N R
+     a b c d e f g h

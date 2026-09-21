@@ -14,6 +14,7 @@ type PieceProps = {
 export function Piece({ code, dragging = false }: PieceProps) {
   return (
     <span
+      data-piece={code}
       className={`text-4xl leading-none select-none drop-shadow-sm ${
         dragging ? 'opacity-30' : ''
       }`}

@@ -30,6 +30,9 @@ permissions:
 env:
   DEPLOY_HOST: ${{ vars.PROD_HOST }}
   APP_DIR: /opt/chesstopia
+  # Same constraint as in ci.yml: Gradle toolchain auto-download is off, so the
+  # runner must bring the JDK. Needed here only for the post-deploy smoke run.
+  JAVA_VERSION: "25"
 
 jobs:
   deploy:
@@ -44,9 +47,24 @@ jobs:
 
       - name: Resolve image tag
         id: meta
+        env:
+          # Über env statt direkt ins Skript interpoliert: ein workflow_dispatch-
+          # Input ist Nutzereingabe und hat in einer Shell-Zeile nichts verloren,
+          # auch wenn ihn nur Write-Berechtigte setzen können.
+          INPUT_TAG: ${{ inputs.tag }}
         run: |
-          TAG="${{ inputs.tag }}"
+          set -euo pipefail
+          TAG="$INPUT_TAG"
           [ -n "$TAG" ] || TAG="${GITHUB_SHA::7}"
+          # Deploybar ist ausschliesslich der endgültige Tag: sieben Hex-Zeichen.
+          # ci.yml pusht auf main zusätzlich `ci-<40-stelliger-SHA>`, der das Gate
+          # der vier Jobs noch nicht passiert hat. Diese Prüfung schliesst ihn aus
+          # — `docker manifest inspect` weiter unten könnte ihn nicht von einem
+          # freigegebenen Image unterscheiden, es prüft nur Existenz.
+          case "$TAG" in
+            [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;;
+            *) echo "::error::Tag '$TAG' ist kein 7-stelliger Git-Short-SHA"; exit 1 ;;
+          esac
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - uses: docker/login-action@v3
@@ -95,6 +113,29 @@ jobs:
             "cd $APP_DIR \
              && IMAGE_TAG=${{ steps.meta.outputs.tag }} docker compose -f docker-compose.prod.yml pull \
              && IMAGE_TAG=${{ steps.meta.outputs.tag }} docker compose -f docker-compose.prod.yml up -d"
+
+      # Smoke is level 4, subset (ADR-0019): the one end-to-end run after every
+      # deploy. Against the prod URL, without a stack of its own — once
+      # PLAYWRIGHT_BASE_URL is set, playwright.config.ts skips the webServer
+      # entries. Node and pnpm come from the node-gradle plugin, so both steps go
+      # through Gradle rather than a bare `pnpm`, which is not on the runner PATH.
+      #
+      # The run creates one game and plays one move in the production database.
+      # That is the price of testing the real thing; see docs/notes/e2e-aufbau.md.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew playwrightInstallBrowsers
+      - name: Smoke-Test gegen die frisch deployte Umgebung
+        env:
+          # Repeats environment.url above. Deliberate: GitHub exposes no output
+          # for it, and an expression pointing at a non-existent output would be
+          # silently empty. Resolving the duplication means lifting the URL into
+          # a repository variable — which removes it from both places, not one.
+          PLAYWRIGHT_BASE_URL: https://46.225.235.229.sslip.io
+        run: ./gradlew playwrightSmoke
 
       - name: Report
         run: echo "Deployed \`${{ steps.meta.outputs.tag }}\` to prod." >> "$GITHUB_STEP_SUMMARY"

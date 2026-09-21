@@ -1,0 +1,15 @@
+description = Schachmatt zeigt das Ergebnisbanner und sperrt das Brett
+moves       = f2f3 e7e5 g2g4 d8h4
+banner      = Schachmatt — Schwarz gewinnt
+locked      = d2 d4
+
+     BOARD
+  8  r n b . k b n r
+  7  p p p p . p p p
+  6  . . . . . . . .
+  5  . . . . p . . .
+  4  . . . . . . P q
+  3  . . . . . P . .
+  2  P P P P P . . P
+  1  R N B Q K B N R
+     a b c d e f g h
