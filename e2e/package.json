@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "test": "playwright test"
+    "test": "playwright test --project=chromium --project=mechanik",
+    "smoke": "playwright test smoke.spec.ts --project=chromium"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0"
