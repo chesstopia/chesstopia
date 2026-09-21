@@ -1,5 +1,5 @@
-# Chesstopia CI — build, test, and (on main) publish the container images.
-# See docs/adr/0011-migration-nach-github-actions.md.
+# Chesstopia CI — build, test, and publish the container images on every push.
+# GHCR retention/cleanup is not yet automated — see docs/adr/0011-migration-nach-github-actions.md.
 #
 # Topology: the three component jobs run FAN-OUT (no `needs:`). Each of them builds
 # the chess-engine transitively — backend through the composite build, frontend
@@ -56,7 +56,6 @@ jobs:
       # `runner` user, so the useradd dance the Bitbucket pipeline needed is gone.
       - run: ./gradlew :chesstopia-backend:build
       - name: Upload bootJar
-        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: backend-jar
@@ -89,7 +88,6 @@ jobs:
       # have gone red the moment the frontend actually imports @chesstopia/openapi-client.
       - run: ./gradlew generateOpenApiClient pnpmFrontendLint pnpmFrontendTest pnpmFrontendBuild
       - name: Upload SPA bundle
-        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
@@ -98,8 +96,6 @@ jobs:
 
   images:
     name: package & push images
-    # Images are built ONLY on main — no throwaway images from feature branches or PRs.
-    if: github.ref == 'refs/heads/main'
     needs: [chess-engine, backend, frontend]
     runs-on: ubuntu-latest
     permissions:
