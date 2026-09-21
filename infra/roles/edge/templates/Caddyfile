@@ -11,8 +11,12 @@
             header_up -Origin
         }
     }
-    handle /ws /ws/* {
+    @ws path /ws /ws/*
+    handle @ws {
         # STOMP/WebSocket-Endpunkt — dieselbe same-origin-Begründung wie /api/*.
+        # `handle` selbst nimmt keine mehreren Pfad-Argumente (genau das brach
+        # zuvor: "wrong argument count ... after '/ws/*'") — deshalb der
+        # benannte Matcher, der `/ws` (bare) und `/ws/*` (Unterpfade) zusammenfasst.
         # Caddys reverse_proxy handelt den WS-Upgrade automatisch.
         reverse_proxy backend:8080 {
             header_up -Origin
