@@ -10,6 +10,7 @@ import io.chesstopia.backend.game.application.port.out.GamesRepository;
 import io.chesstopia.backend.game.domain.Game;
 import io.chesstopia.backend.game.domain.GameId;
 import io.chesstopia.backend.game.domain.Ply;
+import io.chesstopia.backend.game.domain.PlayerToken;
 import io.chesstopia.backend.game.domain.Position;
 import io.chesstopia.backend.game.domain.RuleSet;
 import org.springframework.stereotype.Component;
@@ -54,6 +55,8 @@ class GamePersistenceAdapter implements GamesRepository {
             pe.setCreatedAt(game.createdAt());
         }
         RuleSet rules = game.ruleSet();
+        pe.setOwnerToken(game.ownerToken().value());
+        pe.setInviteToken(game.inviteToken().value());
         pe.setVariant(rules.variant());
         pe.setEnPassantEnabled(rules.enPassantEnabled());
         pe.setCastlingEnabled(rules.castlingEnabled());
@@ -86,7 +89,7 @@ class GamePersistenceAdapter implements GamesRepository {
         RuleSet rules = new RuleSet(pe.getVariant(), pe.isEnPassantEnabled(), pe.isCastlingEnabled());
         List<Ply> history = zuege.stream().map(entityMapper::toPly).toList();
         Position current = positionJsonMapper.toDomain(pe.getPositionSnapshot());
-        return new Game(new GameId(pe.getId()), rules, current, history,
-            pe.getStatus(), pe.getEndReason(), pe.getCreatedAt(), pe.getUpdatedAt());
+        return new Game(new GameId(pe.getId()), new PlayerToken(pe.getOwnerToken()), new PlayerToken(pe.getInviteToken()),
+            rules, current, history, pe.getStatus(), pe.getEndReason(), pe.getCreatedAt(), pe.getUpdatedAt());
     }
 }
