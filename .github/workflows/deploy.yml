@@ -30,9 +30,6 @@ permissions:
 env:
   DEPLOY_HOST: ${{ vars.PROD_HOST }}
   APP_DIR: /opt/chesstopia
-  # Same constraint as in ci.yml: Gradle toolchain auto-download is off, so the
-  # runner must bring the JDK. Needed here only for the post-deploy smoke run.
-  JAVA_VERSION: "25"
 
 jobs:
   deploy:
@@ -115,27 +112,35 @@ jobs:
              && IMAGE_TAG=${{ steps.meta.outputs.tag }} docker compose -f docker-compose.prod.yml up -d"
 
       # Smoke is level 4, subset (ADR-0019): the one end-to-end run after every
-      # deploy. Against the prod URL, without a stack of its own — once
-      # PLAYWRIGHT_BASE_URL is set, playwright.config.ts skips the webServer
-      # entries. Node and pnpm come from the node-gradle plugin, so both steps go
-      # through Gradle rather than a bare `pnpm`, which is not on the runner PATH.
+      # deploy. Against the prod URL, without a stack of its own. Seit ADR-0028 ist
+      # e2e/ ein Black-Box-Client mit eigenem Lockfile — der Schritt braucht Node
+      # und Playwright, kein Java und kein Gradle.
       #
       # The run creates one game and plays one move in the production database.
       # That is the price of testing the real thing; see docs/notes/e2e-aufbau.md.
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-node@v4
         with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
-      - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew playwrightInstallBrowsers
+          node-version: "22.14.0"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "9.15.9"
+      - name: Playwright installieren
+        working-directory: e2e
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
       - name: Smoke-Test gegen die frisch deployte Umgebung
+        working-directory: e2e
         env:
           # Repeats environment.url above. Deliberate: GitHub exposes no output
           # for it, and an expression pointing at a non-existent output would be
           # silently empty. Resolving the duplication means lifting the URL into
           # a repository variable — which removes it from both places, not one.
           PLAYWRIGHT_BASE_URL: https://46.225.235.229.sslip.io
-        run: ./gradlew playwrightSmoke
+          # Produktion ist eine geteilte Umgebung — der Lauf darf nicht
+          # parallelisieren (ADR-0028).
+          PLAYWRIGHT_SHARED_ENV: "1"
+        run: pnpm run smoke
 
       - name: Report
         run: echo "Deployed \`${{ steps.meta.outputs.tag }}\` to prod." >> "$GITHUB_STEP_SUMMARY"

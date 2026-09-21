@@ -1,45 +1,57 @@
 ---
 type: note
 status: current
-updated: 2026-09-07
+updated: 2026-09-21
 verifies:
-  - 'e2e/playwright.config.ts :: webServer'
-  - 'chesstopia-frontend/vite.config.ts :: preview'
-  - 'chesstopia-backend/src/main/resources/application.yml :: chesstopia_dev'
-  - 'chesstopia-backend/src/main/java/io/chesstopia/backend/config/SecurityConfig.java :: http://localhost:4173'
-  - 'build.gradle.kts :: pnpmE2eTest'
-  - 'e2e/playwright.config.ts :: mechanik'
-  - 'build.gradle.kts :: --project=mechanik'
+  - 'docker-compose.e2e.yml :: SITE_HOSTNAME'
+  - 'docker-compose.e2e.yml :: infra/roles/edge/templates/Caddyfile'
+  - 'e2e/playwright.config.ts :: PLAYWRIGHT_SHARED_ENV'
+  - 'e2e/package.json :: --project=mechanik'
   - 'e2e/corpus/runner.ts :: runCase'
+  - 'infra/roles/edge/templates/Caddyfile :: reverse_proxy backend:8080'
+  - 'chesstopia-backend/src/main/resources/application-prod.yml :: jdbc:postgresql://postgres:5432'
 ---
 
 # E2E-Aufbau
 
-Wie der Stack für Ebene 4 ([ADR-0019](../adr/0019-teststrategie.md)) hochkommt. Das *Warum* der Werkzeugwahl steht im ADR; hier steht nur, was beim Aufbau tatsächlich im Weg stand.
+Wie der Stack für Ebene 4 ([ADR-0019](../adr/0019-teststrategie.md)) hochkommt. Das *Warum* der Werkzeugwahl steht im ADR, der Schnitt der Pipeline in [ADR-0028](../adr/0028-artefakt-kette-und-e2e-gegen-den-prod-stack.md); hier steht nur, was beim Aufbau tatsächlich im Weg stand.
 
-## Drei Teile, ein Postgres
+## Der Stack ist der Prod-Stack
 
-Playwright startet Backend und Frontend über zwei `webServer`-Einträge in `e2e/playwright.config.ts` — das Backend als `java -jar` auf dem gebauten Boot-Jar, das Frontend als Vite-Preview gegen das gebaute Bundle, nicht als Devserver. Postgres startet keiner der beiden: lokal per `docker compose up -d postgres`, in CI per Service-Container mit denselben Zugangsdaten wie `docker-compose.yml`. Beides trifft `application.yml` unverändert — es gibt kein eigenes E2E-Profil.
+Playwright startet nichts. Der Stack kommt aus zwei Compose-Dateien: `docker-compose.prod.yml` liefert Backend und Frontend unverändert so, wie sie deployed werden, `docker-compose.e2e.yml` ergänzt, was die Prod-Datei anderen Compose-Projekten überlässt — Postgres, Caddy und einen veröffentlichten Port.
 
-Einstiegspunkt ist `./gradlew pnpmE2eTest`, nicht `buildAll`.
+```
+docker network create chesstopia          # einmalig; in Prod legt Ansible es an
+export IMAGE_REGISTRY=ghcr.io/chesstopia IMAGE_TAG=<short-sha>
+export POSTGRES_DB=chesstopia_dev POSTGRES_USER=chesstopia POSTGRES_PASSWORD=egal
+export JWT_SECRET=egal CHESSCOACH_API_KEY=egal
+docker compose -f docker-compose.prod.yml -f docker-compose.e2e.yml up -d
+cd e2e && pnpm install && pnpm exec playwright install chromium && pnpm run test
+```
 
-## Der Preview-Server braucht seinen eigenen Proxy
+Ohne die vier `export`-Zeilen bricht der Backend-Container beim Start ab: `application-prod.yml` löst `${POSTGRES_PASSWORD}` und `${JWT_SECRET}` auf, und Spring scheitert an einem unbelegten Platzhalter. Die Werte sind im Wegwerf-Stack beliebig; in CI erzeugt der Workflow sie zur Laufzeit.
 
-`vite.config.ts` hatte einen `server.proxy`-Eintrag für `/api`, aber keinen `preview.proxy`. Ohne den zweiten laufen alle API-Aufrufe des E2E-Stacks ins Leere, und zwar als Verbindungs- statt als Testfehler.
+Mit einem lokal gebauten Stack statt gezogener Images: erst `./gradlew :chesstopia-backend:bootJar pnpmFrontendBuild`, dann `docker compose … build`. Beide Dockerfiles sind reine Artefakt-Kopien — ohne die Artefakte schlägt schon das `COPY` fehl.
 
-## Der Preview-Port muss in der CORS-Allowlist stehen
+## Die produktive Caddyfile wird gemountet, nicht abgeschrieben
 
-`SecurityConfig` führt die erlaubten Origins als feste Liste. Sie kannte nur den Devserver-Port; gegen den Preview-Port antwortete das Backend mit `Invalid CORS request`. Die Tücke: mit `curl` ist das unsichtbar, weil ohne `Origin`-Header gar nicht geprüft wird — der Fehler zeigt sich ausschließlich im Browser. Wer einen weiteren Port hinzunimmt, trägt ihn dort ein.
+`docker-compose.e2e.yml` hängt `infra/roles/edge/templates/Caddyfile` unverändert in den Caddy-Container. Eine Zweitfassung für CI ist ausdrücklich ausgeschlossen: Sie wäre genau die Stelle, an der eine veraltete Route stehen bliebe, während Produktion längst etwas anderes sagt.
 
-## Argumente an Vite gehen durch pnpm verloren
+Gesteuert wird nur `SITE_HOSTNAME` — Caddys eigene Env-Syntax `{$SITE_HOSTNAME}`, kein Template-Platzhalter. Im Wegwerf-Stack steht dort `:80`: Port 80, keine Host-Prüfung, kein ACME, kein TLS. Geprüft wird der Körper der Datei, also die Routen, nicht die Zertifikatslogik.
 
-`pnpm --filter chesstopia-frontend run preview -- --port 4173` reicht das `--` wörtlich weiter; Vites CLI wertet alles danach als Positionsargument und ignoriert `--port` und `--strictPort` stillschweigend — der Server startet dann auf dem nächsten freien Port statt zu scheitern. Ohne `--` kommen die Flags an.
+**Das ist der Grund für den ganzen Aufbau.** Die Caddyfile entfernt für `/api/*` den `Origin`-Header. In Produktion sieht das Backend deshalb nie einen CORS-Request; der frühere E2E-Stack über `vite preview` erzeugte einen und brauchte dafür einen eigenen Eintrag in der Origin-Allowlist. Geprüft wurde ein Pfad, den es in Produktion nicht gibt.
 
-Umgekehrt bei der Skript-Kurzform: `pnpm --filter e2e test --project=chromium` bricht mit `Unknown option: 'project'` ab, weil pnpm die Option für sich beansprucht. Deshalb rufen die Gradle-Tasks Playwright über `pnpm … exec playwright test …` auf.
+**Benannte Lücke:** Die Caddyfile hat keine Route für `/ws`. `WebSocketConfig` registriert den STOMP-Endpunkt dort; ein Verbindungsversuch landet im Catch-All und damit im nginx. Eigenes Ticket — der Test dafür braucht zusätzlich einen Frontend-Client, den es noch nicht gibt.
 
-## pnpm ist für Kindprozesse auf dem PATH, für den Workflow nicht
+## Geteilte Umgebung oder Wegwerf-Stack
 
-Node und pnpm liegen unter `.gradle/`, nicht auf dem PATH des Runners — ein blankes `pnpm` in einem Workflow-Schritt findet nichts. Eine `PnpmTask` legt beide aber auf den PATH ihrer Kindprozesse; deshalb darf der `webServer`-Eintrag in der Playwright-Config `pnpm` aufrufen, während der Workflow es nicht darf.
+`PLAYWRIGHT_BASE_URL` sagt nur, *wohin*. Ob parallelisiert werden darf, entscheidet `PLAYWRIGHT_SHARED_ENV=1`: Gegen Produktion (Deploy-Smoke) verbietet geteilter Zustand die Parallelität, gegen den Wegwerf-Stack in CI nicht. Die beiden Fragen waren früher dieselbe Variable — mit dem Compose-Stack ist die Basis-URL *immer* gesetzt, und E2E wäre in CI still seriell geworden.
+
+Die Flags für die Playwright-Projekte stehen in den Skripten von `e2e/package.json`, nicht im Aufruf: `pnpm run test --project=…` beansprucht pnpm die Option für sich und bricht mit `Unknown option: 'project'` ab.
+
+## Deploy-Smoke ohne eigenen Stack
+
+`deploy.yml` fährt nach jedem Rollout `pnpm run smoke` gegen die echte Umgebung — `PLAYWRIGHT_BASE_URL` auf die Prod-URL, `PLAYWRIGHT_SHARED_ENV=1`. Der Lauf ist nicht folgenlos: Er legt dort eine Partie an und spielt einen Zug. Nach jedem Deploy steht also eine Zeile mehr in `partie` und `zug` — bewusst in Kauf genommen, weil ein Smoke, der die Datenbank nicht anfasst, die Datenbank auch nicht prüft.
 
 ## Wie ein Test an die `gameId` kommt
 
@@ -53,18 +65,12 @@ Node und pnpm liegen unter `.gradle/`, nicht auf dem PATH des Runners — ein bl
 
 Ein Zugversuch auf beendeter Partie wird an zwei Stellen gestoppt: `App.tsx` reicht `disabled` ans Brett, und `useBoardState.playMove` kehrt bei nicht laufender Partie früh zurück. Wer den E2E-Test für die Sperre als Gegenprobe entkräften will, muss beide entfernen — eine allein lässt ihn grün.
 
-## Deploy-Smoke ohne eigenen Stack
-
-Mit gesetzter Umgebungsvariable `PLAYWRIGHT_BASE_URL` überspringt die Config die `webServer`-Einträge komplett; `deploy.yml` nutzt das, um nach jedem Rollout nur `smoke.spec.ts` gegen die echte Umgebung laufen zu lassen. Der Lauf ist nicht folgenlos: er legt dort eine Partie an und spielt einen Zug. Nach jedem Deploy steht also eine Zeile mehr in `partie` und `zug` — bewusst in Kauf genommen, weil ein Smoke, der die Datenbank nicht anfasst, die Datenbank auch nicht prüft.
-
 ## Der Korpus
 
 Schachsituationen stehen als Dateien unter `e2e/testcases/<kategorie>/<name>.case` — eine Situation je Datei, eine Zeile je Datei im Report. Das *Warum* steht in [ADR-0024](../adr/0024-datei-getriebener-e2e-korpus.md); hier steht, wie man damit arbeitet.
 
 Eine neue Datei hinlegen genügt. `e2e/tests/corpus.spec.ts` liest das Verzeichnis beim Laden rekursiv und erzeugt je `.case` ein `test()`. Es gibt keinen Codegen und keinen Sync-Schritt — anders als beim Engine-Korpus ([ADR-0022](../adr/0022-datei-getriebener-engine-testkorpus.md)), wo `commonTest` keinen Laufzeit-Dateizugriff hat.
 
-Die Prüfmechanik — Brettleser, Parser, Driftwächter unter `e2e/corpus/` — läuft als eigenes Playwright-Projekt `mechanik`; `pnpmE2eTest` startet beide Projekte. Ohne den zweiten Eintrag liefe sie in CI nicht mit, und eine Mechanik, die nie rot war, prüft nichts.
+Die Prüfmechanik — Brettleser, Parser, Driftwächter unter `e2e/corpus/` — läuft als eigenes Playwright-Projekt `mechanik`; das Skript `test` startet beide Projekte. Ohne den zweiten Eintrag liefe sie in CI nicht mit, und eine Mechanik, die nie rot war, prüft nichts. Browser und Stack braucht sie nicht; sie kostet im E2E-Job trotzdem nichts, weil der Stack dort ohnehin schon steht, bevor Playwright startet.
 
-Preis dieser Lösung: Die Mechaniktests fahren die `webServer`-Einträge mit hoch, obwohl sie weder Browser noch Backend brauchen. Bewusst in Kauf genommen; die Alternative wäre eine zweite Werkzeugkette neben Playwright.
-
-Zwei Kostenzahlen, damit die nächste Entscheidung über einen teuren Fall nicht wieder gemessen werden muss — seriell, ein Worker, lokal: Grundkosten rund 300 ms je Fall, Grenzkosten rund 165 ms je Halbzug. Der teuerste Fall (Patt, 19 Halbzüge) liegt bei rund 3,4 s. Die Rüstzeit des CI-Jobs übersteigt die Prüfzeit um ein Vielfaches — wer Laufzeit sparen will, sucht dort, nicht bei den Fällen.
+Zwei Kostenzahlen, damit die nächste Entscheidung über einen teuren Fall nicht wieder gemessen werden muss — seriell, ein Worker, lokal: Grundkosten rund 300 ms je Fall, Grenzkosten rund 165 ms je Halbzug. Der teuerste Fall (Patt, 19 Halbzüge) liegt bei rund 3,4 s. Die Rüstzeit des Stacks übersteigt die Prüfzeit um ein Vielfaches — wer Laufzeit sparen will, sucht dort, nicht bei den Fällen.

@@ -1,22 +1,25 @@
 ---
 type: adr
-status: accepted
+status: partially-superseded
 # `partial`, weil dieses ADR beide Stufen entscheidet, aber zum Zeitpunkt des
 # Schreibens nur Stufe 1 gebaut ist. Task 11 zieht es auf `complete`. Das Feld
 # ist Zustand und damit das einzige, was an einem ADR später geändert werden
 # darf — der Körper ist append-only.
 implementation: partial
-updated: 2026-09-12
+updated: 2026-09-21
 supersedes: []
-verifies:
-  - '.github/workflows/ci.yml :: integration (E2E + Images)'
-  - '.github/workflows/ci.yml :: needs: [chess-engine, backend, frontend, integration]'
+# Leer, seit ADR-0028 Stufe 1 abgeloest hat: Der Job `integration` und sein
+# `needs:` existieren nicht mehr, und Stufe 2 ist noch nicht gebaut. Die
+# Kontraktpruefung wandert damit vollstaendig zu ADR-0028.
+verifies: []
 ---
 
 # ADR-0027: Der Integrationsjob baut und testet die Images, ein Gate promotet sie
 
 ## Status
-Accepted. Ändert die Job-Topologie aus [ADR-0011](0011-migration-nach-github-actions.md), ohne deren Begründung aufzuheben: Fan-out der Prüfjobs, unbegrenzte Minuten, kein jobübergreifender Cache-Schlüssel — alles das gilt weiter.
+Partially superseded by [ADR-0028](0028-artefakt-kette-und-e2e-gegen-den-prod-stack.md) — **Stufe 1 ist abgelöst** (der Integrationsjob, der E2E fährt und daraus die Images baut, weicht einer Kette aus Build-, Image- und E2E-Jobs). **Stufe 2 gilt weiter** und wird dort umgesetzt: E2E gegen den Container-Stack, mit der unveränderten produktiven Caddyfile.
+
+Ändert die Job-Topologie aus [ADR-0011](0011-migration-nach-github-actions.md), ohne deren Begründung aufzuheben: Fan-out der Prüfjobs, unbegrenzte Minuten, kein jobübergreifender Cache-Schlüssel — alles das gilt weiter.
 
 ## Context
 Das ausgelieferte Image enthielt nachweislich nicht das getestete Artefakt. Das Backend-Jar entstand zweimal unabhängig — im Job `backend`, dessen Artefakt der Job `images` herunterlud, und im Job `e2e`, wo `pnpmE2eTest` an `:chesstopia-backend:bootJar` hängt. Ein Boot-Jar ist nicht bit-reproduzierbar; zwei Builds ergeben zwei verschiedene Dateien.

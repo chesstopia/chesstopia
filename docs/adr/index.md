@@ -34,7 +34,8 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 | [0022](0022-datei-getriebener-engine-testkorpus.md) | Datei-getriebener Engine-Testkorpus | Accepted | complete |
 | [0023](0023-engine-outcome-mit-stellungshistorie.md) | Engine-Outcome nimmt die Stellungshistorie | Accepted | complete |
 | [0024](0024-datei-getriebener-e2e-korpus.md) | Datei-getriebener E2E-Korpus | Accepted | complete |
-| [0027](0027-integrationsjob-baut-und-testet-die-images.md) | Der Integrationsjob baut und testet die Images, ein Gate promotet sie | Accepted | partial |
+| [0027](0027-integrationsjob-baut-und-testet-die-images.md) | Der Integrationsjob baut und testet die Images, ein Gate promotet sie | Partially superseded ¹⁰ | partial |
+| [0028](0028-artefakt-kette-und-e2e-gegen-den-prod-stack.md) | Artefakt-Kette in der CI, E2E gegen den Prod-Stack | Accepted | planned |
 
 ¹ Die `SecurityFilterChain`-Bean existiert, das vorgesehene JWT-Filter-Skelett nicht — dort steht ein `TODO`.
 
@@ -54,9 +55,11 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 
 ⁹ Teilweise abgelöst durch [ADR-0021](0021-mapstruct-fuer-adapter-mappings.md): MapStruct ist aufgenommen; der übrige Dependency-Kern gilt unverändert.
 
+¹⁰ Teilweise abgelöst durch [ADR-0028](0028-artefakt-kette-und-e2e-gegen-den-prod-stack.md): Stufe 1 — der Integrationsjob, der die Images aus seinem eigenen Workspace baut — ist abgelöst. Stufe 2 — E2E gegen den Container-Stack mit der unveränderten produktiven Caddyfile — gilt weiter und wird dort umgesetzt. `partial` bleibt, weil keine der beiden Stufen gebaut ist.
+
 **0009 bis 0011 waren reserviert; die Lücke ist mit dem Merge von PR #2 am 9. August 2026 geschlossen.** Die drei ADRs lagen auf `CHESS-8-Initial-pipeline` und vergaben ihre Nummern zuerst — sie wurden nicht umnummeriert, weil sie sich gegenseitig unter genau diesen Nummern verlinken. Ihr Frontmatter ist beim Zusammenführen nachgetragen worden; die Körper sind unangetastet.
 
-Genau hier ist die Nummernvergabe zweimal fehlgeschlagen: Ein Blick in `docs/adr/` zeigt nur den eigenen Branch. Die nächste freie Nummer wird deshalb über **alle** Branches ermittelt, nicht über das Arbeitsverzeichnis — das Skill `/adr` tut das. **Ein dritter Fall liegt offen:** `0024` ist doppelt vergeben — `0024-datei-getriebener-e2e-korpus.md` auf diesem Branch, `0024-flache-schemas-statt-allof-fuer-typescript-client.md` auf `CHESS-19`; dasselbe gilt für `0020` (`0020-lernkonzept.md` auf `CHESS-10`). Welche Seite umnummeriert wird, entscheidet sich beim Zusammenführen. **Die nächste freie Nummer ist 0028.**
+Genau hier ist die Nummernvergabe zweimal fehlgeschlagen: Ein Blick in `docs/adr/` zeigt nur den eigenen Branch. Die nächste freie Nummer wird deshalb über **alle** Branches ermittelt, nicht über das Arbeitsverzeichnis — das Skill `/adr` tut das. **Ein dritter Fall liegt offen:** `0024` ist doppelt vergeben — `0024-datei-getriebener-e2e-korpus.md` auf diesem Branch, `0024-flache-schemas-statt-allof-fuer-typescript-client.md` auf `CHESS-19`; dasselbe gilt für `0020` (`0020-lernkonzept.md` auf `CHESS-10`). Welche Seite umnummeriert wird, entscheidet sich beim Zusammenführen. **Die nächste freie Nummer ist 0029.**
 
 **0013 bis 0015 sind nachträglich verschriftlicht.** Die Entscheidungen wurden beim Aufsetzen des Backends getroffen und lagen bis dahin in einem einzelnen Dokument (`chesstopia-backend/SpringDesign.MD`), das keine ADR-Form hatte und neben diesem Register eine zweite Entscheidungsablage bildete. Begründungen und verworfene Alternativen stammen von dort; das Dokument ist aufgelöst.
 

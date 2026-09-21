@@ -2,13 +2,13 @@
 type: adr
 status: accepted
 implementation: complete
-updated: 2026-09-07
+updated: 2026-09-21
 supersedes: []
 verifies:
   - 'e2e/playwright.config.ts :: mechanik'
   - 'e2e/corpus/runner.ts :: runCase'
   - 'e2e/testcases/remis/patt.case :: banner      = Remis (Patt)'
-  - 'build.gradle.kts :: --project=mechanik'
+  - 'e2e/package.json :: --project=mechanik'
 ---
 
 # ADR-0024: Datei-getriebener E2E-Korpus

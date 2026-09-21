@@ -38,10 +38,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // 5173 ist der Vite-Devserver, 4173 der Preview-Server, gegen den Ebene 4
-        // aus ADR-0019 läuft. In Produktion routet Caddy /api/* same-origin —
-        // dort greift die Liste gar nicht erst.
-        config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:4173"));
+        // Nur der Vite-Devserver. In Produktion routet Caddy /api/* same-origin und
+        // entfernt den Origin-Header, dort greift die Liste gar nicht erst — und
+        // seit ADR-0028 faehrt auch Ebene 4 hinter Caddy, nicht mehr gegen einen
+        // eigenen Preview-Port. Wer einen weiteren Origin braucht, traegt ihn hier
+        // ein; eine Liste, die nichts mehr prueft, gehoert nicht stehen gelassen.
+        config.setAllowedOrigins(List.of("http://localhost:5173"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

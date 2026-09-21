@@ -1,30 +1,33 @@
-# Chesstopia CI — build, test, and (on main) publish the container images.
-# Siehe docs/adr/0027-integrationsjob-baut-und-testet-die-images.md.
+# Chesstopia CI — jedes Artefakt einmal bauen, in dieser Form testen, in dieser
+# Form ausliefern. Siehe docs/adr/0028-artefakt-kette-und-e2e-gegen-den-prod-stack.md.
 #
 # Topologie:
 #
-#   t=0   chess-engine ‖ backend ‖ frontend        reine Prüfjobs, ~60 s
-#         integration                              kritischer Pfad, ~205 s
-#           E2E → beide Images bauen → (nur main) provisorisch pushen
-#         └─► push (nur main, needs: alle vier)    promotet auf den endgültigen Tag
+#   engine  ‖  backend  ‖  frontend           reine Bau- und Pruefjobs, ~60 s
+#                │           │
+#                ▼           ▼
+#        backend-image   frontend-image       nur Artefakt + buildx + push
+#                └─────┬─────┘
+#                      ▼
+#                     e2e                     Prod-Stack unter Compose
 #
-# Die drei Prüfjobs bauen die chess-engine transitiv jeder für sich — Backend über
-# den Composite Build, Frontend über die pnpmInstall → jsBrowserProductionLibrary-
-# Distribution-Kette (ADR-0006). Die Redundanz ist Absicht: auf einem public Repo
-# sind die Minuten frei, die Jobs laufen auf getrennten VMs, und es gibt keinen
-# jobübergreifenden Cache-Schlüssel, der still danebengreifen kann. ADR-0009
-# sequenzierte anders herum, weil Bitbucket pro Minute abrechnete.
+# Das Jar entsteht im Job `backend`, wird dort von der Testsuite geprueft, als
+# Artefakt uebergeben und in genau dieser Form ins Image kopiert. `upload-artifact`
+# ist eine bytetreue Uebergabe — das getestete Jar ist das ausgelieferte. Dasselbe
+# fuer das Frontend-Bundle.
 #
-# Neu gegenüber ADR-0011: Die Images entstehen NICHT mehr in einem eigenen Job aus
-# heruntergeladenen Artefakten, sondern im Integrationsjob aus demselben Workspace,
-# in dem E2E gerade gelaufen ist. Das getestete und das ausgelieferte Jar sind damit
-# dieselbe Datei — ein Boot-Jar ist nicht bit-reproduzierbar, zwei Builds ergeben
-# zwei verschiedene Artefakte. Gebaut wird auf jedem Branch (das fängt ein kaputtes
-# Dockerfile im PR), gepusht nur auf main.
+# Die Image-Jobs fuehren keinen Projektcode aus. Nur sie tragen `packages: write`;
+# die Build-Jobs, die Gradle und pnpm mit allen Fremdabhaengigkeiten ausfuehren,
+# haben keine Registry-Rechte.
 #
-# "Ein roter Durchstich verdient kein Image" gilt weiter, wandert aber von `needs:`
-# in die Schrittreihenfolge: Der Image-Build steht hinter dem E2E-Schritt, ein roter
-# E2E-Lauf bricht den Job vorher ab.
+# `engine` haengt in den `needs:` der Image-Jobs, weil die Engine-Testsuite
+# ausschliesslich dort laeuft — `backend` konsumiert nur die Jar-Task, `frontend`
+# nur die JS-Distribution. Ohne diese Kante entstuende bei roter Engine-Suite ein
+# Image. `engine` laeuft parallel zu `backend`, die Kette wartet dadurch kaum.
+#
+# Kein Gate hinter `e2e`: Die Images sind gepusht und deploybar, bevor Playwright
+# startet. Das ist bewusst und benannt (ADR-0028, ## Consequences) — der Mensch an
+# deploy.yml traegt es, bis Retention-Policy und ein `promote`-Job kommen.
 name: CI
 
 on:
@@ -42,9 +45,10 @@ env:
   # JDK 25 is mandatory and Gradle toolchain auto-download is disabled (foojay is
   # incompatible with Gradle 9.5.1), so the runner must provide the JDK itself.
   JAVA_VERSION: "25"
+  REGISTRY: ghcr.io/chesstopia
 
 jobs:
-  chess-engine:
+  engine:
     name: chess-engine (build + test)
     runs-on: ubuntu-latest
     steps:
@@ -70,8 +74,15 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       # Tests boot an embedded Postgres from native binaries (Zonky, ADR-0012), whose
       # initdb refuses to run as root. GitHub runners are already the unprivileged
-      # `runner` user, so the useradd dance the Bitbucket pipeline needed is gone.
+      # `runner` user.
       - run: ./gradlew :chesstopia-backend:build
+      # Genau dieses Jar geht ins Image. Kein zweiter Build.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: chesstopia-backend/build/libs/app.jar
+          if-no-files-found: error
+          retention-days: 1
 
   frontend:
     name: frontend (lint + test + build)
@@ -94,174 +105,175 @@ jobs:
             ~/.local/share/pnpm/store
           key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'build.gradle.kts') }}
           restore-keys: pnpm-${{ runner.os }}-
-      # generateOpenApiClient runs here from the start. ADR-0009 flagged it as a
-      # latent dependency: the task lived only in `buildAll`, so the pipeline would
-      # have gone red the moment the frontend actually imports @chesstopia/openapi-client.
+      # generateOpenApiClient ist Pflicht, nicht Kosmetik: pnpmFrontendBuild haengt
+      # nicht daran, und auf einem frischen Checkout ist openapi-client/src leer.
       - run: ./gradlew generateOpenApiClient pnpmFrontendLint pnpmFrontendTest pnpmFrontendBuild
+      # Genau dieses Bundle geht ins Image.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: chesstopia-frontend/dist
+          if-no-files-found: error
+          retention-days: 1
 
-  integration:
-    name: integration (E2E + Images)
+  backend-image:
+    name: backend image
+    needs: [backend, engine]
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # Wird nur von den Push-Schritten ganz unten gebraucht, die an
-      # `if: github.ref == 'refs/heads/main'` hängen. Bei einem PR aus einem Fork
-      # ist das GITHUB_TOKEN read-only — dort laufen diese Schritte nie.
       packages: write
-    services:
-      # Level 4 runs against a real database. Database and role match
-      # docker-compose.yml so application.yml fits unchanged — there is no
-      # separate E2E profile.
-      #
-      # No POSTGRES_PASSWORD on purpose. Regel 10 in gradle/check-docs.gradle.kts
-      # rejects literal credentials anywhere under .github/workflows/, and it is
-      # right to: a workflow is no place to learn which literals are harmless.
-      # `trust` removes the credential instead of hiding it — the container is
-      # reachable only from this job's network and dies with the job, and the
-      # password application.yml sends is accepted whatever it is.
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_DB: chesstopia_dev
-          POSTGRES_USER: chesstopia
-          POSTGRES_HOST_AUTH_METHOD: trust
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
+    steps:
+      # Checkout liefert nur das Dockerfile — hier wird nichts gebaut, was Quellcode
+      # braucht. Das Dockerfile ist eine reine Artefakt-Kopie.
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: backend-jar
+          path: chesstopia-backend/build/libs
+      - name: Image-Tag bestimmen
+        id: meta
+        # Der Git-Short-Hash und nichts sonst — kein wanderndes `latest`, damit
+        # jeder Deploy und jeder Rollback genau einen Commit festnagelt (ADR-0010).
+        run: echo "tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          # Das automatische Run-Token reicht fuer GHCR — kein PAT irgendwo.
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: chesstopia-backend
+          push: true
+          tags: ${{ env.REGISTRY }}/chesstopia-backend:${{ steps.meta.outputs.tag }}
+
+  frontend-image:
+    name: frontend image
+    needs: [frontend, engine]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/download-artifact@v4
         with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
-      - uses: gradle/actions/setup-gradle@v4
-      - name: Cache node/pnpm toolchain + pnpm store
-        uses: actions/cache@v4
+          name: frontend-dist
+          path: chesstopia-frontend/dist
+      - name: Image-Tag bestimmen
+        id: meta
+        run: echo "tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
-          path: |
-            .gradle/nodejs
-            .gradle/pnpm
-            ~/.local/share/pnpm/store
-          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'build.gradle.kts') }}
-          restore-keys: pnpm-${{ runner.os }}-
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: chesstopia-frontend
+          push: true
+          tags: ${{ env.REGISTRY }}/chesstopia-frontend:${{ steps.meta.outputs.tag }}
+
+  e2e:
+    name: e2e (Prod-Stack + Playwright)
+    needs: [backend-image, frontend-image]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    env:
+      # Compose liest beide Dateien aus dieser Variablen — spart die Wiederholung
+      # der -f-Paare in jedem Schritt.
+      COMPOSE_FILE: docker-compose.prod.yml:docker-compose.e2e.yml
+    steps:
+      - uses: actions/checkout@v4
+      # Node direkt, nicht ueber Gradle: e2e/ ist seit ADR-0028 ein Black-Box-Client
+      # mit eigenem Lockfile und haengt nicht mehr an pnpmInstall — und damit auch
+      # nicht mehr an der JS-Distribution der Kotlin-Engine.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.14.0"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "9.15.9"
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-      # Browser über Gradle, nicht über ein blankes `pnpm` — pnpm liegt unter
-      # .gradle/pnpm und ist auf dem Runner nicht auf dem PATH. Die PnpmTask
-      # legt ihn für ihre Kindprozesse selbst dorthin, weshalb Playwrights
-      # webServer-Kommando weiter unten `pnpm` findet.
-      - run: ./gradlew playwrightInstallBrowsers
-      - run: ./gradlew pnpmE2eTest
-        env:
-          CI: true
+          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/pnpm-lock.yaml') }}
+      - name: Playwright installieren
+        working-directory: e2e
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
 
-      # ── Ab hier: Images. Bewusst NACH dem E2E-Schritt — ein roter Durchstich
-      # bricht den Job ab, bevor irgendetwas gebaut oder gepusht wird.
-      - name: Resolve image tag
-        id: meta
-        # Image-Tag ist der Git-Short-Hash und nichts sonst — kein wanderndes
-        # `latest`, damit jeder Deploy und jeder Rollback genau einen Commit
-        # festnagelt (ADR-0010).
-        run: echo "tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-
-      - uses: docker/setup-buildx-action@v3
-
-      # Beide Dockerfiles sind reine Artefakt-Kopien (COPY des fertigen Jars bzw.
-      # dist-Ordners — kein Gradle, kein pnpm in der Docker-Schicht). Der
-      # Build-Kontext ist deshalb genau der Workspace, in dem E2E gerade lief.
-      - name: Build backend image
-        uses: docker/build-push-action@v6
-        with:
-          context: chesstopia-backend
-          push: false
-          load: true
-          tags: ghcr.io/chesstopia/chesstopia-backend:${{ steps.meta.outputs.tag }}
-
-      - name: Build frontend image
-        uses: docker/build-push-action@v6
-        with:
-          context: chesstopia-frontend
-          push: false
-          load: true
-          tags: ghcr.io/chesstopia/chesstopia-frontend:${{ steps.meta.outputs.tag }}
-
-      # ── Nur main: provisorisch pushen. Der Tag trägt den VOLLEN 40-stelligen
-      # SHA mit Präfix `ci-` und ist damit nach Konstruktion kein gültiger
-      # Deploy-Tag (deploy.yml verlangt genau sieben Hex-Zeichen). Erst der
-      # push-Job unten, der auf alle vier Jobs wartet, macht daraus den
-      # endgültigen Tag. Der Umweg existiert, damit die schnelle Rückmeldung auf
-      # Branches erhalten bleibt: mit `needs:` am Integrationsjob würde er auf
-      # jedem Branch ~70 s auf die Prüfjobs warten.
-      - uses: docker/login-action@v3
-        if: github.ref == 'refs/heads/main'
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          # Das automatische Run-Token reicht für GHCR — kein PAT irgendwo.
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Provisorische Tags pushen
-        if: github.ref == 'refs/heads/main'
+      - name: Umgebung des Stacks
+        # Das `prod`-Profil loest ${POSTGRES_PASSWORD} und ${JWT_SECRET} auf und
+        # bricht unbelegt beim Start ab. Die Werte entstehen hier und leben so lange
+        # wie der Job; im Repo steht keiner (Verbot 6).
         run: |
           set -euo pipefail
-          for img in backend frontend; do
-            docker tag "ghcr.io/chesstopia/chesstopia-$img:${{ steps.meta.outputs.tag }}" \
-                       "ghcr.io/chesstopia/chesstopia-$img:ci-${GITHUB_SHA}"
-            docker push "ghcr.io/chesstopia/chesstopia-$img:ci-${GITHUB_SHA}"
-          done
+          {
+            echo "IMAGE_REGISTRY=${REGISTRY}"
+            echo "IMAGE_TAG=${GITHUB_SHA::7}"
+            echo "POSTGRES_DB=chesstopia_dev"
+            echo "POSTGRES_USER=chesstopia"
+            echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
+            echo "JWT_SECRET=$(openssl rand -hex 32)"
+            echo "CHESSCOACH_API_KEY=$(openssl rand -hex 8)"
+          } >> "$GITHUB_ENV"
 
-  push:
-    name: push images
-    # Bilder gibt es nur für main — keine Wegwerf-Images aus Feature-Branches oder PRs.
-    if: github.ref == 'refs/heads/main'
-    # Das eigentliche Gate: erst wenn ALLE vier Jobs grün sind, bekommt der Tag
-    # seine deploybare Form. `integration` allein reicht nicht — es baut nur
-    # `bootJar`; die Backend-Testsuite läuft im Job `backend`.
-    needs: [chess-engine, backend, frontend, integration]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Registry-seitige Promotion: ein neues Manifest auf dieselben Blobs.
-      # Es wird kein Layer übertragen und nichts neu gebaut — das ausgelieferte
-      # Image ist byteweise dasselbe, das der Integrationsjob getestet hat.
-      - name: Provisorische Tags auf den Deploy-Tag promoten
+      - name: Prod-Stack hochfahren
         run: |
           set -euo pipefail
-          TAG="${GITHUB_SHA::7}"
-          for img in backend frontend; do
-            docker buildx imagetools create \
-              --tag "ghcr.io/chesstopia/chesstopia-$img:$TAG" \
-              "ghcr.io/chesstopia/chesstopia-$img:ci-${GITHUB_SHA}"
-          done
-          echo "Promotet: \`$TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          # In Produktion legt Ansible dieses Netz an; docker-compose.prod.yml
+          # erwartet es als `external`.
+          docker network create chesstopia
+          # Explizit ziehen: Damit ist belegt, dass die Images den Registry-Roundtrip
+          # ueberstanden haben, und `up` baut sie nicht aus `build:` neu.
+          docker compose pull backend frontend
+          docker compose up -d
 
-      # Kosmetik, kein Teil der Garantie: der promotete Tag hängt nicht am
-      # provisorischen, beide zeigen unabhängig auf dieselben Blobs. Schlägt das
-      # fehl (Berechtigung, API-Form), bleibt ein Fremdtag stehen — deploybar
-      # wird er dadurch nicht.
-      - name: Provisorische Tags aufräumen
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Auf den Stack warten
         run: |
-          for img in backend frontend; do
-            VERSION_ID=$(gh api "/orgs/chesstopia/packages/container/chesstopia-$img/versions" \
-              --jq ".[] | select(.metadata.container.tags[]? == \"ci-${GITHUB_SHA}\") | .id" | head -1)
-            [ -n "$VERSION_ID" ] || continue
-            gh api --method DELETE "/orgs/chesstopia/packages/container/chesstopia-$img/versions/$VERSION_ID"
+          set -euo pipefail
+          # Durch Caddy hindurch: Die Sonde belegt die /api/*-Route, das Backend und
+          # die Datenbankverbindung in einem Zug.
+          for i in $(seq 1 90); do
+            if [ "$(curl -fsS -o /dev/null -w '%{http_code}' http://localhost:8000/api/v1/hello || true)" = "200" ]; then
+              echo "Stack bereit nach $((i * 2)) s"
+              exit 0
+            fi
+            sleep 2
           done
+          echo "::error::Der Stack kam nicht hoch"
+          docker compose ps
+          docker compose logs --tail=200
+          exit 1
+
+      - name: Playwright
+        working-directory: e2e
+        env:
+          CI: "true"
+        run: pnpm run test
+
+      - name: Stack-Logs bei Fehlschlag
+        if: failure()
+        run: docker compose logs --tail=400
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: e2e/test-results
+          if-no-files-found: ignore
+          retention-days: 7

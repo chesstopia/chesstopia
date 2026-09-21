@@ -1,0 +1,4 @@
+# Eigene Workspace-Wurzel, damit pnpm nicht auf die des Repos hochlaeuft: e2e/ ist
+# seit ADR-0028 ein Black-Box-Client mit eigenem Lockfile. Ohne diese Datei
+# scheitert `pnpm install` hier mit ERR_PNPM_WORKSPACE_PKG_NOT_FOUND.
+packages: []

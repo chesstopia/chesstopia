@@ -1,0 +1,60 @@
+# E2E-Stack für Ebene 4 (ADR-0019) — der Prod-Stack plus genau das, was
+# docker-compose.prod.yml bewusst anderen Compose-Projekten überlässt: Postgres,
+# Caddy und einen veröffentlichten Port. Siehe ADR-0028.
+#
+#   docker network create chesstopia          # einmalig, entspricht Ansible in Prod
+#   docker compose -f docker-compose.prod.yml -f docker-compose.e2e.yml up -d
+#
+# `backend` und `frontend` stehen hier nur mit dem, was der Wegwerf-Stack zusätzlich
+# braucht — Image-Koordinate, prod-Profil und Umgebung kommen unverändert aus der
+# Prod-Datei. Lokal baut `build:` die Images aus den Artefakten des letzten Builds;
+# in CI liegen sie nach `compose pull` bereits vor und werden nicht neu gebaut.
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - chesstopia
+
+  caddy:
+    image: caddy:2-alpine
+    # Die PRODUKTIVE Caddyfile, unverändert gemountet. Eine abgeschriebene
+    # Zweitfassung ist ausgeschlossen (ADR-0028): Sie wäre genau die Stelle, an
+    # der eine veraltete Route stehen bliebe, während Produktion längst etwas
+    # anderes sagt. Die Datei ist kein Jinja-Template — Ansible kopiert sie.
+    volumes:
+      - ./infra/roles/edge/templates/Caddyfile:/etc/caddy/Caddyfile:ro
+    environment:
+      # `{$SITE_HOSTNAME}` ist Caddys eigene Env-Syntax, kein Template-Platzhalter.
+      # `:80` ist die Catch-All-Adresse: Port 80, keine Host-Prüfung, kein ACME
+      # und kein TLS. In Produktion steht dort der echte Hostname — geprüft wird
+      # hier der Körper der Datei, also die Routen, nicht die Zertifikatslogik.
+      SITE_HOSTNAME: ":80"
+    ports:
+      - "8000:80"
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - chesstopia
+
+  backend:
+    build:
+      context: chesstopia-backend
+    # In Prod übernimmt das Ansible-verwaltete db-Compose-Projekt die Reihenfolge;
+    # hier gehört Postgres zum selben Projekt und kann sauber abgewartet werden.
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: chesstopia-frontend
