@@ -1,4 +1,4 @@
-import { expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import { expect, type Browser, type BrowserContext, type Page, type WebSocket } from '@playwright/test';
 
 export type Partie = { gameId: string; einladungslink: string };
 
@@ -14,21 +14,32 @@ export type Partie = { gameId: string; einladungslink: string };
  * HMR-Socket des Vite-Devservers außen vor.
  */
 export function stompAbo(page: Page, timeout = 10_000): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let onSocket: ((socket: WebSocket) => void) | undefined;
+
+  const abo = new Promise<void>((resolve, reject) => {
+    timer = setTimeout(
       () => reject(new Error('STOMP-Client hat kein SUBSCRIBE auf /ws gesendet')),
       timeout,
     );
-    page.on('websocket', (socket) => {
+    onSocket = (socket) => {
       if (new URL(socket.url()).pathname !== '/ws') return;
       socket.on('framesent', (frame) => {
-        if (String(frame.payload).startsWith('SUBSCRIBE')) {
-          clearTimeout(timer);
-          resolve();
-        }
+        if (String(frame.payload).startsWith('SUBSCRIBE')) resolve();
       });
-    });
+    };
+    page.on('websocket', onSocket);
+  }).finally(() => {
+    clearTimeout(timer);
+    if (onSocket) page.off('websocket', onSocket);
   });
+
+  // Scheitert der Aufrufer zwischen Anlegen und `await` — fehlender Button,
+  // Timeout bei waitForURL —, würde der Timer später ein Promise ohne Handler
+  // verwerfen, und Playwright könnte das einem anderen Test anlasten. Der leere
+  // Handler verhindert nur das; wer `await abo` erreicht, bekommt den Fehler.
+  abo.catch(() => {});
+  return abo;
 }
 
 /**
