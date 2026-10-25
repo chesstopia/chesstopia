@@ -1,6 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { dragPiece } from './support/drag';
-import { neuePartie } from './support/partie';
+import { figur, zug } from '../modell/schach';
+import { expect, gruppe, szenario } from '../testlauf';
 
 /**
  * Zeigergesten, die keine Schachsituation sind und deshalb nicht in den Korpus
@@ -8,18 +7,32 @@ import { neuePartie } from './support/partie';
  * synthetische Events in jsdom — dass die Verweigerung auch eine echte
  * Pointer-Geste im Browser überlebt, prüft ausschließlich dieser Test.
  */
-test.describe('Gesten', () => {
-  test('eine Figur der nicht ziehenden Seite lässt sich nicht aufnehmen', async ({ page }) => {
-    // ARRANGE — die Seite spielt Weiß und ist am Zug, e7 gehört Schwarz.
-    await neuePartie(page);
-    await expect(page.getByText('Du bist am Zug')).toBeVisible();
+gruppe('Gesten', () => {
+  szenario('eine Figur der nicht ziehenden Seite lässt sich nicht aufnehmen', async ({
+    neuerSpieler,
+  }) => {
+    // ARRANGE — der Spieler spielt Weiß und ist am Zug, e7 gehört Schwarz.
+    const weiss = await neuerSpieler('weiss');
+    await weiss.starteNeuePartie();
+    await weiss.erwarteZuganzeige('du-bist-am-zug');
 
     // ACT
-    await dragPiece(page, 'e7', 'e5');
+    await weiss.versucheZug(zug('e7e5'));
 
     // ASSERTIONS — Square.tsx verweigert das Aufnehmen bereits am
     // onPointerDown (draggable=false), der Zug erreicht das Backend nie.
-    await expect(page.locator('[data-square="e7"] [data-piece="bP"]')).toBeVisible();
-    await expect(page.getByText('Du bist am Zug')).toBeVisible();
+    await weiss.erwarteFigur('e7', figur('schwarz', 'bauer'));
+    await weiss.erwarteZuganzeige('du-bist-am-zug');
+  });
+
+  szenario('ziehe meldet einen abgelehnten Zug mit dessen Text', async ({ neuerSpieler }) => {
+    // ARRANGE
+    const weiss = await neuerSpieler('weiss');
+    await weiss.starteNeuePartie();
+
+    // ACT & ASSERTIONS
+    await expect(weiss.ziehe(zug('e2', 'e5'))).rejects.toThrow(
+      'weiss: Zug e2-e5 abgelehnt: Dieser Zug ist nicht legal.',
+    );
   });
 });

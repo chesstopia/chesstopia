@@ -1,6 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { dragPiece } from './support/drag';
-import { neuePartie } from './support/partie';
+import { figur, zug } from '../modell/schach';
+import { gruppe, szenario } from '../testlauf';
 
 /**
  * Der Fehlerpfad, den nur die Oberfläche hat: Das Backend antwortet auf einen
@@ -11,28 +10,23 @@ import { neuePartie } from './support/partie';
  * Nur der Zug-Endpunkt wird abgefangen; das Anlegen der Partie muss gelingen,
  * sonst gibt es kein Brett, auf dem gezogen werden könnte.
  */
-test.describe('Netzfehler', () => {
-  test('ein Serverfehler beim Zug erscheint als Fehlermeldung und lässt das Brett stehen', async ({
-    page,
+gruppe('Netzfehler', () => {
+  szenario('ein Serverfehler beim Zug erscheint als Fehlermeldung und lässt das Brett stehen', async ({
+    neuerSpieler,
   }) => {
     // ARRANGE
-    await page.route('**/api/v1/games/*/moves', (route) =>
-      route.fulfill({
-        status: 500,
-        contentType: 'application/problem+json',
-        body: JSON.stringify({ title: 'Internal Server Error', status: 500 }),
-      }),
-    );
-    await neuePartie(page);
-    await expect(page.locator('[data-square="e2"] [data-piece="wP"]')).toBeVisible();
+    const weiss = await neuerSpieler('weiss');
+    await weiss.netz.serverfehlerBeimZug();
+    await weiss.starteNeuePartie();
+    await weiss.erwarteFigur('e2', figur('weiss', 'bauer'));
 
     // ACT
-    await dragPiece(page, 'e2', 'e4');
+    await weiss.versucheZug(zug('e2', 'e4'));
 
     // ASSERTIONS
-    await expect(page.getByText(/^Fehler:/)).toBeVisible();
-    await expect(page.locator('[data-square="e2"] [data-piece="wP"]')).toBeVisible();
-    await expect(page.locator('[data-square="e4"] [data-piece]')).toHaveCount(0);
-    await expect(page.getByText('Du bist am Zug')).toBeVisible();
+    await weiss.erwarteFehler(/.+/);
+    await weiss.erwarteFigur('e2', figur('weiss', 'bauer'));
+    await weiss.erwarteFigur('e4', null);
+    await weiss.erwarteZuganzeige('du-bist-am-zug');
   });
 });
