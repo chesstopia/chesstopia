@@ -31,7 +31,7 @@ Naht, um die es geht.
 **Ebene 4 steht.** Ein Feature, das Frontend und Backend zugleich berührt, wird
 eine `.case`-Datei unter `e2e/testcases/`, wenn es eine Schachsituation ist, und
 eine handgeschriebene Spec unter `e2e/tests/`, wenn nicht
-([ADR-0024](../../../docs/adr/0024-datei-getriebener-e2e-korpus.md)). Was die
+([ADR-0029](../../../docs/adr/0029-datei-getriebener-e2e-korpus.md)). Was die
 Ebene ausdrücklich **nicht** trägt und wo es stattdessen liegt, steht ebenfalls
 dort — nachlesen, bevor ein teurer Fall entsteht.
 
@@ -60,7 +60,7 @@ inzwischen in `chess-engine/testcases/`
 eine neue Schachsituation wird eine neue `.case`-Datei, eine Verzweigung im
 Regelcode ein gezielter Unit-Test daneben. Auf Ebene 4 gibt es einen zweiten
 ausführbaren Katalog derselben Bauart unter `e2e/testcases/`
-([ADR-0024](../../../docs/adr/0024-datei-getriebener-e2e-korpus.md)); er prüft
+([ADR-0029](../../../docs/adr/0029-datei-getriebener-e2e-korpus.md)); er prüft
 nicht die Regel, sondern was die Oberfläche daraus zeigt.
 
 **Partieende**

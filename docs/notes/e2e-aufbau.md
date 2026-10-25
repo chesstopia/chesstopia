@@ -67,7 +67,7 @@ Ein Zugversuch auf beendeter Partie wird an zwei Stellen gestoppt: `App.tsx` rei
 
 ## Der Korpus
 
-Schachsituationen stehen als Dateien unter `e2e/testcases/<kategorie>/<name>.case` — eine Situation je Datei, eine Zeile je Datei im Report. Das *Warum* steht in [ADR-0024](../adr/0024-datei-getriebener-e2e-korpus.md); hier steht, wie man damit arbeitet.
+Schachsituationen stehen als Dateien unter `e2e/testcases/<kategorie>/<name>.case` — eine Situation je Datei, eine Zeile je Datei im Report. Das *Warum* steht in [ADR-0029](../adr/0029-datei-getriebener-e2e-korpus.md); hier steht, wie man damit arbeitet.
 
 Eine neue Datei hinlegen genügt. `e2e/tests/corpus.spec.ts` liest das Verzeichnis beim Laden rekursiv und erzeugt je `.case` ein `test()`. Es gibt keinen Codegen und keinen Sync-Schritt — anders als beim Engine-Korpus ([ADR-0022](../adr/0022-datei-getriebener-engine-testkorpus.md)), wo `commonTest` keinen Laufzeit-Dateizugriff hat.
 

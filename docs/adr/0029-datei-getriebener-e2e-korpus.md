@@ -2,7 +2,7 @@
 type: adr
 status: accepted
 implementation: complete
-updated: 2026-09-21
+updated: 2026-10-25
 supersedes: []
 verifies:
   - 'e2e/playwright.config.ts :: mechanik'
@@ -11,7 +11,7 @@ verifies:
   - 'e2e/package.json :: --project=mechanik'
 ---
 
-# ADR-0024: Datei-getriebener E2E-Korpus
+# ADR-0029: Datei-getriebener E2E-Korpus
 
 ## Status
 Accepted
