@@ -53,11 +53,13 @@ jobs:
           set -euo pipefail
           TAG="$INPUT_TAG"
           [ -n "$TAG" ] || TAG="${GITHUB_SHA::7}"
-          # Deploybar ist ausschliesslich der endgültige Tag: sieben Hex-Zeichen.
-          # ci.yml pusht auf main zusätzlich `ci-<40-stelliger-SHA>`, der das Gate
-          # der vier Jobs noch nicht passiert hat. Diese Prüfung schliesst ihn aus
-          # — `docker manifest inspect` weiter unten könnte ihn nicht von einem
-          # freigegebenen Image unterscheiden, es prüft nur Existenz.
+          # Nur eine Formatprüfung: Der Tag ist der 7-stellige Short-SHA, den
+          # ci.yml vergibt (ADR-0028). Sie fängt Tippfehler und frei erfundene
+          # Tags ab, bevor sie in eine Shell auf dem Server gelangen. Eine Freigabe
+          # belegt sie NICHT: ci.yml pusht auf jedem Branch und vor dem E2E-Lauf,
+          # also hat auch ein Feature-Branch-Image oder eines mit rotem E2E dieses
+          # Format. Welcher Commit grün war, prüft der Mensch, der hier klickt —
+          # benannte Schuld in ADR-0028, bis ein `promote`-Job sie schliesst.
           case "$TAG" in
             [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;;
             *) echo "::error::Tag '$TAG' ist kein 7-stelliger Git-Short-SHA"; exit 1 ;;
