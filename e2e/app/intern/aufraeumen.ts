@@ -17,6 +17,7 @@ interface Angelegt {
  */
 export function schneideAngelegtePartienMit(page: Page): AngelegtePartien {
   const lesevorgaenge: Array<Promise<Angelegt | null>> = [];
+  const lesefehler: string[] = [];
 
   page.on('response', (antwort) => {
     const anfrage = antwort.request();
@@ -26,7 +27,12 @@ export function schneideAngelegtePartienMit(page: Page): AngelegtePartien {
     lesevorgaenge.push(
       antwort.json().then(
         (body: { id: string; ownerToken: string }) => ({ id: body.id, ownerToken: body.ownerToken }),
-        () => null,
+        (grund: unknown) => {
+          lesefehler.push(
+            `Aufräumen: Antwort auf das Anlegen einer Partie nicht lesbar: ${grund instanceof Error ? grund.message : String(grund)}`,
+          );
+          return null;
+        },
       ),
     );
   });
@@ -44,9 +50,14 @@ export function schneideAngelegtePartienMit(page: Page): AngelegtePartien {
           }
         }),
       );
-      const fehler = ergebnisse.filter((e): e is PromiseRejectedResult => e.status === 'rejected');
+      const fehler = [
+        ...lesefehler,
+        ...ergebnisse
+          .filter((e): e is PromiseRejectedResult => e.status === 'rejected')
+          .map((f) => (f.reason as Error).message),
+      ];
       if (fehler.length > 0) {
-        throw new Error(fehler.map((f) => (f.reason as Error).message).join('; '));
+        throw new Error(fehler.join('; '));
       }
     },
   };

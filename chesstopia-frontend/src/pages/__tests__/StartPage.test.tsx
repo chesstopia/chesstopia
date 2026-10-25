@@ -187,5 +187,25 @@ describe('StartPage', () => {
       // ASSERTIONS
       expect(deleteGame).toHaveBeenCalledTimes(1);
     });
+
+    it('die Löschknöpfe der Zeilen sind gesperrt, solange ein Löschen läuft', async () => {
+      // ARRANGE
+      addOwnedGame('g-1', 'owner-1', 'i1');
+      addOwnedGame('g-2', 'owner-2', 'i2');
+      getGame.mockResolvedValue(ongoing);
+      deleteGame.mockReturnValue(new Promise(() => {}));
+      render(<StartPage />, { wrapper: MemoryRouter });
+      await waitFor(() => expect(screen.getAllByRole('button', { name: 'Löschen' })).toHaveLength(2));
+      await userEvent.click(screen.getAllByRole('button', { name: 'Löschen' })[0]);
+
+      // ACT
+      await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Löschen' }));
+
+      // ASSERTIONS
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      const rowButtons = screen.getAllByRole('button', { name: 'Löschen' });
+      expect(rowButtons).toHaveLength(2);
+      expect(rowButtons[1]).toBeDisabled();
+    });
   });
 });

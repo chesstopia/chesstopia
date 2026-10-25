@@ -31,6 +31,7 @@ export function StartPage() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [deletingNow, setDeletingNow] = useState(false);
   const deleting = useRef(false);
 
   useEffect(() => {
@@ -70,6 +71,7 @@ export function StartPage() {
     const gameId = pendingDelete;
     if (gameId === null || deleting.current) return;
     deleting.current = true;
+    setDeletingNow(true);
     setPendingDelete(null);
     const ownerToken = myGames().find((g) => g.gameId === gameId)?.ownerToken;
     try {
@@ -86,6 +88,7 @@ export function StartPage() {
       }
     } finally {
       deleting.current = false;
+      setDeletingNow(false);
     }
   };
 
@@ -110,7 +113,10 @@ export function StartPage() {
                   </Link>
                 </>
               )}
-              <Button variant="outline" size="sm" onClick={() => setPendingDelete(row.gameId)}>
+              <Button variant="outline" size="sm"
+                disabled={deletingNow}
+                onClick={() => setPendingDelete(row.gameId)}
+              >
                 Löschen
               </Button>
               {row.deleteError && <span className="text-red-400">Fehler: {row.deleteError}</span>}
