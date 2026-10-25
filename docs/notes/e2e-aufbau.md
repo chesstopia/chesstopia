@@ -6,6 +6,9 @@ verifies:
   - 'docker-compose.e2e.yml :: SITE_HOSTNAME'
   - 'docker-compose.e2e.yml :: infra/roles/edge/templates/Caddyfile'
   - 'e2e/playwright.config.ts :: PLAYWRIGHT_SHARED_ENV'
+  - 'e2e/playwright.config.ts :: loadEnvFile'
+  - 'e2e/.env :: PLAYWRIGHT_BASE_URL=http://localhost:5173'
+  - '.github/workflows/ci.yml :: PLAYWRIGHT_BASE_URL: http://localhost:8000'
   - 'e2e/package.json :: --project=mechanik'
   - 'e2e/korpus/runner.ts :: runCase'
   - 'e2e/app/intern/geste.ts :: ziehePerZeiger'
@@ -28,7 +31,7 @@ export IMAGE_REGISTRY=ghcr.io/chesstopia IMAGE_TAG=<short-sha>
 export POSTGRES_DB=chesstopia_dev POSTGRES_USER=chesstopia POSTGRES_PASSWORD=egal
 export JWT_SECRET=egal CHESSCOACH_API_KEY=egal
 docker compose -f docker-compose.prod.yml -f docker-compose.e2e.yml up -d
-cd e2e && pnpm install && pnpm exec playwright install chromium && pnpm run test
+cd e2e && pnpm install && pnpm exec playwright install chromium && PLAYWRIGHT_BASE_URL=http://localhost:8000 pnpm run test
 ```
 
 Die `export`-Zeilen haben zwei verschiedene Gründe. `POSTGRES_*` braucht der Stack wirklich: `application-prod.yml` baut daraus Datenquelle und Zugangsdaten, und der Postgres-Container startet ohne Passwort nicht. `JWT_SECRET` und `CHESSCOACH_API_KEY` liest heute kein Code; sie stehen nur da, weil `docker-compose.prod.yml` sie interpoliert. Fehlen sie, warnt Compose und setzt einen Leerstring — kein Abbruch. Wer beim Startabbruch sucht, sucht deshalb bei `POSTGRES_*` und `IMAGE_*`. Die Werte sind im Wegwerf-Stack beliebig; in CI erzeugt der Workflow sie zur Laufzeit.
@@ -37,7 +40,7 @@ Mit einem lokal gebauten Stack statt gezogener Images: erst `./gradlew :chesstop
 
 ## Gegen die Devserver
 
-Laufen `bootRun` und der Vite-Devserver, geht es ohne Compose-Stack: `PLAYWRIGHT_BASE_URL=http://localhost:5173 pnpm run test`. Vite leitet `/api` und `/ws` ans Backend weiter. Geprüft ist damit der Dev-Pfad, nicht der Prod-Stack.
+Laufen `bootRun` und der Vite-Devserver, genügt `pnpm run test`: Die versionierte `e2e/.env` setzt `PLAYWRIGHT_BASE_URL` auf den Devserver. Eine gesetzte Umgebungsvariable hat Vorrang vor der Datei — darüber wählen `ci.yml` den Compose-Stack und `deploy.yml` die Produktion. Fehlt die Variable dort, läuft die CI gegen einen Devserver, den es nicht gibt, und jeder Browser-Test endet in `ERR_CONNECTION_REFUSED`. Vite leitet `/api` und `/ws` ans Backend weiter. Geprüft ist damit der Dev-Pfad, nicht der Prod-Stack.
 
 Der Devserver erzeugt den API-Client nicht neu. Nach einem Branchwechsel oder Rebase mit geänderter `openapi.yaml` liegt in `openapi-client/src/` der alte Client, und der Fehler sieht nach Fachlogik aus — so fehlte nach dem Rebase auf CHESS-19 der Header `X-Player-Token`, und jeder Zug bekam 403. Vorher `./gradlew generateOpenApiClient`.
 

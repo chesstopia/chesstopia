@@ -4,14 +4,18 @@ import { defineConfig, devices } from '@playwright/test';
  * Ebene 4 aus ADR-0019 — der Durchstich durch alle Module.
  *
  * Diese Konfiguration startet nichts. Seit ADR-0028 ist Ebene 4 ein
- * Black-Box-Client: Der Stack kommt von aussen, lokal wie in CI aus
+ * Black-Box-Client: Der Stack kommt von aussen — in CI aus
  * `docker compose -f docker-compose.prod.yml -f docker-compose.e2e.yml up -d`,
- * beim Deploy-Smoke aus der bereits laufenden Produktion. Geprueft wird damit
- * immer der Prod-Stack — nginx hinter Caddy, `prod`-Profil —, nicht mehr ein
- * Boot-Jar neben einem Vite-Preview.
+ * beim Deploy-Smoke aus der bereits laufenden Produktion, lokal standardmaessig
+ * aus bootRun und dem Vite-Devserver (e2e/.env). Die Pipeline prueft damit
+ * immer den Prod-Stack — nginx hinter Caddy, `prod`-Profil.
  *
  * Siehe docs/notes/e2e-aufbau.md.
  */
+
+// Lokale Standardwerte aus e2e/.env. Gesetzte Umgebungsvariablen gewinnen —
+// darueber waehlen ci.yml und deploy.yml ihr Ziel.
+process.loadEnvFile(new URL('.env', import.meta.url));
 
 /**
  * Teilt sich der Lauf die Umgebung mit jemandem? Nur dann darf er nicht
@@ -22,8 +26,8 @@ import { defineConfig, devices } from '@playwright/test';
  */
 const sharedEnv = process.env.PLAYWRIGHT_SHARED_ENV === '1';
 
-// Der veroeffentlichte Caddy-Port aus docker-compose.e2e.yml.
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8000';
+const baseURL = process.env.PLAYWRIGHT_BASE_URL;
+if (!baseURL) throw new Error('PLAYWRIGHT_BASE_URL fehlt — e2e/.env oder Umgebung');
 
 export default defineConfig({
   testDir: './tests',
