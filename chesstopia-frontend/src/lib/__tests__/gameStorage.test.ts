@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { addOwnedGame, addInvitedGame, findGame, myGames } from '../gameStorage';
+import { addOwnedGame, addInvitedGame, findGame, myGames, removeGame } from '../gameStorage';
 
 describe('gameStorage', () => {
   beforeEach(() => {
@@ -63,5 +63,29 @@ describe('gameStorage', () => {
     // ACT & ASSERTIONS
     expect(findGame('irgendwas')).toBeUndefined();
     expect(myGames()).toEqual([]);
+  });
+
+  it('removeGame entfernt nur den Eintrag dieser Partie', () => {
+    // ARRANGE
+    addOwnedGame('g7', 'o7', 'i7');
+    const keep = addInvitedGame('g8', 'i8');
+
+    // ACT
+    removeGame('g7');
+
+    // ASSERTIONS
+    expect(findGame('g7')).toBeUndefined();
+    expect(findGame('g8')).toEqual(keep);
+  });
+
+  it('removeGame auf unbekannter Partie ändert nichts', () => {
+    // ARRANGE
+    const owned = addOwnedGame('g9', 'o9', 'i9');
+
+    // ACT
+    removeGame('unbekannt');
+
+    // ASSERTIONS
+    expect(myGames()).toEqual([owned]);
   });
 });

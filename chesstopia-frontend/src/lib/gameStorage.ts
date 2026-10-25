@@ -40,6 +40,10 @@ export function findGame(gameId: string): StoredGame | undefined {
   return loadGames().find((g) => g.gameId === gameId);
 }
 
+export function removeGame(gameId: string): void {
+  saveGames(loadGames().filter((g) => g.gameId !== gameId));
+}
+
 export function myGames(): StoredGame[] {
   return loadGames().filter((g) => g.role === 'OWNER');
 }
