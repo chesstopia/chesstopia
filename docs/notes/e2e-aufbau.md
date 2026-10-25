@@ -29,7 +29,7 @@ docker compose -f docker-compose.prod.yml -f docker-compose.e2e.yml up -d
 cd e2e && pnpm install && pnpm exec playwright install chromium && pnpm run test
 ```
 
-Ohne die vier `export`-Zeilen bricht der Backend-Container beim Start ab: `application-prod.yml` löst `${POSTGRES_PASSWORD}` und `${JWT_SECRET}` auf, und Spring scheitert an einem unbelegten Platzhalter. Die Werte sind im Wegwerf-Stack beliebig; in CI erzeugt der Workflow sie zur Laufzeit.
+Die `export`-Zeilen haben zwei verschiedene Gründe. `POSTGRES_*` braucht der Stack wirklich: `application-prod.yml` baut daraus Datenquelle und Zugangsdaten, und der Postgres-Container startet ohne Passwort nicht. `JWT_SECRET` und `CHESSCOACH_API_KEY` liest heute kein Code; sie stehen nur da, weil `docker-compose.prod.yml` sie interpoliert. Fehlen sie, warnt Compose und setzt einen Leerstring — kein Abbruch. Wer beim Startabbruch sucht, sucht deshalb bei `POSTGRES_*` und `IMAGE_*`. Die Werte sind im Wegwerf-Stack beliebig; in CI erzeugt der Workflow sie zur Laufzeit.
 
 Mit einem lokal gebauten Stack statt gezogener Images: erst `./gradlew :chesstopia-backend:bootJar pnpmFrontendBuild`, dann `docker compose … build`. Beide Dockerfiles sind reine Artefakt-Kopien — ohne die Artefakte schlägt schon das `COPY` fehl.
 

@@ -211,9 +211,12 @@ jobs:
           pnpm exec playwright install --with-deps chromium
 
       - name: Umgebung des Stacks
-        # Das `prod`-Profil loest ${POSTGRES_PASSWORD} und ${JWT_SECRET} auf und
-        # bricht unbelegt beim Start ab. Die Werte entstehen hier und leben so lange
-        # wie der Job; im Repo steht keiner (Verbot 6).
+        # POSTGRES_* braucht der Stack: Das `prod`-Profil baut daraus die
+        # Datenquelle, Postgres startet ohne Passwort nicht. JWT_SECRET und
+        # CHESSCOACH_API_KEY liest heute kein Code — sie stehen hier nur, weil
+        # docker-compose.prod.yml sie interpoliert; ohne sie warnt Compose. Die
+        # Werte entstehen hier und leben so lange wie der Job; im Repo steht
+        # keiner (Verbot 6).
         run: |
           set -euo pipefail
           {
