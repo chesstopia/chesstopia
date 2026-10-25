@@ -45,8 +45,11 @@ export async function warteBis<T>(
         { message: nachricht },
       )
       .toBe(true);
-  } catch {
-    throw new Error(`${nachricht}; letzter Wert: ${JSON.stringify(zuletzt)}`);
+  } catch (fehler) {
+    // Die Ursache bleibt erhalten: Wirft `lies` selbst (Seite geschlossen,
+    // unbekannte Figur im DOM), steht das im Originaltext und nicht nur im Timeout.
+    const original = fehler instanceof Error ? fehler.message : String(fehler);
+    throw new Error(`${nachricht}; letzter Wert: ${JSON.stringify(zuletzt)}\n${original}`);
   }
   return zuletzt as T;
 }
