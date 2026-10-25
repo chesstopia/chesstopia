@@ -354,4 +354,69 @@ class GameControllerIT {
             .expectStatus().isBadRequest()
             .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON);
     }
+
+    private void deleteGame(UUID id, UUID playerToken, int expectedStatus) {
+        WebTestClient.RequestHeadersSpec<?> request = webTestClient.delete().uri("/api/v1/games/{id}", id);
+        if (playerToken != null) {
+            request = request.header("X-Player-Token", playerToken.toString());
+        }
+        request.exchange().expectStatus().isEqualTo(expectedStatus);
+    }
+
+    @Test
+    void deleteMitOwnerTokenAntwortet204UndDanachIst404() {
+        // ARRANGE
+        GameCreatedResponse created = createGame();
+
+        // ACT
+        deleteGame(created.getId(), created.getOwnerToken(), 204);
+
+        // ASSERTIONS
+        webTestClient.get().uri("/api/v1/games/{id}", created.getId())
+            .exchange().expectStatus().isNotFound();
+    }
+
+    @Test
+    void deleteMitInviteTokenAntwortet403UndDiePartieBleibt() {
+        // ARRANGE
+        GameCreatedResponse created = createGame();
+
+        // ACT
+        deleteGame(created.getId(), created.getInviteToken(), 403);
+
+        // ASSERTIONS
+        assertThat(getGame(created.getId()).getId()).isEqualTo(created.getId());
+    }
+
+    @Test
+    void deleteOhneTokenAntwortet403() {
+        // ARRANGE
+        GameCreatedResponse created = createGame();
+
+        // ACT & ASSERTIONS
+        deleteGame(created.getId(), null, 403);
+    }
+
+    @Test
+    void deleteAufUnbekannterPartieAntwortet404() {
+        // ARRANGE
+        GameCreatedResponse other = createGame();
+
+        // ACT & ASSERTIONS
+        deleteGame(UUID.randomUUID(), other.getOwnerToken(), 404);
+    }
+
+    @Test
+    void deleteNachEinemZugLoeschtAuchDieZuege() {
+        // ARRANGE
+        GameCreatedResponse created = createGame();
+        playMove(created.getId(), created.getOwnerToken(), move("E", "TWO", "E", "FOUR"));
+
+        // ACT
+        deleteGame(created.getId(), created.getOwnerToken(), 204);
+
+        // ASSERTIONS
+        webTestClient.get().uri("/api/v1/games/{id}/moves", created.getId())
+            .exchange().expectStatus().isNotFound();
+    }
 }

@@ -5,6 +5,7 @@ import io.chesstopia.backend.api.model.GameCreatedResponse;
 import io.chesstopia.backend.api.model.GameResponse;
 import io.chesstopia.backend.api.model.MoveListResponse;
 import io.chesstopia.backend.api.model.MoveRequest;
+import io.chesstopia.backend.game.application.port.in.DeleteGame;
 import io.chesstopia.backend.game.application.port.in.PlayMove;
 import io.chesstopia.backend.game.application.port.in.StartGame;
 import io.chesstopia.backend.game.application.port.in.ViewGame;
@@ -29,12 +30,15 @@ class GameController implements GameApi {
     private final StartGame startGame;
     private final PlayMove playMove;
     private final ViewGame viewGame;
+    private final DeleteGame deleteGame;
     private final WebMapper mapper;
 
-    GameController(StartGame startGame, PlayMove playMove, ViewGame viewGame, WebMapper mapper) {
+    GameController(StartGame startGame, PlayMove playMove, ViewGame viewGame, DeleteGame deleteGame,
+                   WebMapper mapper) {
         this.startGame = startGame;
         this.playMove = playMove;
         this.viewGame = viewGame;
+        this.deleteGame = deleteGame;
         this.mapper = mapper;
     }
 
@@ -56,6 +60,13 @@ class GameController implements GameApi {
         PlayerToken token = xPlayerToken == null ? null : new PlayerToken(xPlayerToken);
         Game game = this.playMove.play(new GameId(gameId), mapper.toDomain(moveRequest), token);
         return ResponseEntity.ok(mapper.toResponse(game, game.history().size()));
+    }
+
+    @Override
+    public ResponseEntity<Void> deleteGame(UUID gameId, UUID xPlayerToken) {
+        PlayerToken token = xPlayerToken == null ? null : new PlayerToken(xPlayerToken);
+        this.deleteGame.delete(new GameId(gameId), token);
+        return ResponseEntity.noContent().build();
     }
 
     @Override

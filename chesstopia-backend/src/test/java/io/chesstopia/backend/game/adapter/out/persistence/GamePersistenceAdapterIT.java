@@ -1,5 +1,6 @@
 package io.chesstopia.backend.game.adapter.out.persistence;
 
+import io.chesstopia.backend.game.adapter.out.persistence.entities.ZugJpaRepository;
 import io.chesstopia.backend.game.domain.*;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class GamePersistenceAdapterIT {
 
     @Autowired GamePersistenceAdapter adapter;
+    @Autowired ZugJpaRepository zugRepo;
 
     private static final OffsetDateTime T0 = OffsetDateTime.parse("2026-09-02T10:00:00Z");
     private final Position start = new Position(
@@ -91,5 +93,20 @@ class GamePersistenceAdapterIT {
     void unbekanntePartieIstLeer() {
         // ACT & ASSERTIONS
         assertThat(adapter.findById(GameId.newId())).isEmpty();
+    }
+
+    @Test
+    void deleteEntferntPartieUndZuege() {
+        // ARRANGE
+        Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0);
+        adapter.save(g);
+        adapter.save(adapter.findById(g.id()).orElseThrow().play(move, afterMove, inProgress, T0.plusMinutes(1)));
+
+        // ACT
+        adapter.delete(g.id());
+
+        // ASSERTIONS
+        assertThat(adapter.findById(g.id())).isEmpty();
+        assertThat(zugRepo.countByPartieId(g.id().value())).isZero();
     }
 }
