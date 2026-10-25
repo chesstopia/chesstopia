@@ -18,8 +18,8 @@ gruppe('Zwei Spieler', () => {
     await schwarz.trittBei(partie.einladungslink);
 
     // ACT — Jeder `ziehe` wartet zuerst auf das eigene Zugrecht. Kommt der
-    // Push nicht an, scheitert der nächste Zug. Deshalb gibt es keine
-    // Zwischenprüfungen.
+    // Push nicht an, scheitert der nächste Zug oder die Schlussprüfung.
+    // Deshalb gibt es keine Zwischenprüfungen.
     await weiss.ziehe(zug('e2e4'));
     await schwarz.ziehe(zug('e7e5'));
     await weiss.ziehe(zug('g1f3'));

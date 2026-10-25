@@ -29,6 +29,9 @@ export class Brett {
         figur: element.querySelector('[data-piece]')?.getAttribute('data-piece') ?? null,
       })),
     );
+    // Ohne Brett wäre die Stellung leer und `erwarteFigur(x, null)` trivial grün;
+    // `warteAufWert` wiederholt bei Wurf.
+    if (felder.length !== 64) throw new Error(`${this.farbe}: Brett nicht gerendert (${felder.length} Felder)`);
     const stellung = leereStellung();
     for (const { feld, figur } of felder) {
       if (figur === null) continue;

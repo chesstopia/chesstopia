@@ -11,13 +11,13 @@ import type { Page, WebSocket } from '@playwright/test';
  * erst nach dem Navigieren abgewartet wird. Der Pfadfilter lässt den
  * HMR-Socket des Vite-Devservers außen vor.
  */
-export function stompAbo(page: Page, timeout = 10_000): Promise<void> {
+export function stompAbo(page: Page, farbe: string, timeout = 10_000): Promise<void> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let onSocket: ((socket: WebSocket) => void) | undefined;
 
   const abo = new Promise<void>((resolve, reject) => {
     timer = setTimeout(
-      () => reject(new Error('STOMP-Client hat kein SUBSCRIBE auf /ws gesendet')),
+      () => reject(new Error(`${farbe}: STOMP-Client hat kein SUBSCRIBE auf /ws gesendet`)),
       timeout,
     );
     onSocket = (socket) => {

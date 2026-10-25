@@ -8,6 +8,8 @@ verifies:
   - 'e2e/playwright.config.ts :: PLAYWRIGHT_SHARED_ENV'
   - 'e2e/package.json :: --project=mechanik'
   - 'e2e/korpus/runner.ts :: runCase'
+  - 'e2e/app/intern/geste.ts :: ziehePerZeiger'
+  - 'e2e/app/spieler.ts :: async versucheZug'
   - 'infra/roles/edge/templates/Caddyfile :: reverse_proxy backend:8080'
   - 'chesstopia-backend/src/main/resources/application-prod.yml :: jdbc:postgresql://postgres:5432'
 ---
@@ -67,7 +69,7 @@ Die Gegenseite erfährt von einem Zug nur über den STOMP-Push auf `/ws`. Ein Zu
 
 ## Einen Test schreiben
 
-Das *Warum* der Schichten steht in [ADR-0030](../adr/0030-schichtung-der-e2e-tests.md). Specs importieren nur `e2e/testlauf.ts`, `e2e/app/` und `e2e/modell/` — nie `@playwright/test`. Der Grenzwächter `e2e/korpus/__tests__/grenze.test.ts` läuft im Projekt `mechanik` und schlägt mit Datei und Zeile fehl, wenn eine Spec es doch tut.
+Das *Warum* der Schichten steht in [ADR-0030](../adr/0030-schichtung-der-e2e-tests.md). Specs importieren nur `e2e/testlauf.ts`, `e2e/app/` und `e2e/modell/` — nie `@playwright/test`; `tests/korpus.spec.ts` liest zusätzlich über `e2e/korpus/` und `node:*` die Fall-Dateien ein. Der Grenzwächter `e2e/korpus/__tests__/grenze.test.ts` läuft im Projekt `mechanik` und schlägt mit Datei und Zeile fehl, wenn eine Spec es doch tut.
 
 Ein Test hat die Form `szenario('…', async ({ neuerSpieler }) => …)`; ohne Browser genügt `pruefung`. Gewartet wird nicht im Test.
 

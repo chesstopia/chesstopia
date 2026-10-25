@@ -1,4 +1,4 @@
-import type { Browser } from '@playwright/test';
+import type { Browser, Page } from '@playwright/test';
 import type { Farbe, Feld, Figur, Partie, Stellung, Zug, Zuganzeige } from '../modell/schach';
 import { stompAbo } from './intern/live';
 import { warteBis } from './intern/warten';
@@ -45,14 +45,20 @@ export async function erzeugeSpieler(
   baseURL: string | undefined,
 ): Promise<{ spieler: Spieler; schliessen: () => Promise<void> }> {
   const kontext = await browser.newContext({ baseURL });
-  const page = await kontext.newPage();
-  const startseite = new Startseite(page);
+  let page: Page;
+  try {
+    page = await kontext.newPage();
+  } catch (fehler) {
+    await kontext.close();
+    throw fehler;
+  }
+  const startseite = new Startseite(page, farbe);
   const partieseite = new Partieseite(page, farbe);
   const netz = new Netz(page);
 
   /** Brett steht und das STOMP-Abo ist gesendet; der Listener hängt vor `oeffnen`. */
   const oeffneUndWarte = async (oeffnen: () => Promise<void>): Promise<void> => {
-    const abo = stompAbo(page);
+    const abo = stompAbo(page, farbe);
     await oeffnen();
     await partieseite.brett.warteBisGerendert();
     await abo;
@@ -88,7 +94,11 @@ export async function erzeugeSpieler(
      * scheitert erst am Timeout.
      */
     async ziehe(z) {
-      await partieseite.zugzeile.erwarteAnzeige('du-bist-am-zug');
+      try {
+        await partieseite.zugzeile.erwarteAnzeige('du-bist-am-zug');
+      } catch (fehler) {
+        throw new Error(`${farbe}: Zug ${z.von}-${z.nach}: kein Zugrecht: ${(fehler as Error).message}`);
+      }
       const vorher = await partieseite.fehleranzeige.text();
       await partieseite.brett.ziehe(z);
       const { fehler } = await warteBis(
