@@ -101,6 +101,7 @@ class GameService implements StartGame, PlayMove, ViewGame, DeleteGame {
             throw new ForbiddenException("Nur der Ersteller darf die Partie löschen");
         }
         gamesRepository.delete(gameId);
+        gameEvents.gameWasDeleted(gameId);
     }
 
     private static String square(Square s) {

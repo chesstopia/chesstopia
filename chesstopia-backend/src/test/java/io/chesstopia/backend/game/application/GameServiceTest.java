@@ -233,6 +233,7 @@ class GameServiceTest {
 
         // ASSERTIONS
         verify(gamesRepository).delete(ID);
+        verify(gameEvents).gameWasDeleted(ID);
     }
 
     @Test
@@ -245,6 +246,7 @@ class GameServiceTest {
         assertThatThrownBy(() -> service.delete(ID, existing.inviteToken()))
             .isInstanceOf(ForbiddenException.class);
         verify(gamesRepository, never()).delete(any());
+        verify(gameEvents, never()).gameWasDeleted(any());
     }
 
     @Test
@@ -257,6 +259,7 @@ class GameServiceTest {
         assertThatThrownBy(() -> service.delete(ID, null))
             .isInstanceOf(ForbiddenException.class);
         verify(gamesRepository, never()).delete(any());
+        verify(gameEvents, never()).gameWasDeleted(any());
     }
 
     @Test
@@ -268,6 +271,7 @@ class GameServiceTest {
         assertThatThrownBy(() -> service.delete(ID, new PlayerToken(java.util.UUID.randomUUID())))
             .isInstanceOf(NotFoundException.class);
         verify(gamesRepository, never()).delete(any());
+        verify(gameEvents, never()).gameWasDeleted(any());
     }
 
     @Test

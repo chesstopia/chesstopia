@@ -3,6 +3,8 @@ package io.chesstopia.backend.game.adapter.out.websocket;
 import io.chesstopia.backend.game.adapter.in.web.WebMapper;
 import io.chesstopia.backend.game.application.port.out.GameEvents;
 import io.chesstopia.backend.game.domain.Game;
+import io.chesstopia.backend.game.domain.GameId;
+import java.util.Map;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -10,8 +12,8 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
- * Publiziert einen gespielten Zug an {@code /topic/games/{gameId}} über den
- * bestehenden STOMP-Broker ({@link io.chesstopia.backend.config.WebSocketConfig}) —
+ * Publiziert einen gespielten Zug und eine gelöschte Partie an
+ * {@code /topic/games/{gameId}} über den bestehenden STOMP-Broker ({@link io.chesstopia.backend.config.WebSocketConfig}) —
  * aber erst, nachdem die Transaktion committet ist: sonst könnte ein Abonnent auf
  * einen Zug reagieren, der bei einem Rollback nie stattgefunden hat, oder der
  * moveCount-Guard auf dem Client würde nach einem fehlgeschlagenen Commit die
@@ -24,6 +26,10 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * Transaktion aufgerufen wird (z. B. ruft {@code GameServiceTest} {@code play(...)}
  * direkt gegen Mockito-Kollaborateure auf, ganz ohne Transaktion) — sonst würde
  * Spring das Event dort kommentarlos verwerfen.
+ *
+ * Die Lösch-Nachricht trägt den STOMP-Header {@code event: game-deleted} und den
+ * Body {@code {"gameId":"<uuid>"}}; Zug-Nachrichten tragen keinen {@code event}-Header,
+ * so unterscheidet der Client beide.
  *
  * Die einzige Implementierung von {@link GameEvents}: der Anwendungsservice kennt
  * nur den Port, keine Transaktionsgrenzen. Wiederverwendet {@link WebMapper} statt
@@ -55,6 +61,23 @@ class GameEventsWebSocketAdapter implements GameEvents {
             "/topic/games/" + game.id().value(),
             mapper.toResponse(game, game.history().size()));
     }
+
+    @Override
+    public void gameWasDeleted(GameId gameId) {
+        events.publishEvent(new GameWasDeleted(gameId));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    void onGameWasDeleted(GameWasDeleted event) {
+        String id = event.gameId().value().toString();
+        messagingTemplate.convertAndSend(
+            "/topic/games/" + id,
+            Map.of("gameId", id),
+            Map.of("event", "game-deleted"));
+    }
+
+    /** Internes Transportmittel zwischen {@link #gameWasDeleted} und {@link #onGameWasDeleted}. */
+    private record GameWasDeleted(GameId gameId) {}
 
     /** Internes Transportmittel zwischen {@link #moveWasPlayed} und {@link #onMoveWasPlayed}. */
     private record MoveWasPlayed(Game game) {}
