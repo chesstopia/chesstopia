@@ -1,9 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { test } from '@playwright/test';
-import { parseCase } from '../corpus/parser';
-import { runCase } from '../corpus/runner';
+import { parseCase } from '../korpus/parser';
+import { runCase } from '../korpus/runner';
+import { gruppe, szenario } from '../testlauf';
 
 /**
  * Der datei-getriebene Korpus für Ebene 4 — eine Reportzeile je Datei, wie in
@@ -23,13 +23,11 @@ function dateien(verzeichnis: string): string[] {
   });
 }
 
-test.describe('Korpus', () => {
+gruppe('Korpus', () => {
   for (const datei of dateien(KORPUS).sort()) {
     const name = relative(KORPUS, datei).split(sep).join('/');
     const fall = parseCase(readFileSync(datei, 'utf8'), name);
 
-    test(`${name} — ${fall.description}`, async ({ page, browser }) => {
-      await runCase(page, browser, fall);
-    });
+    szenario(`${name} — ${fall.description}`, ({ neuerSpieler }) => runCase(neuerSpieler, fall));
   }
 });

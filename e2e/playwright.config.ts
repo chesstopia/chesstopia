@@ -43,14 +43,14 @@ export default defineConfig({
     { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
     // Die Pruefmechanik — Datenmodell (modell/), Brettleser, Parser, Driftwaechter
-    // des Korpus (corpus/). Kein
+    // des Korpus (korpus/). Kein
     // Browser und kein Stack: diese Tests benutzen die `page`-Fixture nicht.
     // Eigenes Projekt statt Vitest, weil das weder eine Abhaengigkeit noch eine
     // zweite Konfiguration noch einen zusaetzlichen CI-Schritt kostet.
     {
       name: 'mechanik',
       testDir: '.',
-      testMatch: ['modell/__tests__/**/*.test.ts', 'corpus/__tests__/**/*.test.ts'],
+      testMatch: ['modell/__tests__/**/*.test.ts', 'korpus/__tests__/**/*.test.ts'],
     },
   ],
 });

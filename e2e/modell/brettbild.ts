@@ -1,6 +1,6 @@
 /**
  * Das ASCII-Brett als Text — dieselbe Darstellung wie in
- * `chess-engine/testcases/` und `corpus/board.ts`, bewusst als echte
+ * `chess-engine/testcases/`, bewusst als echte
  * Teilmenge: ein Brett, keine Metazeile. Grossbuchstabe = Weiß,
  * Kleinbuchstabe = Schwarz, `.` = leeres Feld.
  */

@@ -1,6 +1,6 @@
-import { test, expect } from '@playwright/test';
+import { zeichne } from '../../modell/brettbild';
+import { gruppe, pruefung, expect } from '../../testlauf';
 import { parseCase } from '../parser';
-import { renderBoard } from '../board';
 
 const BRETT = [
   '     BOARD',
@@ -22,22 +22,22 @@ turn        = black
 ${BRETT}
 `;
 
-test.describe('parser', () => {
-  test('liest Kopf und Brett eines vollständigen Falls', () => {
+gruppe('parser', () => {
+  pruefung('liest Kopf und Brett eines vollständigen Falls', () => {
     // ACT
     const fall = parseCase(VOLLSTAENDIG, 'grundzug/legaler-zug.case');
 
     // ASSERTIONS
     expect(fall.description).toBe('ein Bauernzug');
-    expect(fall.moves).toEqual([{ from: 'e2', to: 'e4' }]);
+    expect(fall.moves).toEqual([{ von: 'e2', nach: 'e4' }]);
     expect(fall.turn).toBe('black');
     expect(fall.banner).toBeNull();
     expect(fall.error).toBeNull();
     expect(fall.locked).toBeNull();
-    expect(renderBoard(fall.board)).toContain('  4  . . . . P . . .');
+    expect(zeichne(fall.board)).toContain('  4  . . . . P . . .');
   });
 
-  test('liest eine Zugfolge in Reihenfolge', () => {
+  pruefung('liest eine Zugfolge in Reihenfolge', () => {
     // ARRANGE
     const raw = VOLLSTAENDIG.replace('moves       = e2e4', 'moves       = e2e4 e7e5 g1f3');
 
@@ -46,13 +46,13 @@ test.describe('parser', () => {
 
     // ASSERTIONS
     expect(fall.moves).toEqual([
-      { from: 'e2', to: 'e4' },
-      { from: 'e7', to: 'e5' },
-      { from: 'g1', to: 'f3' },
+      { von: 'e2', nach: 'e4' },
+      { von: 'e7', nach: 'e5' },
+      { von: 'g1', nach: 'f3' },
     ]);
   });
 
-  test('liest Banner, Fehlertext und Sperrgeste', () => {
+  pruefung('liest Banner, Fehlertext und Sperrgeste', () => {
     // ARRANGE
     const raw = VOLLSTAENDIG
       .replace('turn        = black', 'banner      = Remis (Patt)\nerror       = Dieser Zug ist nicht legal.\nlocked      = d2 d4');
@@ -64,17 +64,17 @@ test.describe('parser', () => {
     expect(fall.banner).toBe('Remis (Patt)');
     expect(fall.turn).toBeNull();
     expect(fall.error).toBe('Dieser Zug ist nicht legal.');
-    expect(fall.locked).toEqual({ from: 'd2', to: 'd4' });
+    expect(fall.locked).toEqual({ von: 'd2', nach: 'd4' });
   });
 
-  test('nennt den Dateinamen, wenn ein Fall nicht parsebar ist', () => {
+  pruefung('nennt den Dateinamen, wenn ein Fall nicht parsebar ist', () => {
     // ACT & ASSERTIONS
     expect(() => parseCase('description = leer\n', 'remis/patt.case')).toThrow(
       /Testfall 'remis\/patt\.case' nicht parsebar/,
     );
   });
 
-  test('lehnt einen Fall ohne Zugfolge ab', () => {
+  pruefung('lehnt einen Fall ohne Zugfolge ab', () => {
     // ARRANGE
     const raw = VOLLSTAENDIG.replace('moves       = e2e4\n', '');
 
@@ -82,7 +82,7 @@ test.describe('parser', () => {
     expect(() => parseCase(raw, 'x.case')).toThrow(/moves/);
   });
 
-  test('lehnt turn und banner nebeneinander ab', () => {
+  pruefung('lehnt turn und banner nebeneinander ab', () => {
     // ARRANGE
     const raw = VOLLSTAENDIG.replace('turn        = black', 'turn        = black\nbanner      = Remis');
 
@@ -90,7 +90,7 @@ test.describe('parser', () => {
     expect(() => parseCase(raw, 'x.case')).toThrow(/genau eines von `turn` und `banner`/);
   });
 
-  test('lehnt einen Fall ohne turn und ohne banner ab', () => {
+  pruefung('lehnt einen Fall ohne turn und ohne banner ab', () => {
     // ARRANGE
     const raw = VOLLSTAENDIG.replace('turn        = black\n', '');
 
@@ -98,7 +98,7 @@ test.describe('parser', () => {
     expect(() => parseCase(raw, 'x.case')).toThrow(/genau eines von `turn` und `banner`/);
   });
 
-  test('lehnt einen Halbzug ab, der kein Feldpaar ist', () => {
+  pruefung('lehnt einen Halbzug ab, der kein Feldpaar ist', () => {
     // ARRANGE
     const raw = VOLLSTAENDIG.replace('e2e4', 'e2e9');
 
@@ -106,7 +106,7 @@ test.describe('parser', () => {
     expect(() => parseCase(raw, 'x.case')).toThrow(/e2e9/);
   });
 
-  test('lehnt einen unbekannten Schlüssel ab', () => {
+  pruefung('lehnt einen unbekannten Schlüssel ab', () => {
     // ARRANGE
     const raw = VOLLSTAENDIG.replace('turn        = black', 'turn        = black\nruleset     = standard');
 

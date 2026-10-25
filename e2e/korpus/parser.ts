@@ -1,19 +1,17 @@
-import { parseBoardRows, type BoardMap } from './board';
-
-export type Halbzug = { from: string; to: string };
+import { liesReihen } from '../modell/brettbild';
+import { zug, type Stellung, type Zug } from '../modell/schach';
 
 export type CorpusCase = {
   description: string;
-  moves: Halbzug[];
+  moves: Zug[];
   turn: 'white' | 'black' | null;
   banner: string | null;
   error: string | null;
-  locked: Halbzug | null;
-  board: BoardMap;
+  locked: Zug | null;
+  board: Stellung;
 };
 
 const SCHLUESSEL = ['description', 'moves', 'turn', 'banner', 'error', 'locked'];
-const FELD = /^[a-h][1-8]$/;
 
 /**
  * Liest eine `.case`-Datei des E2E-Korpus.
@@ -56,9 +54,9 @@ export function parseCase(raw: string, name: string): CorpusCase {
   const description = kopf.get('description') ?? '';
   if (description === '') scheitern('description fehlt');
 
-  const rohzuege = (kopf.get('moves') ?? '').split(/\s+/).filter((zug) => zug !== '');
+  const rohzuege = (kopf.get('moves') ?? '').split(/\s+/).filter((kurz) => kurz !== '');
   if (rohzuege.length === 0) scheitern('moves fehlt oder ist leer');
-  const moves = rohzuege.map((zug) => zerlege(zug, scheitern));
+  const moves = rohzuege.map((kurz) => zerlege(kurz, scheitern));
 
   const turnRoh = kopf.get('turn') ?? null;
   const banner = kopf.get('banner') ?? null;
@@ -84,19 +82,18 @@ export function parseCase(raw: string, name: string): CorpusCase {
   };
 }
 
-function leseBrett(reihen: string[], scheitern: (grund: string) => never): BoardMap {
+function leseBrett(reihen: string[], scheitern: (grund: string) => never): Stellung {
   try {
-    return parseBoardRows(reihen);
+    return liesReihen(reihen);
   } catch (fehler) {
     scheitern(fehler instanceof Error ? fehler.message : String(fehler));
   }
 }
 
-function zerlege(zug: string, scheitern: (grund: string) => never): Halbzug {
-  const from = zug.slice(0, 2);
-  const to = zug.slice(2);
-  if (zug.length !== 4 || !FELD.test(from) || !FELD.test(to)) {
-    scheitern(`kein Feldpaar: ${zug}`);
+function zerlege(kurz: string, scheitern: (grund: string) => never): Zug {
+  try {
+    return zug(kurz);
+  } catch (fehler) {
+    scheitern(fehler instanceof Error ? fehler.message : String(fehler));
   }
-  return { from, to };
 }
