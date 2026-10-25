@@ -49,7 +49,7 @@ Gesteuert wird nur `SITE_HOSTNAME` — Caddys eigene Env-Syntax `{$SITE_HOSTNAME
 
 ## Geteilte Umgebung oder Wegwerf-Stack
 
-`PLAYWRIGHT_BASE_URL` sagt nur, *wohin*. Ob parallelisiert werden darf, entscheidet `PLAYWRIGHT_SHARED_ENV=1`: Gegen Produktion (Deploy-Smoke) verbietet geteilter Zustand die Parallelität, gegen den Wegwerf-Stack in CI nicht. Die beiden Fragen waren früher dieselbe Variable — mit dem Compose-Stack ist die Basis-URL *immer* gesetzt, und E2E wäre in CI still seriell geworden.
+`PLAYWRIGHT_BASE_URL` sagt nur, *wohin*. Ob parallelisiert und wiederholt werden darf, entscheidet `PLAYWRIGHT_SHARED_ENV=1`: Gegen Produktion (Deploy-Smoke) verbietet geteilter Zustand beides, gegen den Wegwerf-Stack in CI nicht. Die Wiederholung hängt nicht an `CI` allein, weil GitHub Actions `CI=true` auch im Deploy-Smoke setzt. Die beiden Fragen waren früher dieselbe Variable — mit dem Compose-Stack ist die Basis-URL *immer* gesetzt, und E2E wäre in CI still seriell geworden.
 
 Die Flags für die Playwright-Projekte stehen in den Skripten von `e2e/package.json`, nicht im Aufruf: `pnpm run test --project=…` beansprucht pnpm die Option für sich und bricht mit `Unknown option: 'project'` ab.
 

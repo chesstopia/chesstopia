@@ -29,7 +29,10 @@ export default defineConfig({
   testDir: './tests',
   fullyParallel: !sharedEnv,
   workers: sharedEnv ? 1 : undefined,
-  retries: process.env.CI ? 2 : 0,
+  // Gegen eine geteilte Umgebung keine Wiederholung: Jeder Versuch legt dort
+  // eine Partie an, und GitHub Actions setzt CI=true auch im Deploy-Smoke. Ein
+  // roter Smoke hinterliesse sonst drei Partien statt einer.
+  retries: sharedEnv ? 0 : process.env.CI ? 2 : 0,
   reporter: process.env.CI ? 'list' : 'html',
   use: {
     baseURL,

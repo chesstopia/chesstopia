@@ -157,6 +157,6 @@ jobs:
           # URL into a repository variable — which removes it from both places.
           PLAYWRIGHT_BASE_URL: https://46.225.235.229.sslip.io
           # Produktion ist eine geteilte Umgebung — der Lauf darf nicht
-          # parallelisieren (ADR-0028).
+          # parallelisieren und nicht wiederholen (ADR-0028).
           PLAYWRIGHT_SHARED_ENV: "1"
         run: pnpm run smoke
