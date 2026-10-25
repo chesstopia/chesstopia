@@ -33,7 +33,9 @@ eine `.case`-Datei unter `e2e/testcases/`, wenn es eine Schachsituation ist, und
 eine handgeschriebene Spec unter `e2e/tests/`, wenn nicht
 ([ADR-0029](../../../docs/adr/0029-datei-getriebener-e2e-korpus.md)). Was die
 Ebene ausdrücklich **nicht** trägt und wo es stattdessen liegt, steht ebenfalls
-dort — nachlesen, bevor ein teurer Fall entsteht.
+dort — nachlesen, bevor ein teurer Fall entsteht. Neue E2E-Specs laufen über
+`szenario` und `Spieler` aus `e2e/testlauf.ts` und `e2e/app/`, nie über
+Playwright direkt ([ADR-0030](../../../docs/adr/0030-schichtung-der-e2e-tests.md)).
 
 **Nicht getestet wird:** generierter Code (`openapi-client/src/`,
 `build/generated/openapi/` — Verbot 1), Framework-Verhalten, und Zusicherungen,

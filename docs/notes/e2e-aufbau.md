@@ -7,7 +7,7 @@ verifies:
   - 'docker-compose.e2e.yml :: infra/roles/edge/templates/Caddyfile'
   - 'e2e/playwright.config.ts :: PLAYWRIGHT_SHARED_ENV'
   - 'e2e/package.json :: --project=mechanik'
-  - 'e2e/corpus/runner.ts :: runCase'
+  - 'e2e/korpus/runner.ts :: runCase'
   - 'infra/roles/edge/templates/Caddyfile :: reverse_proxy backend:8080'
   - 'chesstopia-backend/src/main/resources/application-prod.yml :: jdbc:postgresql://postgres:5432'
 ---
@@ -59,15 +59,25 @@ Die Flags für die Playwright-Projekte stehen in den Skripten von `e2e/package.j
 
 ## Zwei Seiten, zwei Browser-Kontexte
 
-Eine Partie entsteht über „Neue Partie starten“ auf der Startseite; danach steht die `gameId` in der URL, und ein Reload lädt die Partie aus der Datenbank. Wer sie anlegt, spielt Weiß; Schwarz kommt über den Einladungslink. `e2e/tests/support/partie.ts` kapselt beides.
+Eine Partie entsteht über „Neue Partie starten“ auf der Startseite; danach steht die `gameId` in der URL, und ein Reload lädt die Partie aus der Datenbank. Wer sie anlegt, spielt Weiß; Schwarz kommt über den Einladungslink. Beides sind Handlungen eines `Spieler` (`starteNeuePartie`, `trittBei`, in `e2e/app/spieler.ts`).
 
-Schwarz braucht einen **eigenen Browser-Kontext**. Die Rolle steht in `localStorage` (`chesstopia.games`), und `useGameState` bevorzugt einen vorhandenen Eintrag vor dem Token aus der URL — im Kontext des Erstellers spielte die Seite des Eingeladenen ebenfalls Weiß.
+Jeder Spieler hat einen **eigenen Browser-Kontext**; ihn legt die Fixture `neuerSpieler` an. Die Rolle steht in `localStorage` (`chesstopia.games`), und `useGameState` bevorzugt einen vorhandenen Eintrag vor dem Token aus der URL — im Kontext des Erstellers spielte die Seite des Eingeladenen ebenfalls Weiß.
 
-Die Gegenseite erfährt von einem Zug nur über den STOMP-Push auf `/ws`. Ein Zug, bevor deren Abo steht, geht verloren, und der Test hängt. Die Helfer warten deshalb auf den gesendeten `SUBSCRIBE`-Frame; der Läufer wartet zwischen zwei Halbzügen auf „Du bist am Zug“ bei der Seite, die als Nächstes zieht.
+Die Gegenseite erfährt von einem Zug nur über den STOMP-Push auf `/ws`. Ein Zug, bevor deren Abo steht, geht verloren, und der Test hängt. `starteNeuePartie` und `trittBei` warten deshalb auf den gesendeten `SUBSCRIBE`-Frame (`app/intern/live.ts`); `ziehe` wartet vor der Geste auf „Du bist am Zug“ beim ziehenden Spieler.
+
+## Einen Test schreiben
+
+Das *Warum* der Schichten steht in [ADR-0030](../adr/0030-schichtung-der-e2e-tests.md). Specs importieren nur `e2e/testlauf.ts`, `e2e/app/` und `e2e/modell/` — nie `@playwright/test`. Der Grenzwächter `e2e/korpus/__tests__/grenze.test.ts` läuft im Projekt `mechanik` und schlägt mit Datei und Zeile fehl, wenn eine Spec es doch tut.
+
+Ein Test hat die Form `szenario('…', async ({ neuerSpieler }) => …)`; ohne Browser genügt `pruefung`. Gewartet wird nicht im Test.
+
+- `ziehe(zug)` wartet auf das eigene Zugrecht, führt die Geste aus und wartet auf die Annahme; wird der Zug abgelehnt, scheitert es sofort mit `<farbe>: Zug <von>-<nach> abgelehnt: <text>`. Gleicht der Text der Ablehnung einem bereits sichtbaren Fehler, fällt sie erst beim Timeout auf.
+- `versucheZug(zug)` führt nur die Geste aus und wartet auf nichts. Das ist die Wahl für Züge außer der Reihe, gegen Sperren und gegen einen künstlichen Serverfehler.
+- `erwarte…` wiederholt bis zum Timeout; `stellung()` und `zuganzeige()` sind Momentaufnahmen.
 
 ## Warum die Pointer-Geste kein `dragTo()` ist
 
-`Chessboard.tsx` reagiert auf Pointer-Events, nicht auf die HTML5-Drag-API. Playwrights `locator.dragTo()` setzt genau die voraus und bewegt in dieser Komponente keine Figur. `e2e/tests/support/drag.ts` fährt stattdessen `page.mouse` mit Zwischenschritten, damit das Zielfeld sein `pointerenter` bekommt, bevor der Zeiger dort losgelassen wird.
+`Chessboard.tsx` reagiert auf Pointer-Events, nicht auf die HTML5-Drag-API. Playwrights `locator.dragTo()` setzt genau die voraus und bewegt in dieser Komponente keine Figur. `e2e/app/intern/geste.ts` fährt stattdessen `page.mouse` mit Zwischenschritten, damit das Zielfeld sein `pointerenter` bekommt, bevor der Zeiger dort losgelassen wird.
 
 ## Die Sperre nach Partieende ist doppelt
 
@@ -79,8 +89,8 @@ Die Sperrgeste macht der Läufer bei der Seite, die ohne Partieende am Zug wäre
 
 Schachsituationen stehen als Dateien unter `e2e/testcases/<kategorie>/<name>.case` — eine Situation je Datei, eine Zeile je Datei im Report. Das *Warum* steht in [ADR-0029](../adr/0029-datei-getriebener-e2e-korpus.md); hier steht, wie man damit arbeitet.
 
-Eine neue Datei hinlegen genügt. `e2e/tests/corpus.spec.ts` liest das Verzeichnis beim Laden rekursiv und erzeugt je `.case` ein `test()`. Es gibt keinen Codegen und keinen Sync-Schritt — anders als beim Engine-Korpus ([ADR-0022](../adr/0022-datei-getriebener-engine-testkorpus.md)), wo `commonTest` keinen Laufzeit-Dateizugriff hat.
+Eine neue Datei hinlegen genügt. `e2e/tests/korpus.spec.ts` liest das Verzeichnis beim Laden rekursiv und erzeugt je `.case` ein `test()`. Es gibt keinen Codegen und keinen Sync-Schritt — anders als beim Engine-Korpus ([ADR-0022](../adr/0022-datei-getriebener-engine-testkorpus.md)), wo `commonTest` keinen Laufzeit-Dateizugriff hat.
 
-Die Prüfmechanik — Brettleser, Parser, Driftwächter unter `e2e/corpus/` — läuft als eigenes Playwright-Projekt `mechanik`; das Skript `test` startet beide Projekte. Ohne den zweiten Eintrag liefe sie in CI nicht mit, und eine Mechanik, die nie rot war, prüft nichts. Browser und Stack braucht sie nicht; sie kostet im E2E-Job trotzdem nichts, weil der Stack dort ohnehin schon steht, bevor Playwright startet.
+Die Prüfmechanik — Brettleser, Parser, Driftwächter unter `e2e/korpus/` — läuft als eigenes Playwright-Projekt `mechanik`; das Skript `test` startet beide Projekte. Ohne den zweiten Eintrag liefe sie in CI nicht mit, und eine Mechanik, die nie rot war, prüft nichts. Browser und Stack braucht sie nicht; sie kostet im E2E-Job trotzdem nichts, weil der Stack dort ohnehin schon steht, bevor Playwright startet.
 
 Zwei Kostenzahlen, damit die nächste Entscheidung über einen teuren Fall nicht wieder gemessen werden muss — seriell, ein Worker, lokal: Grundkosten rund 300 ms je Fall, Grenzkosten rund 165 ms je Halbzug. Der teuerste Fall (Patt, 19 Halbzüge) liegt bei rund 3,4 s. Die Rüstzeit des Stacks übersteigt die Prüfzeit um ein Vielfaches — wer Laufzeit sparen will, sucht dort, nicht bei den Fällen.

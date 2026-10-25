@@ -6,7 +6,7 @@ updated: 2026-10-25
 supersedes: []
 verifies:
   - 'e2e/playwright.config.ts :: mechanik'
-  - 'e2e/corpus/runner.ts :: runCase'
+  - 'e2e/korpus/runner.ts :: runCase'
   - 'e2e/testcases/remis/patt.case :: banner      = Remis (Patt)'
   - 'e2e/package.json :: --project=mechanik'
 ---
