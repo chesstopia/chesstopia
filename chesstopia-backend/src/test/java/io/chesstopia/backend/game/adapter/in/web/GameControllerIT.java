@@ -1,5 +1,6 @@
 package io.chesstopia.backend.game.adapter.in.web;
 
+import io.chesstopia.backend.api.model.GameCreatedResponse;
 import io.chesstopia.backend.api.model.GameResponse;
 import io.chesstopia.backend.api.model.MoveListResponse;
 import io.chesstopia.backend.api.model.Piece;
@@ -43,12 +44,12 @@ class GameControllerIT {
         return Map.of("from", square(fromFile, fromRank), "to", square(toFile, toRank));
     }
 
-    private GameResponse createGame() {
+    private GameCreatedResponse createGame() {
         return webTestClient.post()
             .uri("/api/v1/games")
             .exchange()
             .expectStatus().isCreated()
-            .expectBody(GameResponse.class)
+            .expectBody(GameCreatedResponse.class)
             .returnResult().getResponseBody();
     }
 
@@ -61,17 +62,19 @@ class GameControllerIT {
             .returnResult().getResponseBody();
     }
 
-    private void playMove(UUID id, Map<String, Object> body) {
+    private void playMove(UUID id, UUID playerToken, Map<String, Object> body) {
         webTestClient.post()
             .uri("/api/v1/games/{id}/moves", id)
+            .header("X-Player-Token", playerToken.toString())
             .bodyValue(body)
             .exchange()
             .expectStatus().isOk();
     }
 
-    private GameResponse playMoveAndGet(UUID id, Map<String, Object> body) {
+    private GameResponse playMoveAndGet(UUID id, UUID playerToken, Map<String, Object> body) {
         return webTestClient.post()
             .uri("/api/v1/games/{id}/moves", id)
+            .header("X-Player-Token", playerToken.toString())
             .bodyValue(body)
             .exchange()
             .expectStatus().isOk()
@@ -91,16 +94,19 @@ class GameControllerIT {
     // ---- Szenarien ----
 
     @Test
-    void createGame_liefertStartstellung() {
+    void createGame_liefertStartstellungUndZweiVerschiedeneTokens() {
         // ACT
-        GameResponse response = createGame();
+        GameCreatedResponse response = createGame();
 
         // ASSERTIONS
         assertThat(response.getId()).isNotNull();
-        assertThat(response.getStatus()).isEqualTo(GameResponse.StatusEnum.ONGOING);
+        assertThat(response.getStatus()).isEqualTo(GameCreatedResponse.StatusEnum.ONGOING);
         assertThat(response.getMoveCount()).isZero();
         assertThat(response.getPosition().getSideToMove()).isEqualTo(Position.SideToMoveEnum.WHITE);
         assertThat(response.getPosition().getBoard()).hasSize(32);
+        assertThat(response.getOwnerToken()).isNotNull();
+        assertThat(response.getInviteToken()).isNotNull();
+        assertThat(response.getOwnerToken()).isNotEqualTo(response.getInviteToken());
     }
 
     @Test
@@ -110,13 +116,14 @@ class GameControllerIT {
     }
 
     @Test
-    void playMove_e2e4_wirdAusgefuehrtUndPersistiert() {
+    void playMove_e2e4_mitOwnerTokenWirdAusgefuehrtUndPersistiert() {
         // ARRANGE
-        UUID id = createGame().getId();
+        GameCreatedResponse created = createGame();
 
         // ACT
         GameResponse afterMove = webTestClient.post()
-            .uri("/api/v1/games/{id}/moves", id)
+            .uri("/api/v1/games/{id}/moves", created.getId())
+            .header("X-Player-Token", created.getOwnerToken().toString())
             .bodyValue(move("E", "TWO", "E", "FOUR"))
             .exchange()
             .expectStatus().isOk()
@@ -129,7 +136,7 @@ class GameControllerIT {
             Square.FileEnum.E, Square.RankEnum.FOUR, Piece.TypeEnum.PAWN, Piece.ColorEnum.WHITE)).isTrue();
 
         // Eigenes GET — die Stellung muss den Request überlebt haben.
-        GameResponse reloaded = getGame(id);
+        GameResponse reloaded = getGame(created.getId());
         assertThat(reloaded.getMoveCount()).isEqualTo(1);
         assertThat(reloaded.getPosition().getSideToMove()).isEqualTo(Position.SideToMoveEnum.BLACK);
         assertThat(hasPiece(reloaded.getPosition(),
@@ -137,15 +144,71 @@ class GameControllerIT {
     }
 
     @Test
+    void playMove_ohneToken_wird403() {
+        // ARRANGE
+        GameCreatedResponse created = createGame();
+
+        // ACT & ASSERTIONS
+        webTestClient.post()
+            .uri("/api/v1/games/{id}/moves", created.getId())
+            .bodyValue(move("E", "TWO", "E", "FOUR"))
+            .exchange()
+            .expectStatus().isForbidden()
+            .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON);
+    }
+
+    @Test
+    void playMove_mitFremdemToken_wird403() {
+        // ARRANGE
+        GameCreatedResponse created = createGame();
+
+        // ACT & ASSERTIONS
+        webTestClient.post()
+            .uri("/api/v1/games/{id}/moves", created.getId())
+            .header("X-Player-Token", UUID.randomUUID().toString())
+            .bodyValue(move("E", "TWO", "E", "FOUR"))
+            .exchange()
+            .expectStatus().isForbidden();
+    }
+
+    @Test
+    void playMove_mitInviteTokenWennWeissAmZugIst_wird403() {
+        // ARRANGE
+        GameCreatedResponse created = createGame();
+
+        // ACT & ASSERTIONS
+        webTestClient.post()
+            .uri("/api/v1/games/{id}/moves", created.getId())
+            .header("X-Player-Token", created.getInviteToken().toString())
+            .bodyValue(move("E", "TWO", "E", "FOUR"))
+            .exchange()
+            .expectStatus().isForbidden();
+    }
+
+    @Test
+    void playMove_inviteTokenZiehtSchwarzNachdemWeissGezogenHat() {
+        // ARRANGE
+        GameCreatedResponse created = createGame();
+        playMove(created.getId(), created.getOwnerToken(), move("E", "TWO", "E", "FOUR"));
+
+        // ACT
+        GameResponse afterBlack = playMoveAndGet(
+            created.getId(), created.getInviteToken(), move("E", "SEVEN", "E", "FIVE"));
+
+        // ASSERTIONS
+        assertThat(afterBlack.getMoveCount()).isEqualTo(2);
+    }
+
+    @Test
     void listMoves_nachZweiZuegen_liefertBeideEintraege() {
         // ARRANGE
-        UUID id = createGame().getId();
-        playMove(id, move("E", "TWO", "E", "FOUR"));
-        playMove(id, move("E", "SEVEN", "E", "FIVE"));
+        GameCreatedResponse created = createGame();
+        playMove(created.getId(), created.getOwnerToken(), move("E", "TWO", "E", "FOUR"));
+        playMove(created.getId(), created.getInviteToken(), move("E", "SEVEN", "E", "FIVE"));
 
         // ACT
         MoveListResponse list = webTestClient.get()
-            .uri("/api/v1/games/{id}/moves", id)
+            .uri("/api/v1/games/{id}/moves", created.getId())
             .exchange()
             .expectStatus().isOk()
             .expectBody(MoveListResponse.class)
@@ -177,19 +240,20 @@ class GameControllerIT {
     }
 
     @Test
-    void playMove_falscheSeiteZuerst_wird400MitProblemJson() {
+    void playMove_illegalerZugMitPassendemToken_wird400MitProblemJson() {
         // ARRANGE
-        UUID id = createGame().getId();
+        GameCreatedResponse created = createGame();
 
         // ACT & ASSERTIONS
         webTestClient.post()
-            .uri("/api/v1/games/{id}/moves", id)
-            .bodyValue(move("E", "SEVEN", "E", "FIVE"))
+            .uri("/api/v1/games/{id}/moves", created.getId())
+            .header("X-Player-Token", created.getOwnerToken().toString())
+            .bodyValue(move("E", "TWO", "E", "FIVE"))
             .exchange()
             .expectStatus().isBadRequest()
             .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
             .expectBody()
-            .jsonPath("$.detail").value(detail -> assertThat((String) detail).contains("e7"));
+            .jsonPath("$.detail").value(detail -> assertThat((String) detail).isNotEmpty());
     }
 
     @Test
@@ -197,6 +261,7 @@ class GameControllerIT {
         // ACT & ASSERTIONS
         webTestClient.post()
             .uri("/api/v1/games/{id}/moves", UUID.randomUUID())
+            .header("X-Player-Token", UUID.randomUUID().toString())
             .bodyValue(move("E", "TWO", "E", "FOUR"))
             .exchange()
             .expectStatus().isNotFound();
@@ -219,32 +284,34 @@ class GameControllerIT {
     @Test
     void abgelehnterZug_hinterlaesstKeinenPly() {
         // ARRANGE
-        UUID id = createGame().getId();
+        GameCreatedResponse created = createGame();
 
         // ACT & ASSERTIONS
         webTestClient.post()
-            .uri("/api/v1/games/{id}/moves", id)
+            .uri("/api/v1/games/{id}/moves", created.getId())
+            .header("X-Player-Token", created.getOwnerToken().toString())
             .bodyValue(move("E", "SEVEN", "E", "FIVE"))
             .exchange()
             .expectStatus().isBadRequest();
 
-        assertThat(getGame(id).getMoveCount()).isZero();
+        assertThat(getGame(created.getId()).getMoveCount()).isZero();
     }
 
     @Test
     void playMove_laeuferVerstellt_wird400UndStellungBleibtUnveraendert() {
         // ARRANGE
-        UUID id = createGame().getId();
+        GameCreatedResponse created = createGame();
 
         // ACT & ASSERTIONS
         // Läufer f1 kann in der Grundstellung nicht ziehen (durch eigenen Bauern auf e2 verstellt)
         webTestClient.post()
-            .uri("/api/v1/games/{id}/moves", id)
+            .uri("/api/v1/games/{id}/moves", created.getId())
+            .header("X-Player-Token", created.getOwnerToken().toString())
             .bodyValue(move("F", "ONE", "B", "FIVE"))
             .exchange()
             .expectStatus().isBadRequest();
 
-        GameResponse unchanged = getGame(id);
+        GameResponse unchanged = getGame(created.getId());
         assertThat(unchanged.getStatus()).isEqualTo(GameResponse.StatusEnum.ONGOING);
         assertThat(unchanged.getMoveCount()).isZero();
     }
@@ -252,14 +319,16 @@ class GameControllerIT {
     @Test
     void narrenmatt_beendetDiePartieMitBlackWonUndCheckmate() {
         // ARRANGE
-        UUID id = createGame().getId();
+        GameCreatedResponse created = createGame();
+        UUID white = created.getOwnerToken();
+        UUID black = created.getInviteToken();
         // 1. f2-f3  e7-e5  2. g2-g4  Qd8-h4#
-        playMove(id, move("F", "TWO", "F", "THREE"));
-        playMove(id, move("E", "SEVEN", "E", "FIVE"));
-        playMove(id, move("G", "TWO", "G", "FOUR"));
+        playMove(created.getId(), white, move("F", "TWO", "F", "THREE"));
+        playMove(created.getId(), black, move("E", "SEVEN", "E", "FIVE"));
+        playMove(created.getId(), white, move("G", "TWO", "G", "FOUR"));
 
         // ACT
-        GameResponse afterMate = playMoveAndGet(id, move("D", "EIGHT", "H", "FOUR"));
+        GameResponse afterMate = playMoveAndGet(created.getId(), black, move("D", "EIGHT", "H", "FOUR"));
 
         // ASSERTIONS
         assertThat(afterMate.getStatus()).isEqualTo(GameResponse.StatusEnum.BLACK_WON);

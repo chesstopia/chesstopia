@@ -1,6 +1,7 @@
 package io.chesstopia.backend.game.adapter.in.web;
 
 import io.chesstopia.backend.api.GameApi;
+import io.chesstopia.backend.api.model.GameCreatedResponse;
 import io.chesstopia.backend.api.model.GameResponse;
 import io.chesstopia.backend.api.model.MoveListResponse;
 import io.chesstopia.backend.api.model.MoveRequest;
@@ -9,6 +10,7 @@ import io.chesstopia.backend.game.application.port.in.StartGame;
 import io.chesstopia.backend.game.application.port.in.ViewGame;
 import io.chesstopia.backend.game.domain.Game;
 import io.chesstopia.backend.game.domain.GameId;
+import io.chesstopia.backend.game.domain.PlayerToken;
 import io.chesstopia.backend.game.domain.RuleSet;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -37,10 +39,10 @@ class GameController implements GameApi {
     }
 
     @Override
-    public ResponseEntity<GameResponse> createGame() {
+    public ResponseEntity<GameCreatedResponse> createGame() {
         Game game = startGame.start(RuleSet.standard());
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(mapper.toResponse(game, game.history().size()));
+            .body(mapper.toCreatedResponse(game, game.history().size()));
     }
 
     @Override
@@ -50,8 +52,9 @@ class GameController implements GameApi {
     }
 
     @Override
-    public ResponseEntity<GameResponse> playMove(UUID gameId, MoveRequest moveRequest) {
-        Game game = playMove.play(new GameId(gameId), mapper.toDomain(moveRequest));
+    public ResponseEntity<GameResponse> playMove(UUID gameId, MoveRequest moveRequest, UUID xPlayerToken) {
+        PlayerToken token = xPlayerToken == null ? null : new PlayerToken(xPlayerToken);
+        Game game = this.playMove.play(new GameId(gameId), mapper.toDomain(moveRequest), token);
         return ResponseEntity.ok(mapper.toResponse(game, game.history().size()));
     }
 
