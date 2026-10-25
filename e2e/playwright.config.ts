@@ -40,7 +40,7 @@ export default defineConfig({
   reporter: process.env.CI ? 'list' : 'html',
   use: {
     baseURL,
-    trace: 'on-first-retry',
+    trace: 'on',
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
