@@ -19,6 +19,7 @@ export interface Spieler {
   ziehe(zug: Zug): Promise<void>;
   versucheZug(zug: Zug): Promise<void>;
   ladeNeu(): Promise<void>;
+  loeschePartie(id: string): Promise<void>;
 
   // Abfragen — Momentaufnahme, ohne Warten
   stellung(): Promise<Stellung>;
@@ -30,6 +31,7 @@ export interface Spieler {
   erwarteZuganzeige(soll: Zuganzeige): Promise<void>;
   erwarteErgebnis(text: string | null): Promise<void>;
   erwarteFehler(text: string | RegExp | null): Promise<void>;
+  erwartePartieGeloescht(): Promise<void>;
 }
 
 /**
@@ -127,6 +129,13 @@ export async function erzeugeSpieler(
       await oeffneUndWarte(() => page.reload().then(() => undefined));
     },
 
+    async loeschePartie(id) {
+      await startseite.oeffne();
+      await startseite.klickeLoeschen(id);
+      await startseite.loeschdialog.bestaetigen();
+      await startseite.erwartePartieGelistet(id, false);
+    },
+
     stellung: () => partieseite.brett.stellung(),
     zuganzeige: () => partieseite.zugzeile.anzeige(),
 
@@ -135,6 +144,7 @@ export async function erzeugeSpieler(
     erwarteZuganzeige: (soll) => partieseite.zugzeile.erwarteAnzeige(soll),
     erwarteErgebnis: (text) => partieseite.ergebnis.erwarteText(text),
     erwarteFehler: (text) => partieseite.fehleranzeige.erwarte(text),
+    erwartePartieGeloescht: () => partieseite.loeschhinweis.erwarteSichtbar(),
   };
 
   // Erst die angelegten Partien löschen, dann den Kontext schließen — auch

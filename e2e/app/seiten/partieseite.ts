@@ -4,6 +4,7 @@ import { Brett } from '../komponenten/brett';
 import { Einladung } from '../komponenten/einladung';
 import { Ergebnis } from '../komponenten/ergebnis';
 import { Fehleranzeige } from '../komponenten/fehleranzeige';
+import { Loeschhinweis } from '../komponenten/loeschhinweis';
 import { Zugzeile } from '../komponenten/zugzeile';
 
 export class Partieseite {
@@ -12,6 +13,7 @@ export class Partieseite {
   readonly ergebnis: Ergebnis;
   readonly fehleranzeige: Fehleranzeige;
   readonly einladung: Einladung;
+  readonly loeschhinweis: Loeschhinweis;
 
   constructor(
     private readonly page: Page,
@@ -22,6 +24,7 @@ export class Partieseite {
     this.ergebnis = new Ergebnis(page, farbe);
     this.fehleranzeige = new Fehleranzeige(page, farbe);
     this.einladung = new Einladung(page, farbe);
+    this.loeschhinweis = new Loeschhinweis(page, farbe);
   }
 
   async oeffne(url: string): Promise<void> {
