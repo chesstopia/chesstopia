@@ -1,16 +1,15 @@
 ---
 type: adr
 status: partially-superseded
-# `partial`, weil dieses ADR beide Stufen entscheidet, aber zum Zeitpunkt des
-# Schreibens nur Stufe 1 gebaut ist. Task 11 zieht es auf `complete`. Das Feld
-# ist Zustand und damit das einzige, was an einem ADR später geändert werden
-# darf — der Körper ist append-only.
-implementation: partial
-updated: 2026-09-21
+# `complete`: Stufe 1 war gebaut und ist durch ADR-0028 abgelöst, Stufe 2 ist
+# in der Form von ADR-0028 gebaut. Das Feld ist Zustand und damit das einzige,
+# was an einem ADR später geändert werden darf — der Körper ist append-only.
+implementation: complete
+updated: 2026-10-25
 supersedes: []
 # Leer, seit ADR-0028 Stufe 1 abgeloest hat: Der Job `integration` und sein
-# `needs:` existieren nicht mehr, und Stufe 2 ist noch nicht gebaut. Die
-# Kontraktpruefung wandert damit vollstaendig zu ADR-0028.
+# `needs:` existieren nicht mehr, und Stufe 2 ist dort gebaut. Die
+# Kontraktpruefung liegt damit vollstaendig bei ADR-0028.
 verifies: []
 ---
 

@@ -1,8 +1,8 @@
 ---
 type: adr
 status: accepted
-implementation: planned
-updated: 2026-09-21
+implementation: complete
+updated: 2026-10-25
 supersedes: []
 verifies:
   - 'infra/roles/edge/templates/Caddyfile :: header_up -Origin'
@@ -10,6 +10,9 @@ verifies:
   - '.github/workflows/ci.yml :: backend-image'
   - '.github/workflows/ci.yml :: upload-artifact'
   - 'docker-compose.e2e.yml :: Caddyfile'
+  - 'docker-compose.e2e.yml :: SITE_HOSTNAME: ":80"'
+  - 'infra/roles/edge/templates/Caddyfile :: @ws path /ws /ws/*'
+  - '.github/workflows/deploy.yml :: needs: deploy'
 ---
 
 # ADR-0028: Artefakt-Kette in der CI, E2E gegen den Prod-Stack
@@ -22,7 +25,7 @@ Die Pipeline baut dieselben Artefakte dreimal unabhängig: im Job `backend`, im 
 
 Die zweite Lücke liegt in der Betriebsschicht. E2E fährt heute gegen `java -jar` plus `vite preview`. Produktion fährt gegen nginx hinter Caddy. Das sind nicht nur andere Prozesse, sondern **andere Codepfade**: Die Caddyfile entfernt für `/api/*` den `Origin`-Header, das Backend sieht in Produktion also nie einen CORS-Request. Über den Vite-Preview sieht es einen, weshalb Port 4173 in die Origin-Allowlist von `SecurityConfig` aufgenommen werden musste. Geprüft wird der Pfad, den es in Produktion nicht gibt.
 
-Was diese Lücke kostet, liegt offen im Repo: `WebSocketConfig` registriert den STOMP-Endpunkt `/ws`. Die Caddyfile kennt `handle /api/*` und einen Catch-All auf das Frontend — **eine Route für `/ws` gibt es nicht.** Ein Verbindungsversuch landet in Produktion im nginx. Keine der vier Teststufen kann das sehen. Es ist derselbe Fehler, den ADR-0027 im Kontext bereits einmal benennt.
+Was diese Lücke kostet, zeigte sich am STOMP-Endpunkt `/ws`, den `WebSocketConfig` registriert. Die Caddyfile kannte nur `handle /api/*` und einen Catch-All auf das Frontend — **eine Route für `/ws` fehlte**, ein Verbindungsversuch landete in Produktion im nginx, und keine der vier Teststufen konnte das sehen. Es ist derselbe Fehler, den ADR-0027 im Kontext bereits einmal benennt. CHESS-19 hat die Route parallel nachgetragen und brauchte dafür einen zweiten Anlauf: Die erste Fassung war ein Syntaxfehler in der Caddyfile, den ebenfalls keine Teststufe sah.
 
 Drittens hängt der E2E-Lauf im Build-Graphen dessen, was er testen soll. pnpm liegt unter `.gradle/`, `pnpmInstall` hängt an der JS-Distribution der Kotlin-Engine — der E2E-Job baut die Schach-Engine, um Playwright zu installieren.
 
@@ -61,15 +64,15 @@ Sechs Jobs, eine Kette je Komponente.
 
 **`engine` hängt in den `needs:` der Image-Jobs.** Die Engine-Testsuite läuft ausschließlich im Job `engine` — `backend` konsumiert nur die Jar-Task, `frontend` nur die JS-Distribution. Ohne diese Kante entstünde bei roter Engine-Suite ein Image. Da `engine` parallel zu `backend` läuft, wartet die Kette dadurch praktisch nicht länger.
 
-**E2E fährt den Prod-Stack unter Compose.** `docker-compose.e2e.yml` ergänzt als Override über `docker-compose.prod.yml` genau das, was die Prod-Datei anderen Compose-Projekten überlässt: Postgres, Caddy und einen veröffentlichten Port. Die **produktive** Caddyfile und die **produktive** `nginx.conf` werden unverändert gemountet beziehungsweise sind im Image. `SITE_HOSTNAME` ist `http://localhost`, womit Caddy ohne TLS ausliefert; `{$SITE_HOSTNAME}` ist Caddys eigene Env-Syntax, kein Template. Damit laufen nginx, Caddy und das `prod`-Profil zum ersten Mal **vor** dem Deploy zusammen.
+**E2E fährt den Prod-Stack unter Compose.** `docker-compose.e2e.yml` ergänzt als Override über `docker-compose.prod.yml` genau das, was die Prod-Datei anderen Compose-Projekten überlässt: Postgres, Caddy und einen veröffentlichten Port. Die **produktive** Caddyfile und die **produktive** `nginx.conf` werden unverändert gemountet beziehungsweise sind im Image. `SITE_HOSTNAME` ist `:80` — Caddys Catch-All-Adresse: Port 80, keine Host-Prüfung, kein ACME, kein TLS; `{$SITE_HOSTNAME}` ist Caddys eigene Env-Syntax, kein Template. Damit laufen nginx, Caddy und das `prod`-Profil zum ersten Mal **vor** dem Deploy zusammen.
 
 **Dasselbe Compose-File lokal und in CI.** Lokal baut es die Images, in CI zieht es sie. Der Entwickler fährt den Stack der Pipeline.
 
 **`e2e/` verlässt den pnpm-Workspace** und bekommt ein eigenes Lockfile. Der Job braucht Node, `pnpm install --frozen-lockfile`, Playwright und Docker — kein Java, kein Gradle, keine Engine. Die Gradle-Tasks `pnpmE2eTest`, `playwrightInstallBrowsers` und `playwrightSmoke` entfallen; `deploy.yml` ruft Playwright direkt.
 
-**Ein Package je Komponente, ein Tag je Commit, auf jedem Branch.** Der Tag ist der 7-stellige Short-SHA. `docker-compose.prod.yml` und `deploy.yml` bleiben unverändert.
+**Ein Package je Komponente, ein Tag je Commit, auf jedem Branch.** Der Tag ist der 7-stellige Short-SHA. `docker-compose.prod.yml` bleibt unverändert. `deploy.yml` ändert sich an zwei Stellen: Der Smoke ruft Playwright direkt und läuft als eigener Job `smoke` ohne `environment: production`, damit kein Fremdcode neben dem Deploy-Schlüssel läuft; und der Tag wird auf das Short-SHA-Format geprüft.
 
-**Das Kriterium für `fullyParallel` wechselt** von „die Basis-URL kommt von außen" auf „die Umgebung ist geteilt". In der neuen Pipeline kommt die URL immer von außen, auch für den Wegwerf-Stack in CI, der sehr wohl parallel laufen soll. Seriell bleibt nur der Smoke gegen Produktion.
+**Das Kriterium für `fullyParallel` wechselt** von „die Basis-URL kommt von außen" auf „die Umgebung ist geteilt". In der neuen Pipeline kommt die URL immer von außen, auch für den Wegwerf-Stack in CI, der sehr wohl parallel laufen soll. Seriell und ohne Wiederholung bleibt nur der Smoke gegen Produktion — jeder Versuch legt dort eine Partie an.
 
 **Das Deployment bleibt ein eigener Workflow.** CI erzeugt deploybare Tags, `deploy.yml` verbraucht sie, wenn ein Mensch klickt. Rollback und Redeploy ohne Rebuild bleiben derselbe Knopf.
 
@@ -83,6 +86,6 @@ Sechs Jobs, eine Kette je Komponente.
 - **Der kritische Pfad wird länger:** `backend` → `backend-image` → `e2e` statt vier paralleler Jobs. Gemessen ist davon nichts; ein Compose-Stack kommt anders hoch als `java -jar`. Auf einem public Repo sind es Wanduhr-Minuten, keine Kosten.
 - **Ein lokaler E2E-Lauf braucht ab jetzt Docker.** Vorher genügten ein Jar, ein Node-Prozess und ein Postgres-Container. Das ist der Preis dafür, dass lokal und CI dasselbe prüfen.
 - **Zwei Konfigurationen werden gegenstandslos** und werden im selben Zug entfernt: der Eintrag `http://localhost:4173` in der Origin-Allowlist von `SecurityConfig` und `preview.proxy` in `vite.config.ts`. E2E ist hinter Caddy same-origin und braucht beides nicht mehr. Wer sie stehen lässt, hält einen Pfad am Leben, den nichts mehr prüft.
-- **Die fehlende `/ws`-Route in der Caddyfile ist damit sichtbar, aber nicht behoben.** Sie bekommt ein eigenes Ticket, und der Test dafür braucht zusätzlich einen Frontend-Client, den es noch nicht gibt. **Benannte Lücke, kein geschlossener Kreis.**
+- **Die `/ws`-Route ist mitgeprüft.** Seit CHESS-19 gibt es sie und einen STOMP-Client im Frontend; die E2E-Helfer warten durch Caddy hindurch auf das `SUBSCRIBE` beider Seiten, und jeder Korpusfall mit mehr als einem Halbzug hängt am Push. Eine fehlende oder kaputte Route macht E2E rot.
 - **Die Engine wird weiterhin dreimal gebaut** — im eigenen Job, transitiv in `backend`, transitiv in `frontend`. Das aufzulösen bräuchte einen jobübergreifenden Cache-Schlüssel, der bei einem Miss still danebengreift, oder eine Artefakt-Übergabe, die mit der Koordinaten-Substitution des Composite Builds ([ADR-0006](0006-build-orchestration.md)) kollidiert. Doppelte CPU auf freien Minuten ist der billigere Fehler.
 - **Der Check-Name ändert sich erneut.** Aus `integration (E2E + Images)` werden sechs Jobs; die Required Status Checks auf `main` müssen das nachvollziehen, sonst hängt jeder PR an einem Check, der nie wieder meldet.

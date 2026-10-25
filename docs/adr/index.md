@@ -36,15 +36,15 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 | [0024](0024-flache-schemas-statt-allof-fuer-typescript-client.md) | Flache Objektschemas statt `allOf`-Komposition für Schemas, die der TypeScript-Axios-Client konsumiert | Accepted | complete |
 | [0025](0025-owner-invite-token-als-partie-identitaet.md) | Owner-/Invite-Token als Partie-Identität ohne Login | Accepted | complete |
 | [0026](0026-stomp-websocket-statt-rsocket-fuer-zug-push.md) | Bestehendes STOMP/WebSocket für den Zug-Push statt RSocket | Accepted | complete |
-| [0027](0027-integrationsjob-baut-und-testet-die-images.md) | Der Integrationsjob baut und testet die Images, ein Gate promotet sie | Partially superseded ¹⁰ | partial |
-| [0028](0028-artefakt-kette-und-e2e-gegen-den-prod-stack.md) | Artefakt-Kette in der CI, E2E gegen den Prod-Stack | Accepted | planned |
+| [0027](0027-integrationsjob-baut-und-testet-die-images.md) | Der Integrationsjob baut und testet die Images, ein Gate promotet sie | Partially superseded ¹⁰ | complete |
+| [0028](0028-artefakt-kette-und-e2e-gegen-den-prod-stack.md) | Artefakt-Kette in der CI, E2E gegen den Prod-Stack | Accepted | complete |
 | [0029](0029-datei-getriebener-e2e-korpus.md) | Datei-getriebener E2E-Korpus | Accepted | complete |
 
 ¹ Die `SecurityFilterChain`-Bean existiert, das vorgesehene JWT-Filter-Skelett nicht — dort steht ein `TODO`.
 
 ² Die Werkzeuge für *jetzt* stehen unter `.claude/`; `/tests` ist seit [ADR-0019](0019-teststrategie.md) dazugekommen. Die drei Agenten mit benanntem Auslöser sind absichtlich nicht angelegt — `partial` heißt hier „planmäßig unvollständig", nicht „Rückstand".
 
-³ Ebene 1, 2 und 3 stehen. **Der benannte Auslöser für Ebene 4 — der Merge von PR #2 — ist am 9. August 2026 eingetreten.** `partial` hieß ab da „Rückstand", nicht mehr „planmäßig unvollständig"; Playwright war ausstehend und bekam ein eigenes Ticket, damit jener PR bei der Wissensverwaltung blieb. **Der Rückstand ist am 7. September 2026 aufgelöst:** Ebene 4 steht als eigenes Workspace-Paket `e2e/` mit Smoke und drei funktionalen Szenarien, verdrahtet in CI und im Deploy — siehe [E2E-Aufbau](../notes/e2e-aufbau.md).
+³ Ebene 1, 2 und 3 stehen. **Der benannte Auslöser für Ebene 4 — der Merge von PR #2 — ist am 9. August 2026 eingetreten.** `partial` hieß ab da „Rückstand", nicht mehr „planmäßig unvollständig"; Playwright war ausstehend und bekam ein eigenes Ticket, damit jener PR bei der Wissensverwaltung blieb. **Der Rückstand ist am 7. September 2026 aufgelöst:** Ebene 4 steht als eigenständiges Paket `e2e/` — eigenes Lockfile, bewusst außerhalb des pnpm-Workspace ([ADR-0028](0028-artefakt-kette-und-e2e-gegen-den-prod-stack.md)) — mit Smoke, Specs für Gesten und Netzfehler und einem datei-getriebenen Korpus ([ADR-0029](0029-datei-getriebener-e2e-korpus.md)), verdrahtet in CI und im Deploy — siehe [E2E-Aufbau](../notes/e2e-aufbau.md).
 
 ⁴ Die Plattform ist weg, die Begründung nicht. Welcher Teil weiterhin gilt, steht im `## Status`-Abschnitt des jeweiligen ADR ([ADR-0018](0018-status-partially-superseded.md)); [ADR-0011](0011-migration-nach-github-actions.md) benennt die entfallenen Prämissen einzeln.
 
@@ -58,7 +58,7 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 
 ⁹ Teilweise abgelöst durch [ADR-0021](0021-mapstruct-fuer-adapter-mappings.md): MapStruct ist aufgenommen; der übrige Dependency-Kern gilt unverändert.
 
-¹⁰ Teilweise abgelöst durch [ADR-0028](0028-artefakt-kette-und-e2e-gegen-den-prod-stack.md): Stufe 1 — der Integrationsjob, der die Images aus seinem eigenen Workspace baut — ist abgelöst. Stufe 2 — E2E gegen den Container-Stack mit der unveränderten produktiven Caddyfile — gilt weiter und wird dort umgesetzt. `partial` bleibt, weil keine der beiden Stufen gebaut ist.
+¹⁰ Teilweise abgelöst durch [ADR-0028](0028-artefakt-kette-und-e2e-gegen-den-prod-stack.md): Stufe 1 — der Integrationsjob, der die Images aus seinem eigenen Workspace baut — ist abgelöst. Stufe 2 — E2E gegen den Container-Stack mit der unveränderten produktiven Caddyfile — gilt weiter und ist dort gebaut. Deshalb `complete`: Was dieses ADR noch entscheidet, steht.
 
 **0009 bis 0011 waren reserviert; die Lücke ist mit dem Merge von PR #2 am 9. August 2026 geschlossen.** Die drei ADRs lagen auf `CHESS-8-Initial-pipeline` und vergaben ihre Nummern zuerst — sie wurden nicht umnummeriert, weil sie sich gegenseitig unter genau diesen Nummern verlinken. Ihr Frontmatter ist beim Zusammenführen nachgetragen worden; die Körper sind unangetastet.
 
