@@ -13,6 +13,7 @@ verifies:
   - 'e2e/korpus/runner.ts :: runCase'
   - 'e2e/app/intern/geste.ts :: ziehePerZeiger'
   - 'e2e/app/spieler.ts :: async versucheZug'
+  - 'e2e/app/intern/aufraeumen.ts :: schneideAngelegtePartienMit'
   - 'infra/roles/edge/templates/Caddyfile :: reverse_proxy backend:8080'
   - 'chesstopia-backend/src/main/resources/application-prod.yml :: jdbc:postgresql://postgres:5432'
 ---
@@ -60,7 +61,7 @@ Die Flags für die Playwright-Projekte stehen in den Skripten von `e2e/package.j
 
 ## Deploy-Smoke ohne eigenen Stack
 
-`deploy.yml` fährt nach jedem Rollout `pnpm run smoke` gegen die echte Umgebung — `PLAYWRIGHT_BASE_URL` auf die Prod-URL, `PLAYWRIGHT_SHARED_ENV=1`. Der Lauf ist nicht folgenlos: Er legt dort eine Partie an und spielt einen Zug. Nach jedem Deploy steht also eine Zeile mehr in `partie` und `zug` — bewusst in Kauf genommen, weil ein Smoke, der die Datenbank nicht anfasst, die Datenbank auch nicht prüft.
+`deploy.yml` fährt nach jedem Rollout `pnpm run smoke` gegen die echte Umgebung — `PLAYWRIGHT_BASE_URL` auf die Prod-URL, `PLAYWRIGHT_SHARED_ENV=1`. Der Smoke legt dort eine Partie an, spielt einen Zug, lädt neu und löscht die Partie im Teardown wieder über die API ([ADR-0031](../adr/0031-partien-sind-durch-den-ersteller-loeschbar.md)); geprüft wird die Datenbank weiterhin, weil Anlegen, Ziehen und Löschen sie durchlaufen. Welche Partien zu löschen sind, weiß der Teardown aus dem Mitschnitt aller erfolgreichen `POST /api/v1/games` der Seite (`app/intern/aufraeumen.ts`) — auch eine Partie, deren Anlegen im Test danach scheitert, und auch bei rotem Test.
 
 ## Zwei Seiten, zwei Browser-Kontexte
 

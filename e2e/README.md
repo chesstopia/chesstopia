@@ -42,6 +42,10 @@ Nach einem Branchwechsel oder Rebase vorher `./gradlew generateOpenApiClient` �
 | UI-Modus: Testliste, Zeitleiste, Watch | `pnpm exec playwright test --ui` |
 | Schrittweise im Inspector | `pnpm exec playwright test tests/smoke.spec.ts --project=chromium --debug` |
 
+## Aufräumen
+
+Jeder Test löscht die Partien, die er angelegt hat, im Teardown selbst über die API — auch wenn er rot wird ([ADR-0031](../docs/adr/0031-partien-sind-durch-den-ersteller-loeschbar.md)).
+
 ## Report und Trace
 
 Jeder Lauf schreibt einen HTML-Report nach `playwright-report/` und pro Test einen Trace nach `test-results/`. Bei roten Tests öffnet sich der Report lokal von selbst.
