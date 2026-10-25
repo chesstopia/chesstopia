@@ -96,4 +96,52 @@ describe('GamePage', () => {
     // ASSERTIONS
     expect(screen.queryByText(/invite=/)).not.toBeInTheDocument();
   });
+
+  it('zeigt während eines laufenden Zuges die Wartemeldung statt der Zugzeile', () => {
+    // ARRANGE
+    useGameState.mockReturnValue({
+      board: BOARD, sideToMove: 'w', status: 'ONGOING', endReason: null,
+      error: null, loading: false, pending: true, role: 'w', entry: undefined,
+      playMove: vi.fn(),
+    });
+
+    // ACT
+    renderAt('/game/g-1');
+
+    // ASSERTIONS
+    expect(screen.getByText('Zug wird gespielt…')).toBeInTheDocument();
+    expect(screen.queryByText(/am Zug$/)).not.toBeInTheDocument();
+  });
+
+  it('zeigt bei beendeter Partie weder Wartemeldung noch Zugzeile, aber das Ergebnis', () => {
+    // ARRANGE
+    useGameState.mockReturnValue({
+      board: BOARD, sideToMove: 'w', status: 'DRAW', endReason: 'STALEMATE',
+      error: null, loading: false, pending: false, role: 'w', entry: undefined,
+      playMove: vi.fn(),
+    });
+
+    // ACT
+    renderAt('/game/g-1');
+
+    // ASSERTIONS
+    expect(screen.queryByText(/am Zug$/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Zug wird gespielt…')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Remis (Patt)');
+  });
+
+  it('zeigt einen Fehler als eigenen Absatz', () => {
+    // ARRANGE
+    useGameState.mockReturnValue({
+      board: BOARD, sideToMove: 'w', status: 'ONGOING', endReason: null,
+      error: new Error('Dieser Zug ist nicht legal.'), loading: false, pending: false, role: 'w',
+      entry: undefined, playMove: vi.fn(),
+    });
+
+    // ACT
+    renderAt('/game/g-1');
+
+    // ASSERTIONS
+    expect(screen.getByText('Fehler: Dieser Zug ist nicht legal.')).toBeInTheDocument();
+  });
 });
