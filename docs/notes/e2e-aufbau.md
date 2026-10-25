@@ -1,7 +1,7 @@
 ---
 type: note
 status: current
-updated: 2026-09-21
+updated: 2026-10-25
 verifies:
   - 'docker-compose.e2e.yml :: SITE_HOSTNAME'
   - 'docker-compose.e2e.yml :: infra/roles/edge/templates/Caddyfile'
@@ -33,6 +33,12 @@ Ohne die vier `export`-Zeilen bricht der Backend-Container beim Start ab: `appli
 
 Mit einem lokal gebauten Stack statt gezogener Images: erst `./gradlew :chesstopia-backend:bootJar pnpmFrontendBuild`, dann `docker compose … build`. Beide Dockerfiles sind reine Artefakt-Kopien — ohne die Artefakte schlägt schon das `COPY` fehl.
 
+## Gegen die Devserver
+
+Laufen `bootRun` und der Vite-Devserver, geht es ohne Compose-Stack: `PLAYWRIGHT_BASE_URL=http://localhost:5173 pnpm run test`. Vite leitet `/api` und `/ws` ans Backend weiter. Geprüft ist damit der Dev-Pfad, nicht der Prod-Stack.
+
+Der Devserver erzeugt den API-Client nicht neu. Nach einem Branchwechsel oder Rebase mit geänderter `openapi.yaml` liegt in `openapi-client/src/` der alte Client, und der Fehler sieht nach Fachlogik aus — so fehlte nach dem Rebase auf CHESS-19 der Header `X-Player-Token`, und jeder Zug bekam 403. Vorher `./gradlew generateOpenApiClient`.
+
 ## Die produktive Caddyfile wird gemountet, nicht abgeschrieben
 
 `docker-compose.e2e.yml` hängt `infra/roles/edge/templates/Caddyfile` unverändert in den Caddy-Container. Eine Zweitfassung für CI ist ausdrücklich ausgeschlossen: Sie wäre genau die Stelle, an der eine veraltete Route stehen bliebe, während Produktion längst etwas anderes sagt.
@@ -40,8 +46,6 @@ Mit einem lokal gebauten Stack statt gezogener Images: erst `./gradlew :chesstop
 Gesteuert wird nur `SITE_HOSTNAME` — Caddys eigene Env-Syntax `{$SITE_HOSTNAME}`, kein Template-Platzhalter. Im Wegwerf-Stack steht dort `:80`: Port 80, keine Host-Prüfung, kein ACME, kein TLS. Geprüft wird der Körper der Datei, also die Routen, nicht die Zertifikatslogik.
 
 **Das ist der Grund für den ganzen Aufbau.** Die Caddyfile entfernt für `/api/*` den `Origin`-Header. In Produktion sieht das Backend deshalb nie einen CORS-Request; der frühere E2E-Stack über `vite preview` erzeugte einen und brauchte dafür einen eigenen Eintrag in der Origin-Allowlist. Geprüft wurde ein Pfad, den es in Produktion nicht gibt.
-
-**Benannte Lücke:** Die Caddyfile hat keine Route für `/ws`. `WebSocketConfig` registriert den STOMP-Endpunkt dort; ein Verbindungsversuch landet im Catch-All und damit im nginx. Eigenes Ticket — der Test dafür braucht zusätzlich einen Frontend-Client, den es noch nicht gibt.
 
 ## Geteilte Umgebung oder Wegwerf-Stack
 
@@ -53,9 +57,13 @@ Die Flags für die Playwright-Projekte stehen in den Skripten von `e2e/package.j
 
 `deploy.yml` fährt nach jedem Rollout `pnpm run smoke` gegen die echte Umgebung — `PLAYWRIGHT_BASE_URL` auf die Prod-URL, `PLAYWRIGHT_SHARED_ENV=1`. Der Lauf ist nicht folgenlos: Er legt dort eine Partie an und spielt einen Zug. Nach jedem Deploy steht also eine Zeile mehr in `partie` und `zug` — bewusst in Kauf genommen, weil ein Smoke, der die Datenbank nicht anfasst, die Datenbank auch nicht prüft.
 
-## Wie ein Test an die `gameId` kommt
+## Zwei Seiten, zwei Browser-Kontexte
 
-`useBoardState` legt bei jedem Mount eine neue Partie an; die `gameId` steht weder in der URL noch im Storage. Ein Reload zeigt deshalb immer die Startstellung — Persistenz ist über die Oberfläche unsichtbar. Der Smoke-Test liest die `gameId` stattdessen aus der abgefangenen Netzwerkantwort auf `POST /api/v1/games` und prüft die Persistenz danach direkt über den Kontrakt.
+Eine Partie entsteht über „Neue Partie starten“ auf der Startseite; danach steht die `gameId` in der URL, und ein Reload lädt die Partie aus der Datenbank. Wer sie anlegt, spielt Weiß; Schwarz kommt über den Einladungslink. `e2e/tests/support/partie.ts` kapselt beides.
+
+Schwarz braucht einen **eigenen Browser-Kontext**. Die Rolle steht in `localStorage` (`chesstopia.games`), und `useGameState` bevorzugt einen vorhandenen Eintrag vor dem Token aus der URL — im Kontext des Erstellers spielte die Seite des Eingeladenen ebenfalls Weiß.
+
+Die Gegenseite erfährt von einem Zug nur über den STOMP-Push auf `/ws`. Ein Zug, bevor deren Abo steht, geht verloren, und der Test hängt. Die Helfer warten deshalb auf den gesendeten `SUBSCRIBE`-Frame; der Läufer wartet zwischen zwei Halbzügen auf „Du bist am Zug“ bei der Seite, die als Nächstes zieht.
 
 ## Warum die Pointer-Geste kein `dragTo()` ist
 
@@ -63,7 +71,9 @@ Die Flags für die Playwright-Projekte stehen in den Skripten von `e2e/package.j
 
 ## Die Sperre nach Partieende ist doppelt
 
-Ein Zugversuch auf beendeter Partie wird an zwei Stellen gestoppt: `App.tsx` reicht `disabled` ans Brett, und `useBoardState.playMove` kehrt bei nicht laufender Partie früh zurück. Wer den E2E-Test für die Sperre als Gegenprobe entkräften will, muss beide entfernen — eine allein lässt ihn grün.
+Ein Zugversuch auf beendeter Partie wird an zwei Stellen gestoppt: `GamePage.tsx` reicht `disabled` ans Brett, und `useGameState.playMove` kehrt bei nicht laufender Partie früh zurück. Wer den E2E-Test für die Sperre als Gegenprobe entkräften will, muss beide entfernen — eine allein lässt ihn grün.
+
+Die Sperrgeste macht der Läufer bei der Seite, die ohne Partieende am Zug wäre. Bei der anderen Seite wäre sie wertlos: `disabled` greift dort schon wegen des fehlenden Zugrechts.
 
 ## Der Korpus
 

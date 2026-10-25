@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { dragPiece } from './support/drag';
+import { neuePartie } from './support/partie';
 
 /**
  * Der Fehlerpfad, den nur die Oberfläche hat: Das Backend antwortet auf einen
- * Zug mit 5xx, `useBoardState` fängt den Axios-Fehler und `App.tsx` rendert
- * ihn als `Fehler:`-Absatz. Auf Ebene 3 ist dieser Ast unerreichbar — dort
+ * Zug mit 5xx, `useGameState` fängt den Axios-Fehler und `GamePage.tsx`
+ * rendert ihn als `Fehler:`-Absatz. Auf Ebene 3 ist dieser Ast unerreichbar — dort
  * gibt es keinen Axios-Client und keinen Absatz.
  *
  * Nur der Zug-Endpunkt wird abgefangen; das Anlegen der Partie muss gelingen,
@@ -22,7 +23,7 @@ test.describe('Netzfehler', () => {
         body: JSON.stringify({ title: 'Internal Server Error', status: 500 }),
       }),
     );
-    await page.goto('/');
+    await neuePartie(page);
     await expect(page.locator('[data-square="e2"] [data-piece="wP"]')).toBeVisible();
 
     // ACT
@@ -32,6 +33,6 @@ test.describe('Netzfehler', () => {
     await expect(page.getByText(/^Fehler:/)).toBeVisible();
     await expect(page.locator('[data-square="e2"] [data-piece="wP"]')).toBeVisible();
     await expect(page.locator('[data-square="e4"] [data-piece]')).toHaveCount(0);
-    await expect(page.getByText('Weiß am Zug')).toBeVisible();
+    await expect(page.getByText('Du bist am Zug')).toBeVisible();
   });
 });

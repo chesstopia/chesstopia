@@ -1,5 +1,6 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Browser, type Page } from '@playwright/test';
 import { dragPiece } from '../tests/support/drag';
+import { neuePartie, trittBei } from '../tests/support/partie';
 import { emptyBoard, renderBoard, type BoardMap, type PieceCode } from './board';
 import type { CorpusCase } from './parser';
 
@@ -27,54 +28,84 @@ export async function readBoard(page: Page): Promise<BoardMap> {
   return board;
 }
 
+/** Die Zeile unter dem Brett, aus Sicht der jeweiligen Seite. */
+function zugzeile(seite: 'white' | 'black', amZug: 'white' | 'black'): string {
+  return seite === amZug ? 'Du bist am Zug' : 'Gegner ist am Zug';
+}
+
 /**
  * Spielt einen Korpusfall von der Startstellung durch und prüft ihn.
  *
- * Zwischen den Halbzügen wartet der Läufer darauf, dass das **Ausgangsfeld
- * leer** ist. Das ist das eine Signal, das für jeden legalen Zug gilt — auch
- * für Schlagzüge, bei denen das Zielfeld schon vorher besetzt war. Nach dem
- * letzten Halbzug wartet nichts: dort warten die Zusicherungen selbst, weil
- * `expect` wiederholt. Genau deshalb trägt dieselbe Mechanik auch einen Fall,
- * dessen letzter Zug abgelehnt wird und dessen Ausgangsfeld besetzt bleibt.
+ * Seit CHESS-19 spielt jede Seite in ihrem eigenen Browser-Kontext: Weiß legt
+ * die Partie an, Schwarz kommt über den Einladungslink. Halbzug `i` gehört
+ * Weiß bei geradem, Schwarz bei ungeradem Index — jeder Fall beginnt in der
+ * Startstellung. Daraus folgt dieselbe Einschränkung wie zuvor: Abgelehnt
+ * werden darf nur der letzte Halbzug, denn ein abgelehnter Zug gibt das
+ * Zugrecht nicht weiter.
+ *
+ * Zwischen den Halbzügen wartet der Läufer, bis die Seite des **nächsten**
+ * Ziehenden „Du bist am Zug" zeigt. Das ist das eine Signal, das alles
+ * zugleich belegt: Die Stellung ist über den WS-Push dort angekommen, und die
+ * Seite ist nicht mehr gesperrt. Nach dem letzten Halbzug wartet nichts: dort
+ * warten die Zusicherungen selbst, weil `expect` wiederholt.
  */
-export async function runCase(page: Page, testCase: CorpusCase): Promise<void> {
+export async function runCase(page: Page, browser: Browser, testCase: CorpusCase): Promise<void> {
   // ARRANGE
-  await page.goto('/');
-  await expect(page.locator('[data-square]')).toHaveCount(64);
+  const { einladungslink } = await neuePartie(page);
+  const schwarz = await trittBei(browser, einladungslink);
+  const seiten = { white: page, black: schwarz.page };
+  const seiteVon = (index: number) => (index % 2 === 0 ? 'white' : 'black');
 
-  // ACT
-  for (const [index, zug] of testCase.moves.entries()) {
-    await dragPiece(page, zug.from, zug.to);
-    if (index < testCase.moves.length - 1) {
-      await expect(page.locator(`[data-square="${zug.from}"] [data-piece]`)).toHaveCount(0);
+  try {
+    // ACT
+    for (const [index, zug] of testCase.moves.entries()) {
+      await dragPiece(seiten[seiteVon(index)], zug.from, zug.to);
+      if (index < testCase.moves.length - 1) {
+        await expect(seiten[seiteVon(index + 1)].getByText('Du bist am Zug')).toBeVisible();
+      }
     }
-  }
 
-  // ASSERTIONS
-  const erwartet = renderBoard(testCase.board);
-  await expect
-    .poll(async () => renderBoard(await readBoard(page)), { message: 'Brett nach der Zugfolge' })
-    .toBe(erwartet);
+    // ASSERTIONS — beide Seiten zeigen dieselbe Partie
+    const erwartet = renderBoard(testCase.board);
+    for (const [seite, seitenPage] of Object.entries(seiten)) {
+      await expect
+        .poll(async () => renderBoard(await readBoard(seitenPage)), {
+          message: `Brett nach der Zugfolge (${seite})`,
+        })
+        .toBe(erwartet);
+    }
 
-  if (testCase.turn !== null) {
-    const zeile = testCase.turn === 'white' ? 'Weiß am Zug' : 'Schwarz am Zug';
-    await expect(page.getByText(zeile)).toBeVisible();
-  } else {
-    await expect(page.getByRole('status')).toHaveText(testCase.banner as string);
-    await expect(page.getByText(/am Zug$/)).toHaveCount(0);
-  }
+    for (const [seite, seitenPage] of Object.entries(seiten) as Array<['white' | 'black', Page]>) {
+      if (testCase.turn !== null) {
+        await expect(seitenPage.getByText(zugzeile(seite, testCase.turn))).toBeVisible();
+      } else {
+        await expect(seitenPage.getByRole('status')).toHaveText(testCase.banner as string);
+        await expect(seitenPage.getByText(/am Zug$/)).toHaveCount(0);
+      }
+    }
 
-  if (testCase.error !== null) {
-    await expect(page.getByText(`Fehler: ${testCase.error}`)).toBeVisible();
-  } else {
-    await expect(page.getByText(/^Fehler:/)).toHaveCount(0);
-  }
+    // Die Fehlermeldung erscheint nur bei der Seite, die den Zug versucht hat.
+    const letzterZiehender = seiteVon(testCase.moves.length - 1);
+    for (const [seite, seitenPage] of Object.entries(seiten)) {
+      if (testCase.error !== null && seite === letzterZiehender) {
+        await expect(seitenPage.getByText(`Fehler: ${testCase.error}`)).toBeVisible();
+      } else {
+        await expect(seitenPage.getByText(/^Fehler:/)).toHaveCount(0);
+      }
+    }
 
-  if (testCase.locked !== null) {
-    await dragPiece(page, testCase.locked.from, testCase.locked.to);
-    await expect
-      .poll(async () => renderBoard(await readBoard(page)), { message: 'Brett nach der Sperrgeste' })
-      .toBe(erwartet);
-    await expect(page.getByText(/^Fehler:/)).toHaveCount(0);
+    // Die Sperrgeste macht die Seite, die ohne Partieende jetzt am Zug wäre.
+    // Bei der anderen Seite wäre die Prüfung wertlos: Die ist schon durch das
+    // fehlende Zugrecht gesperrt und bliebe es auch ohne Partieende.
+    if (testCase.locked !== null) {
+      const naechste = seiten[seiteVon(testCase.moves.length)];
+      await dragPiece(naechste, testCase.locked.from, testCase.locked.to);
+      await expect
+        .poll(async () => renderBoard(await readBoard(naechste)), { message: 'Brett nach der Sperrgeste' })
+        .toBe(erwartet);
+      await expect(naechste.getByText(/^Fehler:/)).toHaveCount(0);
+    }
+  } finally {
+    await schwarz.kontext.close();
   }
 }

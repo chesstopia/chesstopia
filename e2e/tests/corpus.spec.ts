@@ -28,8 +28,8 @@ test.describe('Korpus', () => {
     const name = relative(KORPUS, datei).split(sep).join('/');
     const fall = parseCase(readFileSync(datei, 'utf8'), name);
 
-    test(`${name} — ${fall.description}`, async ({ page }) => {
-      await runCase(page, fall);
+    test(`${name} — ${fall.description}`, async ({ page, browser }) => {
+      await runCase(page, browser, fall);
     });
   }
 });
