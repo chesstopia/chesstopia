@@ -1,5 +1,6 @@
 import type { Browser, Page } from '@playwright/test';
 import type { Farbe, Feld, Figur, Partie, Stellung, Zug, Zuganzeige } from '../modell/schach';
+import { schneideAngelegtePartienMit } from './intern/aufraeumen';
 import { stompAbo } from './intern/live';
 import { warteBis } from './intern/warten';
 import { Netz } from './netz';
@@ -55,6 +56,7 @@ export async function erzeugeSpieler(
   const startseite = new Startseite(page, farbe);
   const partieseite = new Partieseite(page, farbe);
   const netz = new Netz(page);
+  const angelegtePartien = schneideAngelegtePartienMit(page);
 
   /** Brett steht und das STOMP-Abo ist gesendet; der Listener hängt vor `oeffnen`. */
   const oeffneUndWarte = async (oeffnen: () => Promise<void>): Promise<void> => {
@@ -135,5 +137,21 @@ export async function erzeugeSpieler(
     erwarteFehler: (text) => partieseite.fehleranzeige.erwarte(text),
   };
 
-  return { spieler, schliessen: () => kontext.close() };
+  // Erst die angelegten Partien löschen, dann den Kontext schließen — auch
+  // wenn das Löschen scheitert; dessen Fehler wird danach geworfen.
+  const schliessen = async (): Promise<void> => {
+    let loeschfehler: unknown;
+    try {
+      if (baseURL === undefined) {
+        throw new Error(`${farbe}: Aufräumen: baseURL fehlt, angelegte Partien können nicht gelöscht werden`);
+      }
+      await angelegtePartien.loescheAlle(kontext.request, baseURL);
+    } catch (fehler) {
+      loeschfehler = fehler;
+    }
+    await kontext.close();
+    if (loeschfehler !== undefined) throw loeschfehler;
+  };
+
+  return { spieler, schliessen };
 }
