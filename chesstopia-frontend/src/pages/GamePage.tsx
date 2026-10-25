@@ -8,7 +8,7 @@ export function GamePage() {
   const [searchParams] = useSearchParams();
   const inviteTokenFromUrl = searchParams.get('invite');
 
-  const { board, sideToMove, status, endReason, error, loading, pending, role, entry, playMove } =
+  const { board, sideToMove, status, endReason, error, loading, pending, role, entry, deleted, playMove } =
     useGameState(gameId, inviteTokenFromUrl);
   const over = status !== 'ONGOING';
   const myTurn = role !== null && role === sideToMove;
@@ -28,16 +28,24 @@ export function GamePage() {
           board={board}
           sideToMove={sideToMove ?? 'w'}
           onMove={playMove}
-          disabled={pending || over || !myTurn}
+          disabled={deleted || pending || over || !myTurn}
         />
       )}
-      {board && !over && (
+      {board && !over && !deleted && (
         <p className="text-stone-400">
           {role === null ? 'Zuschauer' : pending ? 'Zug wird gespielt…' : myTurn ? 'Du bist am Zug' : 'Gegner ist am Zug'}
         </p>
       )}
       <GameResultBanner status={status} endReason={endReason} />
-      {error && <p className="text-red-400">Fehler: {error.message}</p>}
+      {deleted && (
+        <div role="alert" className="flex flex-col items-center gap-1 text-stone-200">
+          <p>Diese Partie wurde gelöscht.</p>
+          <Link to="/" className="text-stone-400 underline">
+            Zur Startseite
+          </Link>
+        </div>
+      )}
+      {error && !deleted && <p className="text-red-400">Fehler: {error.message}</p>}
       {inviteLink && (
         <div className="flex flex-col items-center gap-1 text-sm text-stone-400">
           <p>

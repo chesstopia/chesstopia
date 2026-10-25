@@ -5,6 +5,10 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 const { useGameState } = vi.hoisted(() => ({ useGameState: vi.fn() }));
 vi.mock('@/hooks/useGameState', () => ({ useGameState }));
 
+vi.mock('@/components/board/Chessboard', () => ({
+  Chessboard: ({ disabled }: { disabled?: boolean }) => <div data-testid="board" data-disabled={String(disabled)} />,
+}));
+
 import { GamePage } from '../GamePage';
 
 const BOARD = Array.from({ length: 8 }, () => Array(8).fill(null));
@@ -143,5 +147,24 @@ describe('GamePage', () => {
 
     // ASSERTIONS
     expect(screen.getByText('Fehler: Dieser Zug ist nicht legal.')).toBeInTheDocument();
+  });
+
+  it('zeigt bei gelöschter Partie den Hinweis mit Link zur Startseite und ein gesperrtes Brett', () => {
+    // ARRANGE
+    useGameState.mockReturnValue({
+      board: BOARD, sideToMove: 'w', status: 'ONGOING', endReason: null,
+      error: null, loading: false, pending: false, role: 'w', entry: undefined,
+      deleted: true, playMove: vi.fn(),
+    });
+
+    // ACT
+    renderAt('/game/g-1');
+
+    // ASSERTIONS
+    expect(screen.getByRole('alert')).toHaveTextContent('Diese Partie wurde gelöscht.');
+    expect(screen.getByRole('link', { name: 'Zur Startseite' })).toHaveAttribute('href', '/');
+    expect(screen.getByTestId('board')).toHaveAttribute('data-disabled', 'true');
+    expect(screen.queryByText(/am Zug$/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Fehler:/)).not.toBeInTheDocument();
   });
 });

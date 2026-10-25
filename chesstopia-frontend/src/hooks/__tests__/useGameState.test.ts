@@ -13,22 +13,24 @@ vi.mock('@chesstopia/openapi-client', () => ({
 const { isLegalMove } = vi.hoisted(() => ({ isLegalMove: vi.fn() }));
 vi.mock('@/lib/engine', () => ({ isLegalMove }));
 
-const { subscribeToGame, receiveMessage } = vi.hoisted(() => {
-  let handler: ((raw: string) => void) | null = null;
+const { subscribeToGame, receiveMessage, receiveDeleted } = vi.hoisted(() => {
+  type Handlers = { onUpdate: (raw: string) => void; onDeleted: () => void };
+  let handlers: Handlers | null = null;
   return {
-    subscribeToGame: vi.fn((_gameId: string, onMessage: (raw: string) => void) => {
-      handler = onMessage;
+    subscribeToGame: vi.fn((_gameId: string, h: Handlers) => {
+      handlers = h;
       return () => {
-        handler = null;
+        handlers = null;
       };
     }),
-    receiveMessage: (raw: string) => handler?.(raw),
+    receiveMessage: (raw: string) => handlers?.onUpdate(raw),
+    receiveDeleted: () => handlers?.onDeleted(),
   };
 });
 vi.mock('@/lib/stomp', () => ({ subscribeToGame }));
 
 import { useGameState } from '../useGameState';
-import { addOwnedGame } from '@/lib/gameStorage';
+import { addOwnedGame, findGame } from '@/lib/gameStorage';
 import type { Position } from '@chesstopia/openapi-client';
 
 const START: Position = {
@@ -252,5 +254,79 @@ describe('useGameState', () => {
 
     // ASSERTIONS
     expect(unsubscribe).toHaveBeenCalled();
+  });
+
+  it('markiert die Partie als gelöscht, wenn die Lösch-Nachricht eintrifft, und entfernt den Eintrag', async () => {
+    // ARRANGE
+    addOwnedGame('g-1', 'owner-tok', 'invite-tok');
+    const { result } = renderHook(() => useGameState('g-1', null));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // ACT
+    act(() => receiveDeleted());
+
+    // ASSERTIONS
+    expect(result.current.deleted).toBe(true);
+    expect(findGame('g-1')).toBeUndefined();
+  });
+
+  it('markiert die Partie als gelöscht, wenn getGame 404 liefert', async () => {
+    // ARRANGE
+    addOwnedGame('g-1', 'owner-tok', 'invite-tok');
+    getGame.mockRejectedValue({ response: { status: 404 } });
+
+    // ACT
+    const { result } = renderHook(() => useGameState('g-1', null));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // ASSERTIONS
+    expect(result.current.deleted).toBe(true);
+    expect(result.current.error).toBeNull();
+    expect(findGame('g-1')).toBeUndefined();
+  });
+
+  it('markiert die Partie als gelöscht, wenn playMove 404 liefert', async () => {
+    // ARRANGE
+    addOwnedGame('g-1', 'owner-tok', 'invite-tok');
+    playMove.mockRejectedValue({ response: { status: 404 } });
+    const { result } = renderHook(() => useGameState('g-1', null));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // ACT
+    await act(() => result.current.playMove('e2', 'e4'));
+
+    // ASSERTIONS
+    expect(result.current.deleted).toBe(true);
+    expect(result.current.error).toBeNull();
+    expect(findGame('g-1')).toBeUndefined();
+  });
+
+  it('spielt keinen Zug mehr nach dem Löschen', async () => {
+    // ARRANGE
+    addOwnedGame('g-1', 'owner-tok', 'invite-tok');
+    const { result } = renderHook(() => useGameState('g-1', null));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    act(() => receiveDeleted());
+
+    // ACT
+    await act(() => result.current.playMove('e2', 'e4'));
+
+    // ASSERTIONS
+    expect(playMove).not.toHaveBeenCalled();
+  });
+
+  it('ein anderer getGame-Fehler bleibt ein Fehler', async () => {
+    // ARRANGE
+    addOwnedGame('g-1', 'owner-tok', 'invite-tok');
+    getGame.mockRejectedValue({ response: { status: 500 } });
+
+    // ACT
+    const { result } = renderHook(() => useGameState('g-1', null));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // ASSERTIONS
+    expect(result.current.error).not.toBeNull();
+    expect(result.current.deleted).toBe(false);
+    expect(findGame('g-1')).toBeDefined();
   });
 });

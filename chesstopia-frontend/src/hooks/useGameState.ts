@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameApi } from '@chesstopia/openapi-client';
 import type { GameResponse, MoveRequest, Position } from '@chesstopia/openapi-client';
-import { apiConfig } from '@/lib/api';
+import { apiConfig, isNotFound } from '@/lib/api';
 import { isLegalMove } from '@/lib/engine';
 import { parseSquare, sideOf, toBoard } from '@/lib/position';
 import type { Board, Side } from '@/lib/position';
 import { fromSquare } from '@/lib/squares';
-import { addInvitedGame, findGame } from '@/lib/gameStorage';
+import { addInvitedGame, findGame, removeGame } from '@/lib/gameStorage';
 import type { StoredGame } from '@/lib/gameStorage';
 import { subscribeToGame } from '@/lib/stomp';
 
@@ -41,6 +41,7 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
   const [pending, setPending] = useState(false);
   const [status, setStatus] = useState<GameResponse['status']>('ONGOING');
   const [endReason, setEndReason] = useState<GameResponse['endReason'] | null>(null);
+  const [deleted, setDeleted] = useState(false);
   const moveCountRef = useRef(-1);
 
   // Aus `loadedFor` abgeleitet statt eines eigenen `loading`-States: Ein
@@ -60,24 +61,36 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
     setEndReason(data.endReason ?? null);
   }, []);
 
+  const markDeleted = useCallback(() => {
+    setDeleted(true);
+    setError(null);
+    removeGame(gameId);
+  }, [gameId]);
+
   useEffect(() => {
     gameApi
       .getGame(gameId)
       .then((res) => applyResponse(res.data))
-      .catch((err: unknown) => setError(asError(err)))
+      .catch((err: unknown) => {
+        if (isNotFound(err)) markDeleted();
+        else setError(asError(err));
+      })
       .finally(() => setLoadedFor(gameId));
-  }, [gameId, applyResponse]);
+  }, [gameId, applyResponse, markDeleted]);
 
   useEffect(() => {
-    return subscribeToGame(gameId, (raw) => applyResponse(JSON.parse(raw) as GameResponse));
-  }, [gameId, applyResponse]);
+    return subscribeToGame(gameId, {
+      onUpdate: (raw) => applyResponse(JSON.parse(raw) as GameResponse),
+      onDeleted: markDeleted,
+    });
+  }, [gameId, applyResponse, markDeleted]);
 
   const board: Board | null = position === null ? null : toBoard(position);
   const sideToMove: Side | null = position === null ? null : sideOf(position);
 
   const playMove = useCallback(
     async (from: string, to: string) => {
-      if (position === null || status !== 'ONGOING' || !playerToken) return;
+      if (deleted || position === null || status !== 'ONGOING' || !playerToken) return;
 
       const origin = fromSquare(from);
       const isPawn = toBoard(position)[origin.rankIdx][origin.fileIdx]?.[1] === 'P';
@@ -102,13 +115,14 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
         const res = await gameApi.playMove(gameId, move, playerToken);
         applyResponse(res.data);
       } catch (err: unknown) {
-        setError(asError(err));
+        if (isNotFound(err)) markDeleted();
+        else setError(asError(err));
       } finally {
         setPending(false);
       }
     },
-    [gameId, position, status, playerToken, applyResponse],
+    [gameId, position, status, playerToken, deleted, applyResponse, markDeleted],
   );
 
-  return { board, position, sideToMove, status, endReason, error, loading, pending, role, entry, playMove };
+  return { board, position, sideToMove, status, endReason, error, loading, pending, role, entry, deleted, playMove };
 }

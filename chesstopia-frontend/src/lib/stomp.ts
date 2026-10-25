@@ -2,16 +2,23 @@ import { Client } from '@stomp/stompjs';
 
 /**
  * Abonniert `/topic/games/{gameId}` über den bereits konfigurierten STOMP-
- * Broker (WebSocketConfig, Backend). Gibt eine Unsubscribe-Funktion zurück.
+ * Broker (WebSocketConfig, Backend). Eine Nachricht mit dem Header
+ * `event: game-deleted` meldet die Löschung, jede andere ist ein Zug-Update. Gibt eine Unsubscribe-Funktion zurück.
  *
  * `location.origin.replace(/^http/, 'ws')` trifft sowohl http→ws als auch
  * https→wss, weil "https" mit dem Präfix "http" beginnt.
  */
-export function subscribeToGame(gameId: string, onMessage: (raw: string) => void): () => void {
+export function subscribeToGame(
+  gameId: string,
+  handlers: { onUpdate: (raw: string) => void; onDeleted: () => void },
+): () => void {
   const client = new Client({
     brokerURL: `${location.origin.replace(/^http/, 'ws')}/ws`,
     onConnect: () => {
-      client.subscribe(`/topic/games/${gameId}`, (message) => onMessage(message.body));
+      client.subscribe(`/topic/games/${gameId}`, (message) => {
+        if (message.headers.event === 'game-deleted') handlers.onDeleted();
+        else handlers.onUpdate(message.body);
+      });
     },
   });
   client.activate();
