@@ -8,6 +8,8 @@ export type Listeneintrag = {
   eingeladen: boolean;
   status: string;
   zuletzt: string;
+  /** Rohwert von `data-last-played` (ISO-Zeitstempel). */
+  zuletztIso: string;
 };
 
 /** Die Partieliste der Startseite: eine Zeile je Partie, erkennbar an `data-game-id`. */
@@ -30,6 +32,7 @@ export class Partieliste {
         eingeladen: element.getAttribute('data-invited') === 'true',
         status: text('[data-status-badge]'),
         zuletzt: text('[data-last-played]'),
+        zuletztIso: element.querySelector('[data-last-played]')?.getAttribute('data-last-played') ?? '',
       };
     });
   }

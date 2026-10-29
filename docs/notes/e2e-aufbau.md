@@ -65,7 +65,7 @@ Die Flags für die Playwright-Projekte stehen in den Skripten von `e2e/package.j
 
 ## Zwei Seiten, zwei Browser-Kontexte
 
-Eine Partie entsteht über „Neue Partie starten“ auf der Startseite; danach steht die `gameId` in der URL, und ein Reload lädt die Partie aus der Datenbank. Wer sie anlegt, spielt Weiß; Schwarz kommt über den Einladungslink. Beides sind Handlungen eines `Spieler` (`starteNeuePartie`, `trittBei`, in `e2e/app/spieler.ts`).
+Eine Partie entsteht über „Neue Partie“ auf der Startseite; danach steht die `gameId` in der URL, und ein Reload lädt die Partie aus der Datenbank. Wer sie anlegt, spielt Weiß; Schwarz kommt über den Einladungslink. Beides sind Handlungen eines `Spieler` (`starteNeuePartie`, `trittBei`, in `e2e/app/spieler.ts`).
 
 Jeder Spieler hat einen **eigenen Browser-Kontext**; ihn legt die Fixture `neuerSpieler` an. Die Rolle steht in `localStorage` (`chesstopia.games`), und `useGameState` bevorzugt einen vorhandenen Eintrag vor dem Token aus der URL — im Kontext des Erstellers spielte die Seite des Eingeladenen ebenfalls Weiß.
 

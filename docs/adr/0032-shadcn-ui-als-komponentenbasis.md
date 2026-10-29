@@ -1,7 +1,7 @@
 ---
 type: adr
 status: accepted
-implementation: partial
+implementation: complete
 updated: 2026-10-29
 supersedes: []
 verifies:

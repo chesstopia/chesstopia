@@ -30,6 +30,7 @@ gruppe('Startseite', () => {
     for (const spieler of [weiss, schwarz]) {
       const eintrag = await spieler.startseite.partieliste.eintrag(partie.id);
       expect(eintrag?.zuletzt, `${spieler.farbe}: zuletzt gespielt`).toBeTruthy();
+      expect(Number.isNaN(Date.parse(eintrag?.zuletztIso ?? '')), `${spieler.farbe}: Zeitstempel`).toBe(false);
       expect(eintrag?.zuletzt).not.toContain('Invalid');
     }
   });
