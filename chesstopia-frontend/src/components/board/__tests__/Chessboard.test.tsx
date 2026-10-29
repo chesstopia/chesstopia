@@ -240,6 +240,9 @@ describe('Chessboard', () => {
         e.getAttribute('data-square')
       );
       expect(marked.sort()).toEqual(['e2', 'e4']);
+      // Hintergrundebene, kein Overlay: sonst läge die Tönung über der Figur.
+      expect(screen.getByLabelText('e4').style.backgroundImage).toContain('gradient');
+      expect(screen.getByLabelText('e3').style.backgroundImage).toBe('');
     });
 
     it('Ziehen funktioniert auf dem gedrehten Brett', async () => {

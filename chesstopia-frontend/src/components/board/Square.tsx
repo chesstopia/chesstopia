@@ -43,6 +43,10 @@ export function Square({
       style={{
         touchAction: 'none',
         backgroundColor: light ? colors.lightSquare : colors.darkSquare,
+        // Als Hintergrundebene statt Overlay: so liegt die Markierung sicher unter der Figur.
+        backgroundImage: lastMove
+          ? `linear-gradient(${colors.lastMove}, ${colors.lastMove})`
+          : undefined,
         boxShadow: ring ? `inset 0 0 0 4px ${ring}` : undefined,
       }}
       onPointerDown={(event) => {
@@ -53,13 +57,6 @@ export function Square({
       onPointerEnter={() => onHover(square)}
       onPointerUp={() => onDrop(square)}
     >
-      {lastMove && (
-        <span
-          aria-hidden
-          className="absolute inset-0 pointer-events-none"
-          style={{ backgroundColor: colors.lastMove }}
-        />
-      )}
       {rankLabel && (
         <span
           aria-hidden
