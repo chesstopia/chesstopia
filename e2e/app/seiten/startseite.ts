@@ -1,16 +1,19 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 import type { Farbe } from '../../modell/schach';
+import { Partieliste } from '../komponenten/partieliste';
 import { Loeschdialog } from '../komponenten/loeschdialog';
 
 export class Startseite {
   readonly loeschdialog: Loeschdialog;
+  readonly partieliste: Partieliste;
 
   constructor(
     private readonly page: Page,
     private readonly farbe: Farbe,
   ) {
     this.loeschdialog = new Loeschdialog(page, farbe);
+    this.partieliste = new Partieliste(page, farbe);
   }
 
   async oeffne(): Promise<void> {

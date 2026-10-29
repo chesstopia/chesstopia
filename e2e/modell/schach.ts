@@ -14,6 +14,8 @@ export type Zuganzeige =
   | 'zug-wird-gespielt'
   | 'zuschauer'
   | 'keine';
+/** Welche Seite des Bretts unten steht — aus der Bildschirmlage, nicht aus der DOM-Reihenfolge. */
+export type Ausrichtung = 'weiss-unten' | 'schwarz-unten';
 export type Partie = { id: string; einladungslink: string };
 
 const LINIEN = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
