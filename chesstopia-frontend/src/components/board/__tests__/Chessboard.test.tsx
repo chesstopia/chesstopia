@@ -198,4 +198,82 @@ describe('Chessboard', () => {
       expect(from.style.boxShadow).toBe('');
     });
   });
+
+  describe('Ausrichtung und Markierung', () => {
+    const order = (container: HTMLElement) =>
+      [...container.querySelectorAll('[data-square]')].map((e) => e.getAttribute('data-square'));
+    const texts = (container: HTMLElement, attr: string) =>
+      [...container.querySelectorAll(`[${attr}]`)].map((e) => e.textContent);
+
+    it('orientation b rendert h1 zuerst und a8 zuletzt', () => {
+      // ACT
+      const black = order(render(<Chessboard board={INITIAL} orientation="b" />).container);
+      const white = order(render(<Chessboard board={INITIAL} orientation="w" />).container);
+
+      // ASSERTIONS
+      expect(black[0]).toBe('h1');
+      expect(black[63]).toBe('a8');
+      expect(white[0]).toBe('a8');
+      expect(white[63]).toBe('h1');
+    });
+
+    it('Koordinaten folgen der Ausrichtung', () => {
+      // ACT
+      const white = render(<Chessboard board={INITIAL} orientation="w" />).container;
+      const black = render(<Chessboard board={INITIAL} orientation="b" />).container;
+
+      // ASSERTIONS
+      expect(texts(white, 'data-coord-file')).toEqual([...'abcdefgh']);
+      expect(texts(white, 'data-coord-rank')).toEqual([...'87654321']);
+      expect(texts(black, 'data-coord-file')).toEqual([...'hgfedcba']);
+      expect(texts(black, 'data-coord-rank')).toEqual([...'12345678']);
+    });
+
+    it('markiert Start- und Zielfeld des letzten Zugs', () => {
+      // ACT
+      const { container } = render(
+        <Chessboard board={INITIAL} lastMove={{ from: 'e2', to: 'e4' }} />
+      );
+
+      // ASSERTIONS
+      const marked = [...container.querySelectorAll('[data-last-move]')].map((e) =>
+        e.getAttribute('data-square')
+      );
+      expect(marked.sort()).toEqual(['e2', 'e4']);
+    });
+
+    it('Ziehen funktioniert auf dem gedrehten Brett', async () => {
+      // ARRANGE
+      const onMove = vi.fn();
+      const user = userEvent.setup();
+      render(<Chessboard board={INITIAL} sideToMove="b" orientation="b" onMove={onMove} />);
+
+      // ACT
+      await user.pointer([
+        { keys: '[MouseLeft>]', target: screen.getByLabelText('e7') },
+        { target: screen.getByLabelText('e5') },
+        { keys: '[/MouseLeft]', target: screen.getByLabelText('e5') },
+      ]);
+
+      // ASSERTIONS
+      expect(onMove).toHaveBeenCalledExactlyOnceWith('e7', 'e5');
+    });
+
+    it('das Geisterbild übernimmt die Feldgröße beim Aufnehmen', async () => {
+      // ARRANGE
+      const rect = vi
+        .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+        .mockReturnValue({ width: 100, height: 100 } as DOMRect);
+      const user = userEvent.setup();
+      const { container } = render(<Chessboard board={INITIAL} />);
+
+      // ACT
+      await user.pointer({ keys: '[MouseLeft>]', target: screen.getByLabelText('e2') });
+
+      // ASSERTIONS
+      const ghost = container.querySelector('[aria-hidden] img') as HTMLElement;
+      expect(ghost.style.width).toBe('90px');
+      rect.mockRestore();
+    });
+  });
 });

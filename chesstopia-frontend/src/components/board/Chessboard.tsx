@@ -9,9 +9,15 @@ type ChessboardProps = {
   sideToMove?: Side;
   onMove?: (from: string, to: string) => void;
   disabled?: boolean;
+  /** Aus wessen Sicht das Brett steht; Schwarz sieht es um 180° gedreht. */
+  orientation?: Side;
+  lastMove?: { from: string; to: string } | null;
 };
 
-type Drag = { from: string; x: number; y: number };
+/** `size` ist die Feldkante in px, gemessen beim Aufnehmen. */
+type Drag = { from: string; x: number; y: number; size: number };
+
+const FILES = 'abcdefgh';
 
 /**
  * Das Brett und die Zeigergeste darauf.
@@ -24,7 +30,9 @@ type Drag = { from: string; x: number; y: number };
  * Kein `setPointerCapture` — jsdom kennt es nicht, und das Zielfeld meldet sich
  * ohnehin selbst.
  */
-export function Chessboard({ board, sideToMove = 'w', onMove, disabled = false }: ChessboardProps) {
+export function Chessboard({
+  board, sideToMove = 'w', onMove, disabled = false, orientation = 'w', lastMove = null,
+}: ChessboardProps) {
   const [drag, setDrag] = useState<Drag | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
 
@@ -46,28 +54,39 @@ export function Chessboard({ board, sideToMove = 'w', onMove, disabled = false }
     setHovered(null);
   };
 
+  // Gedreht wird nur die Anzeigereihenfolge; Feldnamen und Brettindizes bleiben echt.
+  const flipped = orientation === 'b';
+  const rankOrder = flipped ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
+  const fileOrder = flipped ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
+
   return (
     <div
-      className="relative grid grid-cols-8 w-[min(90vw,560px)] aspect-square border-2 border-stone-700 shadow-xl"
+      className="relative grid grid-cols-8 aspect-square border-2 border-stone-700 shadow-xl"
+      // `--board-chrome` setzt die Partieseite: Höhe von Kopfzeile und Spielerzeilen.
+      style={{ width: 'clamp(280px, min(100%, calc(100dvh - var(--board-chrome, 0px))), 720px)' }}
       onPointerMove={(event) =>
         setDrag((current) =>
           current === null ? null : { ...current, x: event.clientX, y: event.clientY },
         )
       }
     >
-      {board.flatMap((rank, rankIdx) =>
-        rank.map((piece, fileIdx) => {
+      {rankOrder.flatMap((rankIdx, row) =>
+        fileOrder.map((fileIdx, col) => {
           const square = toSquare(rankIdx, fileIdx);
+          const piece = board[rankIdx]?.[fileIdx] ?? null;
           return (
             <Square
               key={square}
               square={square}
               light={(rankIdx + fileIdx) % 2 === 0}
               piece={piece}
+              lastMove={lastMove !== null && (lastMove.from === square || lastMove.to === square)}
+              fileLabel={row === 7 ? FILES[fileIdx] : undefined}
+              rankLabel={col === 0 ? String(8 - rankIdx) : undefined}
               draggable={!disabled && piece !== null && piece[0] === sideToMove}
               dragging={drag?.from === square}
               hovered={drag !== null && hovered === square}
-              onPickUp={(from, x, y) => setDrag({ from, x, y })}
+              onPickUp={(from, x, y, size) => setDrag({ from, x, y, size })}
               onHover={setHovered}
               onDrop={handleDrop}
             />
@@ -96,7 +115,7 @@ function GhostPiece({ board, drag }: { board: Board; drag: Drag }) {
       className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2"
       style={{ left: drag.x, top: drag.y }}
     >
-      <Piece code={piece} size={56} />
+      <Piece code={piece} size={drag.size * 0.9} />
     </span>
   );
 }

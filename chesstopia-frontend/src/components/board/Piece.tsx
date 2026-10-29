@@ -22,7 +22,7 @@ export function Piece({ code, dragging = false, size }: PieceProps) {
       alt={`${COLOR_NAME[code[0] as 'w' | 'b']} ${TYPE_NAME[code[1] as keyof typeof TYPE_NAME]}`}
       src={theme.pieces[code]}
       draggable={false}
-      className={`select-none ${size === undefined ? 'w-[90%] h-[90%]' : ''} ${
+      className={`select-none ${size === undefined ? 'w-[90%] h-auto' : ''} ${
         dragging ? 'opacity-30' : ''
       }`}
       style={size === undefined ? undefined : { width: size, height: size }}
