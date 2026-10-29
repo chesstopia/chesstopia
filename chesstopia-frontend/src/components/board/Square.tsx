@@ -1,5 +1,6 @@
 import type { PieceCode } from '@/lib/position';
 import { Piece } from './Piece';
+import { useBoardTheme } from './theme/BoardThemeProvider';
 
 type SquareProps = {
   square: string;
@@ -17,8 +18,8 @@ type SquareProps = {
 export function Square({
   square, light, piece, draggable, dragging, hovered, onPickUp, onHover, onDrop,
 }: SquareProps) {
-  const base = light ? 'bg-amber-100' : 'bg-amber-800';
-  const mark = dragging ? 'ring-4 ring-inset ring-sky-400' : hovered ? 'ring-4 ring-inset ring-sky-200' : '';
+  const { colors } = useBoardTheme();
+  const ring = dragging ? colors.dragSource : hovered ? colors.dragTarget : null;
 
   return (
     <div
@@ -26,12 +27,16 @@ export function Square({
       // eine Vorlesehilfe 64 leere Kästen.
       aria-label={square}
       data-square={square}
-      className={`flex items-center justify-center w-full aspect-square ${base} ${mark} ${
+      className={`flex items-center justify-center w-full aspect-square ${
         draggable ? 'cursor-grab' : ''
       }`}
       // Ohne diese Zeile scrollt der Browser auf einem Tablet das Brett weg,
       // statt die Figur zu ziehen.
-      style={{ touchAction: 'none' }}
+      style={{
+        touchAction: 'none',
+        backgroundColor: light ? colors.lightSquare : colors.darkSquare,
+        boxShadow: ring ? `inset 0 0 0 4px ${ring}` : undefined,
+      }}
       onPointerDown={(event) => {
         if (!draggable) return;
         event.preventDefault();

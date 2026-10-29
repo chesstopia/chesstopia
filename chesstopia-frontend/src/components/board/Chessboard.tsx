@@ -96,7 +96,7 @@ function GhostPiece({ board, drag }: { board: Board; drag: Drag }) {
       className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2"
       style={{ left: drag.x, top: drag.y }}
     >
-      <Piece code={piece} />
+      <Piece code={piece} size={56} />
     </span>
   );
 }

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Chessboard } from '../Chessboard';
+import { FLACH } from '../theme/boardTheme';
 import type { Board, PieceCode } from '@/lib/position';
 
 /**
@@ -27,9 +28,9 @@ const INITIAL = board(['rnbqkbnr', 'pppppppp', '8', '8', '8', '8', 'PPPPPPPP', '
 const EMPTY = board(['8', '8', '8', '8', '8', '8', '8', '8']);
 const KINGS_ONLY = board(['4k3', '8', '8', '8', '8', '8', '8', '4K3']);
 
-/** Alle Figurensymbole im Dokument — die Komponenten tragen keine Rollen. */
+/** Alle Figurencodes im Dokument — die Komponenten tragen keine Rollen. */
 function glyphs(container: HTMLElement): string[] {
-  return [...container.querySelectorAll('span')].map((s) => s.textContent ?? '');
+  return [...container.querySelectorAll('[data-piece]')].map((s) => s.getAttribute('data-piece') ?? '');
 }
 
 describe('Chessboard', () => {
@@ -48,9 +49,9 @@ describe('Chessboard', () => {
 
       // ASSERTIONS
       expect(glyphs(container)).toHaveLength(32);
-      expect(screen.getAllByText('♟')).toHaveLength(8);
-      expect(screen.getAllByText('♙')).toHaveLength(8);
-      expect(screen.getAllByText('♔')).toHaveLength(1);
+      expect(glyphs(container).filter((g) => g === 'bP')).toHaveLength(8);
+      expect(glyphs(container).filter((g) => g === 'wP')).toHaveLength(8);
+      expect(glyphs(container).filter((g) => g === 'wK')).toHaveLength(1);
     });
 
     it('setzt Schwarz oben und Weiß unten', () => {
@@ -61,7 +62,7 @@ describe('Chessboard', () => {
       // ASSERTIONS
       // board[0] ist Reihe 8 — die schwarze Grundreihe. Der schwarze König steht
       // vor allen weißen Figuren, sonst ist das Brett gespiegelt.
-      expect(all.indexOf('♚')).toBeLessThan(all.indexOf('♔'));
+      expect(all.indexOf('bK')).toBeLessThan(all.indexOf('wK'));
     });
 
     it('rendert ein leeres Brett ohne Figuren, aber mit allen Feldern', () => {
@@ -81,7 +82,7 @@ describe('Chessboard', () => {
 
       // ASSERTIONS
       expect(container.querySelector('div')?.children).toHaveLength(64);
-      expect(glyphs(container)).toEqual(['♚', '♔']);
+      expect(glyphs(container)).toEqual(['bK', 'wK']);
     });
   });
 
@@ -191,10 +192,10 @@ describe('Chessboard', () => {
 
       // ACT & ASSERTIONS
       await user.pointer({ keys: '[MouseLeft>]', target: from });
-      expect(from.className).toContain('ring-sky-400');
+      expect(from.style.boxShadow).toContain(FLACH.colors.dragSource);
 
       await user.pointer({ keys: '[/MouseLeft]', target: screen.getByLabelText('e4') });
-      expect(from.className).not.toContain('ring-sky-400');
+      expect(from.style.boxShadow).toBe('');
     });
   });
 });
