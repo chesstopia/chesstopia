@@ -18,9 +18,9 @@ export class Loeschdialog {
     await this.druecke('Löschen');
   }
 
-  // Der Zeilenknopf heißt ebenfalls `Löschen`: Suche bleibt im Dialog.
+  // Die Suche bleibt im Dialog, nicht auf der Startseite.
   private async druecke(knopf: string): Promise<void> {
-    const dialog = this.page.getByRole('dialog', { name: 'Partie löschen?' });
+    const dialog = this.page.getByRole('alertdialog', { name: 'Partie löschen?' });
     try {
       await dialog.getByRole('button', { name: knopf, exact: true }).click({ timeout: 5_000 });
       await dialog.waitFor({ state: 'hidden', timeout: 5_000 });
