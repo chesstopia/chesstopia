@@ -22,3 +22,11 @@ if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.sho
 // jsdom implementiert `Element.scrollIntoView` nicht; `MoveList` ruft es beim
 // Rendern von Zügen auf. Tests, die den Aufruf prüfen, spionieren darauf.
 Element.prototype.scrollIntoView ??= () => {};
+
+// jsdom implementiert `ResizeObserver` nicht; Radix-Popper (Tooltip) braucht ihn,
+// sobald ein Tooltip beim Hover öffnet.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};

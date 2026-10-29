@@ -24,7 +24,30 @@ vi.mock('react-router', async () => {
 });
 
 import { StartPage } from '../StartPage';
-import { addOwnedGame, myGames } from '@/lib/gameStorage';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { addInvitedGame, addOwnedGame, allGames, myGames } from '@/lib/gameStorage';
+
+function Wrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <MemoryRouter>
+      <TooltipProvider>{children}</TooltipProvider>
+    </MemoryRouter>
+  );
+}
+
+function game(id: string, overrides: Record<string, unknown> = {}) {
+  return {
+    data: {
+      id,
+      position: { sideToMove: 'WHITE', board: [] },
+      status: 'ONGOING',
+      endReason: null,
+      moveCount: 0,
+      lastActivityAt: '2026-10-29T10:00:00Z',
+      ...overrides,
+    },
+  };
+}
 
 describe('StartPage', () => {
   beforeEach(() => {
@@ -40,10 +63,10 @@ describe('StartPage', () => {
     createGame.mockResolvedValue({
       data: { id: 'g-neu', ownerToken: 'owner-x', inviteToken: 'invite-x', status: 'ONGOING', moveCount: 0 },
     });
-    render(<StartPage />, { wrapper: MemoryRouter });
+    render(<StartPage />, { wrapper: Wrapper });
 
     // ACT
-    await userEvent.click(screen.getByRole('button', { name: 'Neue Partie starten' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Neue Partie' }));
 
     // ASSERTIONS
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/game/g-neu'));
@@ -54,52 +77,155 @@ describe('StartPage', () => {
   it('zeigt einen Fehler, wenn das Anlegen der Partie fehlschlägt', async () => {
     // ARRANGE
     createGame.mockRejectedValue(new Error('Netzwerkfehler'));
-    render(<StartPage />, { wrapper: MemoryRouter });
+    render(<StartPage />, { wrapper: Wrapper });
 
     // ACT
-    await userEvent.click(screen.getByRole('button', { name: 'Neue Partie starten' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Neue Partie' }));
 
     // ASSERTIONS
     expect(await screen.findByText(/Fehler: Netzwerkfehler/)).toBeInTheDocument();
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it('zeigt eine Zeile pro eigener Partie mit ihrem Status', async () => {
-    // ARRANGE
-    addOwnedGame('g-1', 'o1', 'i1');
-    getGame.mockResolvedValue({ data: { id: 'g-1', status: 'WHITE_WON', endReason: 'CHECKMATE', moveCount: 5 } });
-
+  it('leerer Zustand zeigt „Neue Partie“', () => {
     // ACT
-    render(<StartPage />, { wrapper: MemoryRouter });
+    render(<StartPage />, { wrapper: Wrapper });
 
     // ASSERTIONS
-    expect(await screen.findByText(/Weiß hat gewonnen/)).toBeInTheDocument();
+    expect(screen.getByText(/Noch keine Partien/)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Neue Partie' })).toHaveLength(1);
+  });
+
+  it('teilt in Laufend und Beendet, jeweils neueste zuerst', async () => {
+    // ARRANGE
+    ['g-alt', 'g-neu', 'g-fertig-alt', 'g-fertig-neu'].forEach((id) => addOwnedGame(id, `o-${id}`, `i-${id}`));
+    getGame.mockImplementation((id: string) =>
+      Promise.resolve(
+        {
+          'g-alt': game(id, { lastActivityAt: '2026-10-20T10:00:00Z' }),
+          'g-neu': game(id, { lastActivityAt: '2026-10-28T10:00:00Z' }),
+          'g-fertig-alt': game(id, { status: 'WHITE_WON', endReason: 'CHECKMATE', lastActivityAt: '2026-10-01T10:00:00Z' }),
+          'g-fertig-neu': game(id, { status: 'DRAW', endReason: 'STALEMATE', lastActivityAt: '2026-10-10T10:00:00Z' }),
+        }[id],
+      ),
+    );
+
+    // ACT
+    render(<StartPage />, { wrapper: Wrapper });
+
+    // ASSERTIONS
+    await screen.findByText('Remis · Patt');
+    const order = (section: string) =>
+      Array.from(document.querySelectorAll(`[data-section="${section}"]`)).map((el) => el.getAttribute('data-game-id'));
+    expect(order('laufend')).toEqual(['g-neu', 'g-alt']);
+    expect(order('beendet')).toEqual(['g-fertig-neu', 'g-fertig-alt']);
+    expect(screen.getByRole('heading', { name: 'Laufend' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Beendet' })).toBeInTheDocument();
+  });
+
+  it('lässt eine leere Abschnittsüberschrift weg', async () => {
+    // ARRANGE
+    addOwnedGame('g-1', 'o1', 'i1');
+    getGame.mockResolvedValue(game('g-1'));
+
+    // ACT
+    render(<StartPage />, { wrapper: Wrapper });
+
+    // ASSERTIONS
+    await screen.findByText('Du bist am Zug');
+    expect(screen.queryByRole('heading', { name: 'Beendet' })).not.toBeInTheDocument();
+  });
+
+  it('zeigt eingeladene Partien', async () => {
+    // ARRANGE
+    addInvitedGame('g-2', 'inv-2');
+    getGame.mockResolvedValue(game('g-2', { position: { sideToMove: 'BLACK', board: [] } }));
+
+    // ACT
+    render(<StartPage />, { wrapper: Wrapper });
+
+    // ASSERTIONS
+    expect(await screen.findByText('Du spielst Schwarz · eingeladen')).toBeInTheDocument();
+    expect(screen.getByText('Du bist am Zug')).toBeInTheDocument();
+    expect(getGame).toHaveBeenCalledWith('g-2');
   });
 
   it('markiert eine nicht mehr erreichbare Partie statt die ganze Liste abzubrechen', async () => {
     // ARRANGE
     addOwnedGame('g-1', 'o1', 'i1');
     addOwnedGame('g-2', 'o2', 'i2');
-    getGame.mockImplementation((id: string) =>
-      id === 'g-1'
-        ? Promise.reject(new Error('404'))
-        : Promise.resolve({ data: { id: 'g-2', status: 'ONGOING', endReason: null, moveCount: 0 } }),
-    );
+    getGame.mockImplementation((id: string) => (id === 'g-1' ? Promise.reject(new Error('404')) : Promise.resolve(game('g-2'))));
 
     // ACT
-    render(<StartPage />, { wrapper: MemoryRouter });
+    render(<StartPage />, { wrapper: Wrapper });
 
     // ASSERTIONS
-    expect(await screen.findByText(/nicht verfügbar/)).toBeInTheDocument();
-    expect(await screen.findByText(/Läuft/)).toBeInTheDocument();
+    expect(await screen.findByText('Partie nicht mehr verfügbar')).toBeInTheDocument();
+    expect(await screen.findByText('Du bist am Zug')).toBeInTheDocument();
+  });
+
+  describe('Entfernen', () => {
+    async function openRemoveDialog() {
+      await userEvent.click(await screen.findByRole('button', { name: 'Aus Liste entfernen' }));
+    }
+
+    it('fragt nach und ruft kein API; Abbrechen lässt die Zeile stehen', async () => {
+      // ARRANGE
+      addInvitedGame('g-2', 'inv-2');
+      getGame.mockResolvedValue(game('g-2'));
+      render(<StartPage />, { wrapper: Wrapper });
+      await openRemoveDialog();
+      const dialog = screen.getByRole('alertdialog');
+      expect(within(dialog).getByText('Partie aus Liste entfernen?')).toBeInTheDocument();
+
+      // ACT
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Abbrechen' }));
+
+      // ASSERTIONS
+      await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+      expect(document.querySelector('[data-game-id="g-2"]')).not.toBeNull();
+      expect(allGames()).toHaveLength(1);
+    });
+
+    it('Bestätigen entfernt Zeile und Eintrag, ohne deleteGame aufzurufen', async () => {
+      // ARRANGE
+      addInvitedGame('g-2', 'inv-2');
+      getGame.mockResolvedValue(game('g-2'));
+      render(<StartPage />, { wrapper: Wrapper });
+      await openRemoveDialog();
+
+      // ACT
+      await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Entfernen' }));
+
+      // ASSERTIONS
+      await waitFor(() => expect(document.querySelector('[data-game-id="g-2"]')).toBeNull());
+      expect(deleteGame).not.toHaveBeenCalled();
+      expect(allGames()).toHaveLength(0);
+    });
+
+    it('eine nicht mehr verfügbare eingeladene Partie lässt sich entfernen', async () => {
+      // ARRANGE
+      addInvitedGame('g-2', 'inv-2');
+      getGame.mockRejectedValue({ response: { status: 404 } });
+      render(<StartPage />, { wrapper: Wrapper });
+      expect(await screen.findByText('Partie nicht mehr verfügbar')).toBeInTheDocument();
+      await openRemoveDialog();
+
+      // ACT
+      await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Entfernen' }));
+
+      // ASSERTIONS
+      await waitFor(() => expect(screen.queryByText('Partie nicht mehr verfügbar')).not.toBeInTheDocument());
+      expect(allGames()).toHaveLength(0);
+    });
   });
 
   describe('Löschen', () => {
-    const ongoing = { data: { id: 'g-1', status: 'ONGOING', endReason: null, moveCount: 0 } };
+    const ongoing = game('g-1');
 
     async function openDialog() {
-      const item = (await screen.findByText(/Läuft/)).closest('li') as HTMLElement;
-      await userEvent.click(within(item).getByRole('button', { name: 'Löschen' }));
+      const item = (await screen.findByText('Du bist am Zug')).closest('li') as HTMLElement;
+      await userEvent.click(within(item).getByRole('button', { name: 'Partie löschen' }));
       return item;
     }
 
@@ -107,7 +233,7 @@ describe('StartPage', () => {
       // ARRANGE
       addOwnedGame('g-1', 'owner-1', 'i1');
       getGame.mockResolvedValue(ongoing);
-      render(<StartPage />, { wrapper: MemoryRouter });
+      render(<StartPage />, { wrapper: Wrapper });
       await openDialog();
 
       // ACT
@@ -115,7 +241,7 @@ describe('StartPage', () => {
 
       // ASSERTIONS
       expect(deleteGame).not.toHaveBeenCalled();
-      expect(screen.getByText(/Läuft/)).toBeInTheDocument();
+      expect(screen.getByText('Du bist am Zug')).toBeInTheDocument();
       expect(myGames()).toHaveLength(1);
     });
 
@@ -124,14 +250,14 @@ describe('StartPage', () => {
       addOwnedGame('g-1', 'owner-1', 'i1');
       getGame.mockResolvedValue(ongoing);
       deleteGame.mockResolvedValue({});
-      render(<StartPage />, { wrapper: MemoryRouter });
+      render(<StartPage />, { wrapper: Wrapper });
       await openDialog();
 
       // ACT
       await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Löschen' }));
 
       // ASSERTIONS
-      await waitFor(() => expect(screen.queryByText(/Läuft/)).not.toBeInTheDocument());
+      await waitFor(() => expect(screen.queryByText('Du bist am Zug')).not.toBeInTheDocument());
       expect(deleteGame).toHaveBeenCalledWith('g-1', 'owner-1');
       expect(myGames()).toHaveLength(0);
     });
@@ -141,15 +267,15 @@ describe('StartPage', () => {
       addOwnedGame('g-1', 'owner-1', 'i1');
       getGame.mockRejectedValue({ response: { status: 404 } });
       deleteGame.mockRejectedValue({ response: { status: 404 } });
-      render(<StartPage />, { wrapper: MemoryRouter });
-      const item = (await screen.findByText(/nicht verfügbar/)).closest('li') as HTMLElement;
-      await userEvent.click(within(item).getByRole('button', { name: 'Löschen' }));
+      render(<StartPage />, { wrapper: Wrapper });
+      const item = (await screen.findByText('Partie nicht mehr verfügbar')).closest('li') as HTMLElement;
+      await userEvent.click(within(item).getByRole('button', { name: 'Partie löschen' }));
 
       // ACT
       await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Löschen' }));
 
       // ASSERTIONS
-      await waitFor(() => expect(screen.queryByText(/nicht verfügbar/)).not.toBeInTheDocument());
+      await waitFor(() => expect(screen.queryByText('Partie nicht mehr verfügbar')).not.toBeInTheDocument());
       expect(screen.queryByText(/Fehler:/)).not.toBeInTheDocument();
       expect(myGames()).toHaveLength(0);
     });
@@ -159,7 +285,7 @@ describe('StartPage', () => {
       addOwnedGame('g-1', 'owner-1', 'i1');
       getGame.mockResolvedValue(ongoing);
       deleteGame.mockRejectedValue(new Error('Netzwerkfehler'));
-      render(<StartPage />, { wrapper: MemoryRouter });
+      render(<StartPage />, { wrapper: Wrapper });
       await openDialog();
 
       // ACT
@@ -167,7 +293,7 @@ describe('StartPage', () => {
 
       // ASSERTIONS
       const message = await screen.findByText(/^Fehler:/);
-      expect(message.closest('li')).toHaveTextContent(/Läuft/);
+      expect(message.closest('li')).toHaveTextContent('Du bist am Zug');
       expect(myGames()).toHaveLength(1);
     });
 
@@ -176,7 +302,7 @@ describe('StartPage', () => {
       addOwnedGame('g-1', 'owner-1', 'i1');
       getGame.mockResolvedValue(ongoing);
       deleteGame.mockReturnValue(new Promise(() => {}));
-      render(<StartPage />, { wrapper: MemoryRouter });
+      render(<StartPage />, { wrapper: Wrapper });
       await openDialog();
       const confirm = within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Löschen' });
 
@@ -194,16 +320,16 @@ describe('StartPage', () => {
       addOwnedGame('g-2', 'owner-2', 'i2');
       getGame.mockResolvedValue(ongoing);
       deleteGame.mockReturnValue(new Promise(() => {}));
-      render(<StartPage />, { wrapper: MemoryRouter });
-      await waitFor(() => expect(screen.getAllByRole('button', { name: 'Löschen' })).toHaveLength(2));
-      await userEvent.click(screen.getAllByRole('button', { name: 'Löschen' })[0]);
+      render(<StartPage />, { wrapper: Wrapper });
+      await waitFor(() => expect(screen.getAllByRole('button', { name: 'Partie löschen' })).toHaveLength(2));
+      await userEvent.click(screen.getAllByRole('button', { name: 'Partie löschen' })[0]);
 
       // ACT
       await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Löschen' }));
 
       // ASSERTIONS
       await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
-      const rowButtons = screen.getAllByRole('button', { name: 'Löschen' });
+      const rowButtons = screen.getAllByRole('button', { name: 'Partie löschen' });
       expect(rowButtons).toHaveLength(2);
       expect(rowButtons[1]).toBeDisabled();
     });
