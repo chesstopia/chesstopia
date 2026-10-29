@@ -37,7 +37,8 @@ export function GamePage() {
   const label = (side: Side) =>
     role === null ? SIDE_NAME[side] : `${side === role ? 'Du' : 'Gegner'} · ${SIDE_NAME[side]}`;
   const turnState = role === null ? 'zuschauer' : pending ? 'zug-wird-gespielt' : myTurn ? 'du-bist-am-zug' : 'gegner-ist-am-zug';
-  const turnText = { zuschauer: 'Zuschauer', 'zug-wird-gespielt': 'Zug wird gespielt…', 'du-bist-am-zug': 'Du bist am Zug', 'gegner-ist-am-zug': 'Gegner ist am Zug' }[turnState];
+  // Hinweis in der eigenen Zeile; beim Zug des Gegners spricht dessen hervorgehobene Zeile.
+  const ownNote = { zuschauer: undefined, 'zug-wird-gespielt': 'Zug wird gespielt…', 'du-bist-am-zug': 'Du bist am Zug', 'gegner-ist-am-zug': undefined }[turnState];
 
   return (
     // `--board-chrome`: Kopfzeile, zwei Spielerzeilen und Abstände, die das Brett von 100dvh abzieht.
@@ -46,11 +47,6 @@ export function GamePage() {
         <Link to="/" className="text-sm text-muted-foreground underline">
           ← Meine Partien
         </Link>
-        {showTurn && (
-          <p data-turn-indicator={turnState} className="text-sm text-muted-foreground">
-            {turnText}
-          </p>
-        )}
       </div>
       {loading && <p className="text-muted-foreground">Lade Brett…</p>}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -67,8 +63,16 @@ export function GamePage() {
               orientation={orientation}
               lastMove={lastMove}
             />
-            <div className="w-[clamp(280px,min(100%,calc(100dvh-var(--board-chrome,0px))),720px)] max-w-full">
-              <PlayerRow side={orientation} label={label(orientation)} active={!over && sideToMove === orientation} />
+            <div
+              data-turn-indicator={showTurn ? turnState : undefined}
+              className="w-[clamp(280px,min(100%,calc(100dvh-var(--board-chrome,0px))),720px)] max-w-full"
+            >
+              <PlayerRow
+                side={orientation}
+                label={label(orientation)}
+                active={!over && sideToMove === orientation}
+                note={showTurn ? ownNote : undefined}
+              />
             </div>
           </div>
         )}

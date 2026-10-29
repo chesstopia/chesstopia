@@ -57,7 +57,9 @@ describe('GamePage', () => {
     renderAt('/game/g-1');
 
     // ASSERTIONS
-    expect(screen.getByText('Zuschauer')).toBeInTheDocument();
+    expect(screen.getByText('Weiß')).toBeInTheDocument();
+    expect(screen.getByText('Schwarz')).toBeInTheDocument();
+    expect(screen.queryByText(/Du ·|Gegner ·/)).not.toBeInTheDocument();
   });
 
   it('zeigt "Du bist am Zug", wenn die eigene Rolle am Zug ist', () => {
@@ -87,7 +89,8 @@ describe('GamePage', () => {
     renderAt('/game/g-1');
 
     // ASSERTIONS
-    expect(screen.getByText('Gegner ist am Zug')).toBeInTheDocument();
+    expect(screen.getByText('Gegner · Schwarz').closest('[data-testid="player-row"]')).toHaveAttribute('data-active', 'true');
+    expect(screen.queryByText('Du bist am Zug')).not.toBeInTheDocument();
   });
 
   it('zeigt keinen Einladungslink für Gäste', () => {
