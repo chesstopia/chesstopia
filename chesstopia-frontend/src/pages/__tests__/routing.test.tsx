@@ -29,6 +29,6 @@ describe('routing', () => {
     render(<RouterProvider router={router} />);
 
     // ASSERTIONS
-    expect(screen.getByText('Zur Übersicht')).toBeInTheDocument();
+    expect(screen.getByText('← Meine Partien')).toBeInTheDocument();
   });
 });

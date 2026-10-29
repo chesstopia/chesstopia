@@ -18,3 +18,7 @@ if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.sho
     this.removeAttribute('open');
   };
 }
+
+// jsdom implementiert `Element.scrollIntoView` nicht; `MoveList` ruft es beim
+// Rendern von Zügen auf. Tests, die den Aufruf prüfen, spionieren darauf.
+Element.prototype.scrollIntoView ??= () => {};

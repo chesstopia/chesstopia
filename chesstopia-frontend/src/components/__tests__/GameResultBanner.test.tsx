@@ -46,4 +46,33 @@ describe('GameResultBanner', () => {
     // ASSERTIONS
     expect(screen.getByRole('status')).toHaveTextContent('Partie beendet');
   });
+
+  it('hält die neutrale Zeile als einziges role=status-Element mit data-game-result', () => {
+    // ACT
+    render(<GameResultBanner status="BLACK_WON" endReason="CHECKMATE" role="w" />);
+
+    // ASSERTIONS
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent(/^Schachmatt — Schwarz gewinnt$/);
+    expect(status).toHaveAttribute('data-game-result');
+  });
+
+  it('zeigt die eigene Sicht groß und außerhalb der neutralen Zeile', () => {
+    // ACT
+    render(<GameResultBanner status="BLACK_WON" endReason="CHECKMATE" role="w" />);
+
+    // ASSERTIONS
+    const own = screen.getByText('Du hast verloren');
+    expect(own).toBeInTheDocument();
+    expect(screen.getByRole('status')).not.toContainElement(own);
+  });
+
+  it('zeigt Zuschauern keine eigene Zeile', () => {
+    // ACT
+    render(<GameResultBanner status="WHITE_WON" endReason="CHECKMATE" role={null} />);
+
+    // ASSERTIONS
+    expect(screen.queryByText(/Du hast/)).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Schachmatt — Weiß gewinnt');
+  });
 });

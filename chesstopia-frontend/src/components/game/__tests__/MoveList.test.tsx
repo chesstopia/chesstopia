@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { MoveRecord } from '@chesstopia/openapi-client';
 import { MoveList } from '../MoveList';
@@ -11,18 +11,13 @@ const e4 = record(1, { file: 'E', rank: 'TWO' }, { file: 'E', rank: 'FOUR' });
 const e5 = record(2, { file: 'E', rank: 'SEVEN' }, { file: 'E', rank: 'FIVE' });
 
 describe('MoveList', () => {
-  const original = Element.prototype.scrollIntoView;
-  const scrollIntoView = vi.fn();
-  beforeEach(() => {
-    scrollIntoView.mockClear();
-    Element.prototype.scrollIntoView = scrollIntoView;
-  });
   afterEach(() => {
-    Element.prototype.scrollIntoView = original;
+    vi.restoreAllMocks();
   });
 
   it('scrollt beim neuen Halbzug an das Ende', () => {
     // ARRANGE
+    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView');
     const { rerender } = render(<MoveList moves={[e4]} />);
     scrollIntoView.mockClear();
 
