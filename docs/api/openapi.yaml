@@ -261,6 +261,7 @@ components:
         - position
         - status
         - moveCount
+        - lastActivityAt
       properties:
         id:
           type: string
@@ -282,6 +283,10 @@ components:
           format: int32
           description: Anzahl der bisher gespielten Halbzüge
           example: 0
+        lastActivityAt:
+          type: string
+          format: date-time
+          description: Zeitpunkt des letzten Zugs; bei einer Partie ohne Zug der Anlagezeitpunkt.
 
     GameCreatedResponse:
       description: >
@@ -301,6 +306,7 @@ components:
         - position
         - status
         - moveCount
+        - lastActivityAt
         - ownerToken
         - inviteToken
       properties:
@@ -324,6 +330,10 @@ components:
           format: int32
           description: Anzahl der bisher gespielten Halbzüge
           example: 0
+        lastActivityAt:
+          type: string
+          format: date-time
+          description: Zeitpunkt des letzten Zugs; bei einer Partie ohne Zug der Anlagezeitpunkt.
         ownerToken:
           type: string
           format: uuid
