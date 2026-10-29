@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { MoveRecord } from '@chesstopia/openapi-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -9,9 +10,16 @@ interface MoveListProps {
 
 export function MoveList({ moves }: MoveListProps) {
   const last = moves[moves.length - 1];
+  const lastRef = useRef<HTMLSpanElement>(null);
+
+  // Neuester Halbzug soll sichtbar bleiben
+  useEffect(() => {
+    lastRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [moves.length]);
 
   const halfMove = (record: MoveRecord) => (
     <span
+      ref={record === last ? lastRef : undefined}
       aria-current={record === last ? 'true' : undefined}
       className={record === last ? 'rounded bg-muted px-1 font-semibold' : 'px-1'}
     >
@@ -28,7 +36,7 @@ export function MoveList({ moves }: MoveListProps) {
         {moves.length === 0 ? (
           <p className="text-muted-foreground">Noch keine Züge</p>
         ) : (
-          <ScrollArea className="max-h-64">
+          <ScrollArea className="[&>[data-slot=scroll-area-viewport]]:max-h-64">
             <ol className="flex flex-col gap-1 font-mono">
               {pairMoves(moves).map((row) => (
                 <li key={row.number} className="grid grid-cols-[2rem_1fr_1fr] items-center">

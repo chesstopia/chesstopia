@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { MoveRecord } from '@chesstopia/openapi-client';
 import { MoveList } from '../MoveList';
@@ -11,6 +11,29 @@ const e4 = record(1, { file: 'E', rank: 'TWO' }, { file: 'E', rank: 'FOUR' });
 const e5 = record(2, { file: 'E', rank: 'SEVEN' }, { file: 'E', rank: 'FIVE' });
 
 describe('MoveList', () => {
+  const original = Element.prototype.scrollIntoView;
+  const scrollIntoView = vi.fn();
+  beforeEach(() => {
+    scrollIntoView.mockClear();
+    Element.prototype.scrollIntoView = scrollIntoView;
+  });
+  afterEach(() => {
+    Element.prototype.scrollIntoView = original;
+  });
+
+  it('scrollt beim neuen Halbzug an das Ende', () => {
+    // ARRANGE
+    const { rerender } = render(<MoveList moves={[e4]} />);
+    scrollIntoView.mockClear();
+
+    // ACT
+    rerender(<MoveList moves={[e4, e5]} />);
+
+    // ASSERTIONS
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(scrollIntoView.mock.contexts[0]).toBe(screen.getByText('e7–e5'));
+  });
+
   it('zeigt Nummer und beide Halbzüge einer Zeile', () => {
     // ARRANGE & ACT
     render(<MoveList moves={[e4, e5]} />);
