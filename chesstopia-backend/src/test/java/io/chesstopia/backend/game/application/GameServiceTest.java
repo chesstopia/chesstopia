@@ -221,4 +221,70 @@ class GameServiceTest {
         // ACT & ASSERTIONS
         assertThatThrownBy(() -> service.load(GameId.newId())).isInstanceOf(NotFoundException.class);
     }
+
+    @Test
+    void deleteMitOwnerTokenLoeschtDiePartie() {
+        // ARRANGE
+        Game existing = Game.start(ID, RuleSet.standard(), start, T0);
+        when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
+
+        // ACT
+        service.delete(ID, existing.ownerToken());
+
+        // ASSERTIONS
+        verify(gamesRepository).delete(ID);
+        verify(gameEvents).gameWasDeleted(ID);
+    }
+
+    @Test
+    void deleteMitInviteTokenWirftForbiddenUndLoeschtNicht() {
+        // ARRANGE
+        Game existing = Game.start(ID, RuleSet.standard(), start, T0);
+        when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
+
+        // ACT & ASSERTIONS
+        assertThatThrownBy(() -> service.delete(ID, existing.inviteToken()))
+            .isInstanceOf(ForbiddenException.class);
+        verify(gamesRepository, never()).delete(any());
+        verify(gameEvents, never()).gameWasDeleted(any());
+    }
+
+    @Test
+    void deleteOhneTokenWirftForbiddenUndLoeschtNicht() {
+        // ARRANGE
+        Game existing = Game.start(ID, RuleSet.standard(), start, T0);
+        when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
+
+        // ACT & ASSERTIONS
+        assertThatThrownBy(() -> service.delete(ID, null))
+            .isInstanceOf(ForbiddenException.class);
+        verify(gamesRepository, never()).delete(any());
+        verify(gameEvents, never()).gameWasDeleted(any());
+    }
+
+    @Test
+    void deleteAufUnbekannterPartieWirftNotFound() {
+        // ARRANGE
+        when(gamesRepository.findById(ID)).thenReturn(Optional.empty());
+
+        // ACT & ASSERTIONS
+        assertThatThrownBy(() -> service.delete(ID, new PlayerToken(java.util.UUID.randomUUID())))
+            .isInstanceOf(NotFoundException.class);
+        verify(gamesRepository, never()).delete(any());
+        verify(gameEvents, never()).gameWasDeleted(any());
+    }
+
+    @Test
+    void deleteAufBeendeterPartieLoeschtAuch() {
+        // ARRANGE
+        Game finished = Game.start(ID, RuleSet.standard(), start, T0)
+            .play(e2e4, afterMove, new GameConclusion(GameStatus.WHITE_WON, EndReason.CHECKMATE), T0.plusMinutes(1));
+        when(gamesRepository.findById(ID)).thenReturn(Optional.of(finished));
+
+        // ACT
+        service.delete(ID, finished.ownerToken());
+
+        // ASSERTIONS
+        verify(gamesRepository).delete(ID);
+    }
 }

@@ -1,0 +1,60 @@
+import { defineConfig, devices } from '@playwright/test';
+
+/**
+ * Ebene 4 aus ADR-0019 — der Durchstich durch alle Module.
+ *
+ * Diese Konfiguration startet nichts. Seit ADR-0028 ist Ebene 4 ein
+ * Black-Box-Client: Der Stack kommt von aussen — in CI aus
+ * `docker compose -f docker-compose.prod.yml -f docker-compose.e2e.yml up -d`,
+ * beim Deploy-Smoke aus der bereits laufenden Produktion, lokal standardmaessig
+ * aus bootRun und dem Vite-Devserver (e2e/.env). Die Pipeline prueft damit
+ * immer den Prod-Stack — nginx hinter Caddy, `prod`-Profil.
+ *
+ * Siehe docs/notes/e2e-aufbau.md.
+ */
+
+// Lokale Standardwerte aus e2e/.env. Gesetzte Umgebungsvariablen gewinnen —
+// darueber waehlen ci.yml und deploy.yml ihr Ziel.
+process.loadEnvFile(new URL('.env', import.meta.url));
+
+/**
+ * Teilt sich der Lauf die Umgebung mit jemandem? Nur dann darf er nicht
+ * parallelisieren. Frueher haeng dieses Kriterium an PLAYWRIGHT_BASE_URL — das
+ * war gleichbedeutend, solange eine gesetzte Basis-URL immer Produktion meinte.
+ * Seit der Wegwerf-Stack in CI ebenfalls ueber eine Basis-URL angesprochen wird,
+ * waere E2E dort still seriell geworden.
+ */
+const sharedEnv = process.env.PLAYWRIGHT_SHARED_ENV === '1';
+
+const baseURL = process.env.PLAYWRIGHT_BASE_URL;
+if (!baseURL) throw new Error('PLAYWRIGHT_BASE_URL fehlt — e2e/.env oder Umgebung');
+
+export default defineConfig({
+  testDir: './tests',
+  fullyParallel: !sharedEnv,
+  workers: sharedEnv ? 1 : undefined,
+  // Gegen eine geteilte Umgebung keine Wiederholung: Jeder Versuch legt dort
+  // eine Partie an, und GitHub Actions setzt CI=true auch im Deploy-Smoke. Ein
+  // roter Smoke hinterliesse sonst drei Partien statt einer.
+  retries: sharedEnv ? 0 : process.env.CI ? 2 : 0,
+  reporter: process.env.CI ? 'list' : 'html',
+  use: {
+    baseURL,
+    trace: 'on',
+  },
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    // Die Pruefmechanik — Datenmodell (modell/), Brettleser, Parser, Driftwaechter
+    // des Korpus (korpus/). Kein
+    // Browser und kein Stack: diese Tests benutzen die `page`-Fixture nicht.
+    // Eigenes Projekt statt Vitest, weil das weder eine Abhaengigkeit noch eine
+    // zweite Konfiguration noch einen zusaetzlichen CI-Schritt kostet.
+    {
+      name: 'mechanik',
+      testDir: '.',
+      testMatch: ['modell/__tests__/**/*.test.ts', 'korpus/__tests__/**/*.test.ts'],
+    },
+  ],
+});

@@ -2,6 +2,7 @@ package io.chesstopia.backend.game.application;
 
 import io.chesstopia.backend.error.ForbiddenException;
 import io.chesstopia.backend.error.NotFoundException;
+import io.chesstopia.backend.game.application.port.in.DeleteGame;
 import io.chesstopia.backend.game.application.port.in.PlayMove;
 import io.chesstopia.backend.game.application.port.in.StartGame;
 import io.chesstopia.backend.game.application.port.in.ViewGame;
@@ -33,7 +34,7 @@ import java.util.List;
  * Engine-Import, kein FEN.
  */
 @Service
-class GameService implements StartGame, PlayMove, ViewGame {
+class GameService implements StartGame, PlayMove, ViewGame, DeleteGame {
 
     private final GamesRepository gamesRepository;
     private final ChessEngine chessEngine;
@@ -89,6 +90,18 @@ class GameService implements StartGame, PlayMove, ViewGame {
     public Game load(GameId gameId) {
         return gamesRepository.findById(gameId)
             .orElseThrow(() -> new NotFoundException("Partie %s existiert nicht".formatted(gameId.value())));
+    }
+
+    @Override
+    @Transactional
+    public void delete(GameId gameId, PlayerToken playerToken) {
+        Game game = gamesRepository.findById(gameId)
+            .orElseThrow(() -> new NotFoundException("Partie %s existiert nicht".formatted(gameId.value())));
+        if (game.roleOf(playerToken).orElse(null) != Color.WHITE) {
+            throw new ForbiddenException("Nur der Ersteller darf die Partie löschen");
+        }
+        gamesRepository.delete(gameId);
+        gameEvents.gameWasDeleted(gameId);
     }
 
     private static String square(Square s) {

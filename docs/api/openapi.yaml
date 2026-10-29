@@ -62,6 +62,24 @@ paths:
                 $ref: "#/components/schemas/GameResponse"
         "404":
           $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteGame
+      summary: Partie löschen
+      description: >
+        Löscht die Partie samt allen Zügen. Nur der Ersteller-Token darf das;
+        der Gegner wird per Push benachrichtigt.
+      tags:
+        - game
+      parameters:
+        - $ref: "#/components/parameters/GameId"
+        - $ref: "#/components/parameters/PlayerToken"
+      responses:
+        "204":
+          description: Die Partie wurde gelöscht
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/v1/games/{gameId}/moves:
     get:
@@ -153,7 +171,8 @@ components:
       description: >
         Nachweis, welche Farbe der Aufrufer steuert — der Ersteller-Token
         (Weiß) oder der Einladungs-Token (Schwarz). Fehlt er oder passt er
-        nicht zur Farbe, die am Zug ist, antwortet der Server mit 403.
+        nicht zur Farbe, die am Zug ist, antwortet der Server mit 403. Beim
+        Löschen einer Partie muss es der Ersteller-Token sein.
       schema:
         type: string
         format: uuid

@@ -13,3 +13,14 @@ import { Configuration } from '@chesstopia/openapi-client';
  * `server.proxy`-Eintrag in `vite.config.ts`.
  */
 export const apiConfig = new Configuration({ basePath: '' });
+
+/**
+ * Erkennt einen 404-Fehler des generierten Axios-Clients. axios ist keine direkte
+ * Abhängigkeit des Frontends, daher wird die Form `response.status` strukturell geprüft.
+ */
+export function isNotFound(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null || !('response' in err)) return false;
+  const response = err.response;
+  if (typeof response !== 'object' || response === null || !('status' in response)) return false;
+  return response.status === 404;
+}

@@ -1,3 +1,5 @@
+# e2e/ fehlt hier bewusst: Ebene 4 ist ein Black-Box-Client mit eigenem Lockfile
+# und laeuft ohne Gradle und ohne die Engine (ADR-0028).
 packages:
   # KMP chess rules engine — built by Gradle, linked as @chesstopia/chess-engine
   - 'chess-engine'

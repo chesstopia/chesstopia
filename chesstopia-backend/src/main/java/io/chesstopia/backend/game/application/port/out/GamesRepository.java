@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface GamesRepository {
     Game save(Game game);
     Optional<Game> findById(GameId id);
+    void delete(GameId id);
 }

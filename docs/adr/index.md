@@ -28,7 +28,7 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 | [0016](0016-agenten-topologie.md) | Agenten-Topologie — zwei Subagenten, zwei Skills, drei Schwellen | Accepted | partial ² |
 | [0017](0017-produktionskonfiguration-im-repo.md) | Produktionskonfiguration im Repo — verboten ist der Wert, nicht die Datei | Accepted | complete |
 | [0018](0018-status-partially-superseded.md) | Vierter Statuswert `partially-superseded` für ADRs | Accepted | complete |
-| [0019](0019-teststrategie.md) | Teststrategie — vier Ebenen, zwei davon mit benanntem Auslöser | Accepted | partial ³ |
+| [0019](0019-teststrategie.md) | Teststrategie — vier Ebenen, zwei davon mit benanntem Auslöser | Accepted | complete ³ |
 | [0020](0020-hexagonale-architektur-und-notationsfreie-domaene.md) | Hexagonale Architektur im game-Feature + notationsfreie Domäne | Accepted | partial |
 | [0021](0021-mapstruct-fuer-adapter-mappings.md) | MapStruct für die Adapter-Mappings | Accepted | complete |
 | [0022](0022-datei-getriebener-engine-testkorpus.md) | Datei-getriebener Engine-Testkorpus | Accepted | complete |
@@ -36,12 +36,17 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 | [0024](0024-flache-schemas-statt-allof-fuer-typescript-client.md) | Flache Objektschemas statt `allOf`-Komposition für Schemas, die der TypeScript-Axios-Client konsumiert | Accepted | complete |
 | [0025](0025-owner-invite-token-als-partie-identitaet.md) | Owner-/Invite-Token als Partie-Identität ohne Login | Accepted | complete |
 | [0026](0026-stomp-websocket-statt-rsocket-fuer-zug-push.md) | Bestehendes STOMP/WebSocket für den Zug-Push statt RSocket | Accepted | complete |
+| [0027](0027-integrationsjob-baut-und-testet-die-images.md) | Der Integrationsjob baut und testet die Images, ein Gate promotet sie | Partially superseded ¹⁰ | complete |
+| [0028](0028-artefakt-kette-und-e2e-gegen-den-prod-stack.md) | Artefakt-Kette in der CI, E2E gegen den Prod-Stack | Accepted | complete |
+| [0029](0029-datei-getriebener-e2e-korpus.md) | Datei-getriebener E2E-Korpus | Accepted | complete |
+| [0030](0030-schichtung-der-e2e-tests.md) | Schichtung der E2E-Tests | Accepted | complete |
+| [0031](0031-partien-sind-durch-den-ersteller-loeschbar.md) | Partien sind durch den Ersteller löschbar | Accepted | complete |
 
 ¹ Die `SecurityFilterChain`-Bean existiert, das vorgesehene JWT-Filter-Skelett nicht — dort steht ein `TODO`.
 
 ² Die Werkzeuge für *jetzt* stehen unter `.claude/`; `/tests` ist seit [ADR-0019](0019-teststrategie.md) dazugekommen. Die drei Agenten mit benanntem Auslöser sind absichtlich nicht angelegt — `partial` heißt hier „planmäßig unvollständig", nicht „Rückstand".
 
-³ Ebene 1, 2 und 3 stehen. **Der benannte Auslöser für Ebene 4 — der Merge von PR #2 — ist am 9. August 2026 eingetreten.** `partial` heißt hier ab sofort „Rückstand", nicht mehr „planmäßig unvollständig"; Playwright ist ausstehend und bekommt ein eigenes Ticket, damit dieser PR bei der Wissensverwaltung bleibt.
+³ Ebene 1, 2 und 3 stehen. **Der benannte Auslöser für Ebene 4 — der Merge von PR #2 — ist am 9. August 2026 eingetreten.** `partial` hieß ab da „Rückstand", nicht mehr „planmäßig unvollständig"; Playwright war ausstehend und bekam ein eigenes Ticket, damit jener PR bei der Wissensverwaltung blieb. **Der Rückstand ist am 7. September 2026 aufgelöst:** Ebene 4 steht als eigenständiges Paket `e2e/` — eigenes Lockfile, bewusst außerhalb des pnpm-Workspace ([ADR-0028](0028-artefakt-kette-und-e2e-gegen-den-prod-stack.md)) — mit Smoke, Specs für Gesten und Netzfehler und einem datei-getriebenen Korpus ([ADR-0029](0029-datei-getriebener-e2e-korpus.md)), verdrahtet in CI und im Deploy — siehe [E2E-Aufbau](../notes/e2e-aufbau.md).
 
 ⁴ Die Plattform ist weg, die Begründung nicht. Welcher Teil weiterhin gilt, steht im `## Status`-Abschnitt des jeweiligen ADR ([ADR-0018](0018-status-partially-superseded.md)); [ADR-0011](0011-migration-nach-github-actions.md) benennt die entfallenen Prämissen einzeln.
 
@@ -55,9 +60,11 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 
 ⁹ Teilweise abgelöst durch [ADR-0021](0021-mapstruct-fuer-adapter-mappings.md): MapStruct ist aufgenommen; der übrige Dependency-Kern gilt unverändert.
 
+¹⁰ Teilweise abgelöst durch [ADR-0028](0028-artefakt-kette-und-e2e-gegen-den-prod-stack.md): Stufe 1 — der Integrationsjob, der die Images aus seinem eigenen Workspace baut — ist abgelöst. Stufe 2 — E2E gegen den Container-Stack mit der unveränderten produktiven Caddyfile — gilt weiter und ist dort gebaut. Deshalb `complete`: Was dieses ADR noch entscheidet, steht.
+
 **0009 bis 0011 waren reserviert; die Lücke ist mit dem Merge von PR #2 am 9. August 2026 geschlossen.** Die drei ADRs lagen auf `CHESS-8-Initial-pipeline` und vergaben ihre Nummern zuerst — sie wurden nicht umnummeriert, weil sie sich gegenseitig unter genau diesen Nummern verlinken. Ihr Frontmatter ist beim Zusammenführen nachgetragen worden; die Körper sind unangetastet.
 
-Genau hier ist die Nummernvergabe zweimal fehlgeschlagen: Ein Blick in `docs/adr/` zeigt nur den eigenen Branch. Die nächste freie Nummer wird deshalb über **alle** Branches ermittelt, nicht über das Arbeitsverzeichnis — das Skill `/adr` tut das. **Die nächste freie Nummer ist 0027.**
+Genau hier ist die Nummernvergabe zweimal fehlgeschlagen: Ein Blick in `docs/adr/` zeigt nur den eigenen Branch. Die nächste freie Nummer wird deshalb über **alle** Branches ermittelt, nicht über das Arbeitsverzeichnis — das Skill `/adr` tut das. **Ein dritter Fall ist beim Zusammenführen aufgelöst:** `0024` war doppelt vergeben — `0024-datei-getriebener-e2e-korpus.md` auf `CHESS-21` und `0024-flache-schemas-statt-allof-fuer-typescript-client.md` auf `CHESS-19`. Umnummeriert wurde die noch nicht gemergte Seite: Das E2E-ADR heißt jetzt [ADR-0029](0029-datei-getriebener-e2e-korpus.md). Offen bleibt `0020` (`0020-lernkonzept.md` auf `CHESS-10`). **Die nächste freie Nummer ist 0032.**
 
 **0013 bis 0015 sind nachträglich verschriftlicht.** Die Entscheidungen wurden beim Aufsetzen des Backends getroffen und lagen bis dahin in einem einzelnen Dokument (`chesstopia-backend/SpringDesign.MD`), das keine ADR-Form hatte und neben diesem Register eine zweite Entscheidungsablage bildete. Begründungen und verworfene Alternativen stammen von dort; das Dokument ist aufgelöst.
 

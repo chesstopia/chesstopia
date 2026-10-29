@@ -1,0 +1,14 @@
+description = dreifache Stellungswiederholung beendet die Partie remis
+moves       = g1f3 g8f6 f3g1 f6g8 g1f3 g8f6 f3g1 f6g8
+banner      = Remis (dreifache Stellungswiederholung)
+
+     BOARD
+  8  r n b q k b n r
+  7  p p p p p p p p
+  6  . . . . . . . .
+  5  . . . . . . . .
+  4  . . . . . . . .
+  3  . . . . . . . .
+  2  P P P P P P P P
+  1  R N B Q K B N R
+     a b c d e f g h

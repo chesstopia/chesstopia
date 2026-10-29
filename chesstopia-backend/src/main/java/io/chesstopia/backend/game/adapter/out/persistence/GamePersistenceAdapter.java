@@ -85,6 +85,12 @@ class GamePersistenceAdapter implements GamesRepository {
             .map(pe -> toGame(pe, zugRepo.findByPartieIdOrderByMoveNumberAsc(id.value())));
     }
 
+    @Override
+    public void delete(GameId id) {
+        zugRepo.deleteByPartieId(id.value());
+        partieRepo.deleteById(id.value());
+    }
+
     private Game toGame(PartieEntity pe, List<ZugEntity> zuege) {
         RuleSet rules = new RuleSet(pe.getVariant(), pe.isEnPassantEnabled(), pe.isCastlingEnabled());
         List<Ply> history = zuege.stream().map(entityMapper::toPly).toList();

@@ -46,6 +46,11 @@ tasks.register<PnpmTask>("pnpmFrontendTest") {
     args.set(listOf("--filter", "chesstopia-frontend", "test"))
 }
 
+// Ebene 4 hat hier keinen Task mehr. Seit ADR-0028 ist e2e/ ein Black-Box-Client
+// mit eigenem Lockfile ausserhalb des pnpm-Workspace: Der Stack kommt aus
+//   docker compose -f docker-compose.prod.yml -f docker-compose.e2e.yml up -d
+// und die Tests laufen mit `pnpm run test` in e2e/. Siehe docs/notes/e2e-aufbau.md.
+
 // Generate the TypeScript Axios client from docs/api/openapi.yaml
 tasks.register<PnpmTask>("generateOpenApiClient") {
     group = "openapi"
@@ -79,13 +84,16 @@ tasks.register("buildAll") {
 }
 
 /**
- * CI stage 1: build and test the chess-engine standalone (JVM jar + JS library, incl. tests).
- * Runs first so its task outputs populate the Gradle build cache; the parallel backend and
- * frontend stages then get cache hits for the same chess-engine tasks instead of rebuilding.
- * chess-engine has no standalone wrapper, so it is driven through the composite build here.
+ * Baut und testet die chess-engine allein (JVM-Jar + JS-Library, inkl. Tests).
+ * Dies ist die EINZIGE Stelle, an der die Testsuite der Engine läuft — der
+ * Backend-Build konsumiert nur ihre Jar-Task, der Frontend-Build nur ihre
+ * JS-Distribution. Beide bauen die Engine transitiv und gleichzeitig mit
+ * (Composite Build bzw. pnpmInstall-Kette, ADR-0006); dieser Task baut sie
+ * NICHT für sie vor. chess-engine hat keinen eigenen Wrapper und wird deshalb
+ * über den Composite Build angesteuert.
  */
 tasks.register("chessEngineBuild") {
     group = "build"
-    description = "Builds and tests the chess-engine (JVM + JS) — CI stage 1, warms the build cache"
+    description = "Baut und testet die chess-engine (JVM + JS) — die einzige Stelle, an der ihre Testsuite läuft"
     dependsOn(gradle.includedBuild("chess-engine").task(":build"))
 }

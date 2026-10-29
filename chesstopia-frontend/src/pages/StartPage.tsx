@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { GameApi } from '@chesstopia/openapi-client';
 import type { GameResponse } from '@chesstopia/openapi-client';
-import { apiConfig } from '@/lib/api';
-import { addOwnedGame, myGames } from '@/lib/gameStorage';
+import { apiConfig, isNotFound } from '@/lib/api';
+import { addOwnedGame, myGames, removeGame } from '@/lib/gameStorage';
 import { Button } from '@/components/ui/button';
+import { DeleteGameDialog } from '@/components/DeleteGameDialog';
 
 const gameApi = new GameApi(apiConfig);
 
@@ -15,7 +16,9 @@ const STATUS_LABEL: Record<string, string> = {
   DRAW: 'Remis',
 };
 
-type Row = { gameId: string; label: string; unavailable?: false } | { gameId: string; unavailable: true };
+type Row = ({ gameId: string; label: string; unavailable?: false } | { gameId: string; unavailable: true }) & {
+  deleteError?: string;
+};
 
 function statusLabel(response: GameResponse): string {
   const base = STATUS_LABEL[response.status] ?? response.status;
@@ -27,6 +30,9 @@ export function StartPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [deletingNow, setDeletingNow] = useState(false);
+  const deleting = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,6 +67,31 @@ export function StartPage() {
     }
   };
 
+  const confirmDelete = async () => {
+    const gameId = pendingDelete;
+    if (gameId === null || deleting.current) return;
+    deleting.current = true;
+    setDeletingNow(true);
+    setPendingDelete(null);
+    const ownerToken = myGames().find((g) => g.gameId === gameId)?.ownerToken;
+    try {
+      await gameApi.deleteGame(gameId, ownerToken);
+      removeGame(gameId);
+      setRows((current) => current.filter((r) => r.gameId !== gameId));
+    } catch (err) {
+      if (isNotFound(err)) {
+        removeGame(gameId);
+        setRows((current) => current.filter((r) => r.gameId !== gameId));
+      } else {
+        const message = err instanceof Error ? err.message : 'Partie konnte nicht gelöscht werden';
+        setRows((current) => current.map((r) => (r.gameId === gameId ? { ...r, deleteError: message } : r)));
+      }
+    } finally {
+      deleting.current = false;
+      setDeletingNow(false);
+    }
+  };
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-stone-900 text-stone-200">
       <h1 className="text-2xl font-semibold">Chesstopia</h1>
@@ -71,7 +102,7 @@ export function StartPage() {
       {rows.length > 0 && (
         <ul className="flex flex-col gap-2">
           {rows.map((row) => (
-            <li key={row.gameId} className="flex items-center gap-3">
+            <li key={row.gameId} data-game-id={row.gameId} className="flex items-center gap-3">
               {row.unavailable ? (
                 <span className="text-stone-500">Partie nicht verfügbar</span>
               ) : (
@@ -82,10 +113,18 @@ export function StartPage() {
                   </Link>
                 </>
               )}
+              <Button variant="outline" size="sm"
+                disabled={deletingNow}
+                onClick={() => setPendingDelete(row.gameId)}
+              >
+                Löschen
+              </Button>
+              {row.deleteError && <span className="text-red-400">Fehler: {row.deleteError}</span>}
             </li>
           ))}
         </ul>
       )}
+      <DeleteGameDialog open={pendingDelete !== null} onConfirm={confirmDelete} onCancel={() => setPendingDelete(null)} />
     </main>
   );
 }

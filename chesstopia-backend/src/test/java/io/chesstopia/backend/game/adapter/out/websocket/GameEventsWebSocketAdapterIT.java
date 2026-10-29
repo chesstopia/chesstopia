@@ -8,6 +8,7 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,6 +25,7 @@ import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Belegt live, dass ein gespielter Zug über den STOMP-Broker ankommt —
@@ -56,6 +58,7 @@ class GameEventsWebSocketAdapterIT {
         WebSocketStompClient stompClient = new WebSocketStompClient(new StandardWebSocketClient());
         stompClient.setMessageConverter(new JacksonJsonMessageConverter());
         CompletableFuture<GameResponse> received = new CompletableFuture<>();
+        CompletableFuture<String> eventHeader = new CompletableFuture<>();
 
         StompSession session = stompClient
             .connectAsync("ws://localhost:" + port + "/ws", new StompSessionHandlerAdapter() {})
@@ -68,6 +71,7 @@ class GameEventsWebSocketAdapterIT {
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
+                eventHeader.complete(String.valueOf(headers.getFirst("event")));
                 received.complete((GameResponse) payload);
             }
         });
@@ -89,9 +93,97 @@ class GameEventsWebSocketAdapterIT {
         GameResponse broadcast = received.get(5, TimeUnit.SECONDS);
         assertThat(broadcast.getId()).isEqualTo(created.getId());
         assertThat(broadcast.getMoveCount()).isEqualTo(1);
+        assertThat(eventHeader.get(5, TimeUnit.SECONDS)).isEqualTo("null");
         assertThat(broadcast.getPosition().getSideToMove()).isEqualTo(Position.SideToMoveEnum.BLACK);
 
         session.disconnect();
         stompClient.stop();
+    }
+
+    @Test
+    void eineGeloeschtePartieWirdMitEventHeaderBroadcastet() throws Exception {
+        // ARRANGE
+        GameCreatedResponse created = createGame();
+        WebSocketStompClient stompClient = stompClient();
+        CompletableFuture<StompHeaders> receivedHeaders = new CompletableFuture<>();
+        CompletableFuture<Map<?, ?>> receivedBody = new CompletableFuture<>();
+        StompSession session = subscribe(stompClient, created, receivedHeaders, receivedBody);
+
+        // ACT
+        webTestClient.delete()
+            .uri("/api/v1/games/{id}", created.getId())
+            .header("X-Player-Token", created.getOwnerToken().toString())
+            .exchange()
+            .expectStatus().isNoContent();
+
+        // ASSERTIONS
+        assertThat(receivedHeaders.get(5, TimeUnit.SECONDS).getFirst("event")).isEqualTo("game-deleted");
+        assertThat(receivedBody.get(5, TimeUnit.SECONDS).get("gameId")).isEqualTo(created.getId().toString());
+
+        session.disconnect();
+        stompClient.stop();
+    }
+
+    @Test
+    void abgelehntesLoeschenSendetNichts() throws Exception {
+        // ARRANGE
+        GameCreatedResponse created = createGame();
+        WebSocketStompClient stompClient = stompClient();
+        CompletableFuture<StompHeaders> receivedHeaders = new CompletableFuture<>();
+        CompletableFuture<Map<?, ?>> receivedBody = new CompletableFuture<>();
+        StompSession session = subscribe(stompClient, created, receivedHeaders, receivedBody);
+
+        // ACT
+        webTestClient.delete()
+            .uri("/api/v1/games/{id}", created.getId())
+            .header("X-Player-Token", created.getInviteToken().toString())
+            .exchange()
+            .expectStatus().isForbidden();
+
+        // ASSERTIONS
+        assertThatThrownBy(() -> receivedHeaders.get(1, TimeUnit.SECONDS))
+            .isInstanceOf(TimeoutException.class);
+
+        session.disconnect();
+        stompClient.stop();
+    }
+
+    private GameCreatedResponse createGame() {
+        return webTestClient.post()
+            .uri("/api/v1/games")
+            .exchange()
+            .expectStatus().isCreated()
+            .expectBody(GameCreatedResponse.class)
+            .returnResult().getResponseBody();
+    }
+
+    private WebSocketStompClient stompClient() {
+        WebSocketStompClient stompClient = new WebSocketStompClient(new StandardWebSocketClient());
+        stompClient.setMessageConverter(new JacksonJsonMessageConverter());
+        return stompClient;
+    }
+
+    private StompSession subscribe(WebSocketStompClient stompClient, GameCreatedResponse created,
+                                   CompletableFuture<StompHeaders> receivedHeaders,
+                                   CompletableFuture<Map<?, ?>> receivedBody) throws Exception {
+        StompSession session = stompClient
+            .connectAsync("ws://localhost:" + port + "/ws", new StompSessionHandlerAdapter() {})
+            .get(5, TimeUnit.SECONDS);
+        session.subscribe("/topic/games/" + created.getId(), new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return Map.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                receivedHeaders.complete(headers);
+                receivedBody.complete((Map<?, ?>) payload);
+            }
+        });
+        // Kein STOMP-Receipt verdrahtet — kurze Wartezeit, damit das SUBSCRIBE-Frame
+        // beim Broker ankommt, bevor das Löschen den Broadcast auslöst.
+        Thread.sleep(300);
+        return session;
     }
 }
