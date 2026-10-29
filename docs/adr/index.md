@@ -41,6 +41,7 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 | [0029](0029-datei-getriebener-e2e-korpus.md) | Datei-getriebener E2E-Korpus | Accepted | complete |
 | [0030](0030-schichtung-der-e2e-tests.md) | Schichtung der E2E-Tests | Accepted | complete |
 | [0031](0031-partien-sind-durch-den-ersteller-loeschbar.md) | Partien sind durch den Ersteller löschbar | Accepted | complete |
+| [0032](0032-shadcn-ui-als-komponentenbasis.md) | shadcn/ui als Komponentenbasis des Frontends | Accepted | partial |
 
 ¹ Die `SecurityFilterChain`-Bean existiert, das vorgesehene JWT-Filter-Skelett nicht — dort steht ein `TODO`.
 
