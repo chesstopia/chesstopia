@@ -5,7 +5,7 @@ import type { GameResponse } from '@chesstopia/openapi-client';
 import { apiConfig, isNotFound } from '@/lib/api';
 import { addOwnedGame, myGames, removeGame } from '@/lib/gameStorage';
 import { Button } from '@/components/ui/button';
-import { DeleteGameDialog } from '@/components/DeleteGameDialog';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 const gameApi = new GameApi(apiConfig);
 
@@ -124,7 +124,15 @@ export function StartPage() {
           ))}
         </ul>
       )}
-      <DeleteGameDialog open={pendingDelete !== null} onConfirm={confirmDelete} onCancel={() => setPendingDelete(null)} />
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Partie löschen?"
+        description="Partie wirklich löschen? Das lässt sich nicht rückgängig machen."
+        confirmLabel="Löschen"
+        destructive
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </main>
   );
 }

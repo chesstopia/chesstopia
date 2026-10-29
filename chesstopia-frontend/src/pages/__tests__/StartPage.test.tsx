@@ -111,7 +111,7 @@ describe('StartPage', () => {
       await openDialog();
 
       // ACT
-      await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Abbrechen' }));
+      await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Abbrechen' }));
 
       // ASSERTIONS
       expect(deleteGame).not.toHaveBeenCalled();
@@ -128,7 +128,7 @@ describe('StartPage', () => {
       await openDialog();
 
       // ACT
-      await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Löschen' }));
+      await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Löschen' }));
 
       // ASSERTIONS
       await waitFor(() => expect(screen.queryByText(/Läuft/)).not.toBeInTheDocument());
@@ -146,7 +146,7 @@ describe('StartPage', () => {
       await userEvent.click(within(item).getByRole('button', { name: 'Löschen' }));
 
       // ACT
-      await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Löschen' }));
+      await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Löschen' }));
 
       // ASSERTIONS
       await waitFor(() => expect(screen.queryByText(/nicht verfügbar/)).not.toBeInTheDocument());
@@ -163,7 +163,7 @@ describe('StartPage', () => {
       await openDialog();
 
       // ACT
-      await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Löschen' }));
+      await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Löschen' }));
 
       // ASSERTIONS
       const message = await screen.findByText(/^Fehler:/);
@@ -178,7 +178,7 @@ describe('StartPage', () => {
       deleteGame.mockReturnValue(new Promise(() => {}));
       render(<StartPage />, { wrapper: MemoryRouter });
       await openDialog();
-      const confirm = within(screen.getByRole('dialog')).getByRole('button', { name: 'Löschen' });
+      const confirm = within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Löschen' });
 
       // ACT
       await userEvent.click(confirm);
@@ -199,10 +199,10 @@ describe('StartPage', () => {
       await userEvent.click(screen.getAllByRole('button', { name: 'Löschen' })[0]);
 
       // ACT
-      await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Löschen' }));
+      await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Löschen' }));
 
       // ASSERTIONS
-      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
       const rowButtons = screen.getAllByRole('button', { name: 'Löschen' });
       expect(rowButtons).toHaveLength(2);
       expect(rowButtons[1]).toBeDisabled();
