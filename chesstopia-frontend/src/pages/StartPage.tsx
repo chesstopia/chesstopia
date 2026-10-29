@@ -105,6 +105,8 @@ export function StartPage() {
   };
 
   const now = new Date();
+  // Nicht abrufbare Partie: Der Hinweis auf den Einladungslink träfe nicht zu.
+  const unavailable = rows.find((r) => r.gameId === pending?.gameId)?.game === null;
   const ongoing = rows.filter((r) => r.game?.status === 'ONGOING').sort(byRecency);
   const finished = rows.filter((r) => r.game?.status !== 'ONGOING').sort(byRecency);
 
@@ -174,7 +176,11 @@ export function StartPage() {
       <ConfirmDialog
         open={pending?.kind === 'remove'}
         title="Partie aus Liste entfernen?"
-        description="Die Partie selbst bleibt bestehen und ist über den Einladungslink wieder erreichbar."
+        description={
+          unavailable
+            ? 'Die Partie ist nicht mehr abrufbar.'
+            : 'Die Partie selbst bleibt bestehen und ist über den Einladungslink wieder erreichbar.'
+        }
         confirmLabel="Entfernen"
         onConfirm={confirmRemove}
         onCancel={() => setPending(null)}

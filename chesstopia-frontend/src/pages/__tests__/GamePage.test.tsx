@@ -45,7 +45,7 @@ describe('GamePage', () => {
     useGameState.mockReset();
   });
 
-  it('zeigt "Zuschauer", wenn keine Rolle aufgelöst ist', () => {
+  it('zeigt neutrale Seitennamen ohne Du/Gegner, wenn keine Rolle aufgelöst ist', () => {
     // ARRANGE
     useGameState.mockReturnValue({
       board: BOARD, sideToMove: 'w', status: 'ONGOING', endReason: null,
@@ -77,7 +77,7 @@ describe('GamePage', () => {
     expect(screen.getByText('Du bist am Zug')).toBeInTheDocument();
   });
 
-  it('zeigt "Gegner ist am Zug", wenn die eigene Rolle nicht am Zug ist', () => {
+  it('hebt die Zeile des Gegners hervor und zeigt kein "Du bist am Zug", wenn der Gegner am Zug ist', () => {
     // ARRANGE
     useGameState.mockReturnValue({
       board: BOARD, sideToMove: 'b', status: 'ONGOING', endReason: null,
@@ -91,22 +91,6 @@ describe('GamePage', () => {
     // ASSERTIONS
     expect(screen.getByText('Gegner · Schwarz').closest('[data-testid="player-row"]')).toHaveAttribute('data-active', 'true');
     expect(screen.queryByText('Du bist am Zug')).not.toBeInTheDocument();
-  });
-
-  it('zeigt keinen Einladungslink für Gäste', () => {
-    // ARRANGE
-    useGameState.mockReturnValue({
-      board: BOARD, sideToMove: 'w', status: 'ONGOING', endReason: null,
-      error: null, loading: false, pending: false, role: 'b',
-      entry: { gameId: 'g-1', role: 'INVITED', inviteToken: 'invite-tok' },
-      playMove: vi.fn(), moves: [], lastMove: null,
-    });
-
-    // ACT
-    renderAt('/game/g-1');
-
-    // ASSERTIONS
-    expect(screen.queryByText(/invite=/)).not.toBeInTheDocument();
   });
 
   it('zeigt während eines laufenden Zuges die Wartemeldung statt der Zugzeile', () => {

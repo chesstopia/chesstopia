@@ -62,8 +62,8 @@ export function Chessboard({
   return (
     <div
       className="relative grid grid-cols-8 aspect-square border-2 border-stone-700 shadow-xl"
-      // `--board-chrome` setzt die Partieseite: Höhe von Kopfzeile und Spielerzeilen.
-      style={{ width: 'clamp(280px, min(100%, calc(100dvh - var(--board-chrome, 0px))), 720px)' }}
+      // `--board-size` setzt die Partieseite; ohne sie füllt das Brett seine Spalte.
+      style={{ width: 'var(--board-size, 100%)' }}
       onPointerMove={(event) =>
         setDrag((current) =>
           current === null ? null : { ...current, x: event.clientX, y: event.clientY },

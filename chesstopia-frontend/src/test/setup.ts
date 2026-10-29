@@ -7,18 +7,6 @@ import { afterEach } from 'vitest';
 // ohne diese Zeile sieht der zweite Test das DOM des ersten.
 afterEach(cleanup);
 
-// jsdom implementiert `HTMLDialogElement.showModal`/`close` nicht. Minimal
-// nachgerüstet: Sie setzen bzw. entfernen nur das `open`-Attribut, das
-// `getByRole('dialog')` zur Sichtbarkeit auswertet.
-if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.showModal) {
-  HTMLDialogElement.prototype.showModal = function showModal() {
-    this.setAttribute('open', '');
-  };
-  HTMLDialogElement.prototype.close = function close() {
-    this.removeAttribute('open');
-  };
-}
-
 // jsdom implementiert `Element.scrollIntoView` nicht. Der `MoveList`-Test
 // spioniert darauf, um zu prüfen, dass die Zugliste die Seite nicht mitscrollt.
 Element.prototype.scrollIntoView ??= () => {};

@@ -41,8 +41,7 @@ export function GamePage() {
   const ownNote = { zuschauer: undefined, 'zug-wird-gespielt': 'Zug wird gespielt…', 'du-bist-am-zug': 'Du bist am Zug', 'gegner-ist-am-zug': undefined }[turnState];
 
   return (
-    // `--board-chrome`: Kopfzeile, zwei Spielerzeilen und Abstände, die das Brett von 100dvh abzieht.
-    <main key={gameId} className="mx-auto flex max-w-6xl flex-col gap-4 p-4" style={{ '--board-chrome': '11rem' } as React.CSSProperties}>
+    <main key={gameId} className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
         <Link to="/" className="text-sm text-muted-foreground underline">
           ← Meine Partien
@@ -51,8 +50,13 @@ export function GamePage() {
       {loading && <p className="text-muted-foreground">Lade Brett…</p>}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         {board && (
-          <div className="flex min-w-0 flex-col gap-2">
-            <div className="w-[clamp(280px,min(100%,calc(100dvh-var(--board-chrome,0px))),720px)] max-w-full">
+          // `--board-size`: Brett und Spielerzeilen teilen sich die Breite. 11rem ist der Platz für
+          // Kopfzeile, zwei Spielerzeilen und Abstände, den das Brett von 100dvh abzieht.
+          <div
+            className="flex min-w-0 flex-col gap-2"
+            style={{ '--board-size': 'clamp(280px, min(100%, calc(100dvh - 11rem)), 720px)' } as React.CSSProperties}
+          >
+            <div className="w-[var(--board-size)] max-w-full">
               <PlayerRow side={opponentSide} label={label(opponentSide)} active={!over && sideToMove === opponentSide} />
             </div>
             <Chessboard
@@ -65,7 +69,7 @@ export function GamePage() {
             />
             <div
               data-turn-indicator={showTurn ? turnState : undefined}
-              className="w-[clamp(280px,min(100%,calc(100dvh-var(--board-chrome,0px))),720px)] max-w-full"
+              className="w-[var(--board-size)] max-w-full"
             >
               <PlayerRow
                 side={orientation}

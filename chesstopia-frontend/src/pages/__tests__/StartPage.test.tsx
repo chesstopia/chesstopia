@@ -177,6 +177,7 @@ describe('StartPage', () => {
       await openRemoveDialog();
       const dialog = screen.getByRole('alertdialog');
       expect(within(dialog).getByText('Partie aus Liste entfernen?')).toBeInTheDocument();
+      expect(within(dialog).getByText(/über den Einladungslink wieder erreichbar/)).toBeInTheDocument();
 
       // ACT
       await userEvent.click(within(dialog).getByRole('button', { name: 'Abbrechen' }));
@@ -210,9 +211,12 @@ describe('StartPage', () => {
       render(<StartPage />, { wrapper: Wrapper });
       expect(await screen.findByText('Partie nicht mehr verfügbar')).toBeInTheDocument();
       await openRemoveDialog();
+      const dialog = screen.getByRole('alertdialog');
+      expect(within(dialog).getByText('Die Partie ist nicht mehr abrufbar.')).toBeInTheDocument();
+      expect(within(dialog).queryByText(/Einladungslink/)).toBeNull();
 
       // ACT
-      await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Entfernen' }));
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Entfernen' }));
 
       // ASSERTIONS
       await waitFor(() => expect(screen.queryByText('Partie nicht mehr verfügbar')).not.toBeInTheDocument());
