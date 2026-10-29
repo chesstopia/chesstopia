@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatLastPlayed } from '../lastPlayed';
+import { formatEndedAt, formatLastPlayed } from '../lastPlayed';
 
 describe('lastPlayed', () => {
   // Lokale Zeit, damit die Kalendertag-Grenzen unabhängig von der Zeitzone des Testlaufs sind.
@@ -39,5 +39,21 @@ describe('lastPlayed', () => {
   it('in einem anderen Jahr: „TT.MM.JJJJ“', () => {
     // ACT & ASSERTIONS
     expect(formatLastPlayed(iso(new Date(2025, 9, 24, 10, 0, 0)), now)).toBe('24.10.2025');
+  });
+
+  describe('formatEndedAt', () => {
+    it('relative Form ohne „am“', () => {
+      // ACT & ASSERTIONS
+      expect(formatEndedAt(iso(new Date(2026, 9, 29, 14, 59, 30)), now)).toBe('beendet gerade eben');
+      expect(formatEndedAt(iso(new Date(2026, 9, 29, 14, 55, 0)), now)).toBe('beendet vor 5 Min.');
+      expect(formatEndedAt(iso(new Date(2026, 9, 29, 12, 0, 0)), now)).toBe('beendet vor 3 Std.');
+      expect(formatEndedAt(iso(new Date(2026, 9, 28, 21, 14, 0)), now)).toBe('beendet gestern, 21:14');
+    });
+
+    it('Datumsform mit „am“', () => {
+      // ACT & ASSERTIONS
+      expect(formatEndedAt(iso(new Date(2026, 9, 24, 10, 0, 0)), now)).toBe('beendet am 24.10.');
+      expect(formatEndedAt(iso(new Date(2025, 9, 24, 10, 0, 0)), now)).toBe('beendet am 24.10.2025');
+    });
   });
 });

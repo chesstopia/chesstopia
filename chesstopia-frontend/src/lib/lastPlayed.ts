@@ -9,16 +9,28 @@ function startOfDay(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 }
 
-/** Zeitangabe für Partielisten, z. B. „vor 5 Min.“, „gestern, 21:14“, „24.10.“. */
-export function formatLastPlayed(iso: string, now: Date): string {
+type Zeitangabe = { text: string; absolute: boolean };
+
+function describe(iso: string, now: Date): Zeitangabe {
   const then = new Date(iso);
   const minutes = Math.floor((now.getTime() - then.getTime()) / MINUTE);
-  if (minutes < 1) return 'gerade eben';
-  if (minutes < 60) return relative.format(-minutes, 'minute');
+  if (minutes < 1) return { text: 'gerade eben', absolute: false };
+  if (minutes < 60) return { text: relative.format(-minutes, 'minute'), absolute: false };
 
   const dayDiff = Math.round((startOfDay(now) - startOfDay(then)) / 86_400_000);
-  if (dayDiff === 0) return relative.format(-Math.floor(minutes / 60), 'hour');
-  if (dayDiff === 1) return `gestern, ${clock.format(then)}`;
-  if (then.getFullYear() === now.getFullYear()) return dayMonth.format(then);
-  return dayMonthYear.format(then);
+  if (dayDiff === 0) return { text: relative.format(-Math.floor(minutes / 60), 'hour'), absolute: false };
+  if (dayDiff === 1) return { text: `gestern, ${clock.format(then)}`, absolute: false };
+  if (then.getFullYear() === now.getFullYear()) return { text: dayMonth.format(then), absolute: true };
+  return { text: dayMonthYear.format(then), absolute: true };
+}
+
+/** Zeitangabe für Partielisten, z. B. „vor 5 Min.“, „gestern, 21:14“, „24.10.“. */
+export function formatLastPlayed(iso: string, now: Date): string {
+  return describe(iso, now).text;
+}
+
+/** Wie `formatLastPlayed`, mit grammatisch passendem Präfix: „beendet vor 5 Min.“, „beendet am 24.10.“. */
+export function formatEndedAt(iso: string, now: Date): string {
+  const { text, absolute } = describe(iso, now);
+  return `beendet ${absolute ? 'am ' : ''}${text}`;
 }

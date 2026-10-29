@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { neutralResult, ownResult, outcomeBadge } from '../outcome';
+import { neutralResult, ownResult, outcomeBadge, outcomeKind } from '../outcome';
 
 describe('outcome', () => {
   describe('ownResult', () => {
@@ -19,6 +19,26 @@ describe('outcome', () => {
     ] as const)('%s als %s ergibt %s', (status, role, expected) => {
       // ACT & ASSERTIONS
       expect(ownResult(status, role)).toBe(expected);
+    });
+  });
+
+  describe('outcomeKind', () => {
+    it.each([
+      ['ONGOING', 'w', null],
+      ['WHITE_WON', 'w', 'won'],
+      ['WHITE_WON', 'b', 'lost'],
+      ['BLACK_WON', 'b', 'won'],
+      ['BLACK_WON', 'w', 'lost'],
+      ['DRAW', 'w', 'draw'],
+      ['DRAW', 'b', 'draw'],
+    ] as const)('%s als %s ergibt %s', (status, side, expected) => {
+      // ACT & ASSERTIONS
+      expect(outcomeKind(status, side)).toBe(expected);
+    });
+
+    it('wirft bei unbekanntem Status, statt ihn als Schwarz-Sieg zu werten', () => {
+      // ACT & ASSERTIONS
+      expect(() => outcomeKind('ABANDONED' as never, 'w')).toThrow('Unbekannter Partiestatus');
     });
   });
 

@@ -63,7 +63,7 @@ describe('GameRow', () => {
     expect(screen.getByRole('link', { name: 'Öffnen' })).toBeInTheDocument();
   });
 
-  it('beendet: Ausgang aus eigener Sicht, Knopf „Ansehen“, Zeitpräfix „beendet am“', () => {
+  it('beendet: Ausgang aus eigener Sicht, Knopf „Ansehen“, Zeitangabe „beendet vor …“', () => {
     // ACT
     renderRow({ game: response({ status: 'WHITE_WON', endReason: 'CHECKMATE' }) });
 
@@ -71,8 +71,40 @@ describe('GameRow', () => {
     const row = document.querySelector('[data-game-id="g-1"]') as HTMLElement;
     expect(row).toHaveAttribute('data-section', 'beendet');
     expect(row.querySelector('[data-status-badge]')).toHaveTextContent('Gewonnen · Schachmatt');
-    expect(row.querySelector('[data-last-played]')).toHaveTextContent('beendet am vor 5 Min.');
+    expect(row.querySelector('[data-last-played]')).toHaveTextContent('beendet vor 5 Min.');
     expect(screen.getByRole('link', { name: 'Ansehen' })).toBeInTheDocument();
+  });
+
+  it('beendet vor Tagen: „beendet am 24.10.“', () => {
+    // ACT
+    renderRow({ game: response({ status: 'WHITE_WON', endReason: 'CHECKMATE', lastActivityAt: new Date(2026, 9, 24, 10, 0, 0).toISOString() }) });
+
+    // ASSERTIONS
+    expect(document.querySelector('[data-last-played]')).toHaveTextContent('beendet am 24.10.');
+  });
+
+  it.each([
+    ['WHITE_WON', 'OWNER', 'won', 'bg-green-100'],
+    ['BLACK_WON', 'OWNER', 'lost', 'bg-red-100'],
+    ['DRAW', 'OWNER', 'draw', null],
+    ['BLACK_WON', 'INVITED', 'won', 'bg-green-100'],
+  ] as const)('beendet %s als %s: Ausgang %s am Badge', (status, role, kind, colorClass) => {
+    // ACT
+    renderRow({ role, game: response({ status, endReason: status === 'DRAW' ? 'STALEMATE' : 'CHECKMATE' }) });
+
+    // ASSERTIONS
+    const badge = document.querySelector('[data-status-badge]') as HTMLElement;
+    expect(badge).toHaveAttribute('data-outcome', kind);
+    if (colorClass) expect(badge.className).toContain(colorClass);
+    else expect(badge.className).not.toMatch(/bg-(green|red)-100/);
+  });
+
+  it('laufend: kein data-outcome am Badge', () => {
+    // ACT
+    renderRow();
+
+    // ASSERTIONS
+    expect(document.querySelector('[data-status-badge]')).not.toHaveAttribute('data-outcome');
   });
 
   it('eingeladen: Schwarz, Zusatz „eingeladen“, Entfernen statt Löschen', async () => {

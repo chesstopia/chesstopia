@@ -2,8 +2,8 @@ import { Link } from 'react-router';
 import { Trash2, X } from 'lucide-react';
 import type { GameResponse } from '@chesstopia/openapi-client';
 import type { GameRole } from '@/lib/gameStorage';
-import { formatLastPlayed } from '@/lib/lastPlayed';
-import { outcomeBadge } from '@/lib/outcome';
+import { formatEndedAt, formatLastPlayed } from '@/lib/lastPlayed';
+import { outcomeBadge, outcomeKind, type OutcomeKind } from '@/lib/outcome';
 import { sideOf, type Side } from '@/lib/position';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,12 @@ interface GameRowProps {
   onRemove: () => void;
 }
 
+const OUTCOME_CLASS: Record<OutcomeKind, string> = {
+  won: 'border-green-200 bg-green-100 text-green-800',
+  lost: 'border-red-200 bg-red-100 text-red-800',
+  draw: '',
+};
+
 export function GameRow({ gameId, role, game, now, disabled = false, error, onDelete, onRemove }: GameRowProps) {
   const invited = role === 'INVITED';
   const side: Side = invited ? 'b' : 'w';
@@ -30,6 +36,7 @@ export function GameRow({ gameId, role, game, now, disabled = false, error, onDe
   const myTurn = game !== null && ongoing && sideOf(game.position) === side;
 
   const badge = game === null ? null : ongoing ? (myTurn ? 'Du bist am Zug' : 'Gegner am Zug') : outcomeBadge(game.status, game.endReason, side);
+  const outcome = game === null ? null : outcomeKind(game.status, side);
   const openLabel = ongoing ? (myTurn ? 'Fortsetzen' : 'Öffnen') : 'Ansehen';
 
   const IconAction = invited ? X : Trash2;
@@ -59,13 +66,18 @@ export function GameRow({ gameId, role, game, now, disabled = false, error, onDe
         </div>
         {game !== null && (
           <div data-last-played={game.lastActivityAt} className="mt-0.5 text-xs text-muted-foreground">
-            {ongoing ? 'zuletzt gespielt' : 'beendet am'} {formatLastPlayed(game.lastActivityAt, now)}
+            {ongoing ? `zuletzt gespielt ${formatLastPlayed(game.lastActivityAt, now)}` : formatEndedAt(game.lastActivityAt, now)}
           </div>
         )}
         {error && <div className="mt-0.5 text-xs text-destructive">Fehler: {error}</div>}
       </div>
       {badge && (
-        <Badge data-status-badge variant={myTurn ? 'default' : 'outline'} className="ml-auto whitespace-nowrap">
+        <Badge
+          data-status-badge
+          data-outcome={outcome ?? undefined}
+          variant={myTurn ? 'default' : 'outline'}
+          className={cn('ml-auto whitespace-nowrap', outcome && OUTCOME_CLASS[outcome])}
+        >
           {badge}
         </Badge>
       )}
