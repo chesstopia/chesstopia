@@ -48,3 +48,8 @@ export function parseSquare(name: string): Square {
   if (name.length !== 2 || !file || !rank) throw new RangeError(`Kein Feldname: ${name}`);
   return { file, rank };
 }
+
+/** `{ file: 'E', rank: 'TWO' }` → `"e2"` — Gegenstück zu `parseSquare`. */
+export function formatSquare(square: Square): string {
+  return `${square.file.toLowerCase()}${RANKS.indexOf(square.rank) + 1}`;
+}

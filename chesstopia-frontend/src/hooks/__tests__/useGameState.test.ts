@@ -1,12 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
-const { getGame, playMove } = vi.hoisted(() => ({ getGame: vi.fn(), playMove: vi.fn() }));
+const { getGame, playMove, listMoves } = vi.hoisted(() => ({
+  getGame: vi.fn(),
+  playMove: vi.fn(),
+  listMoves: vi.fn(),
+}));
 vi.mock('@chesstopia/openapi-client', () => ({
   Configuration: class {},
   GameApi: class {
     getGame = getGame;
     playMove = playMove;
+    listMoves = listMoves;
   },
 }));
 
@@ -40,6 +45,16 @@ const START: Position = {
   halfmoveClock: 0,
   fullmoveNumber: 1,
 };
+const sq = (file: string, rank: string) => ({ file, rank });
+const moveRecord = (n: number, from: [string, string], to: [string, string]) => ({
+  moveNumber: n,
+  move: { from: sq(...from), to: sq(...to) },
+  positionAfter: START,
+  playedAt: '2026-01-01T00:00:00Z',
+});
+const E2E4 = moveRecord(1, ['E', 'TWO'], ['E', 'FOUR']);
+const E7E5 = moveRecord(2, ['E', 'SEVEN'], ['E', 'FIVE']);
+const E1E2 = moveRecord(3, ['E', 'ONE'], ['E', 'TWO']);
 const gameResponse = (position: Position, moveCount = 0) => ({
   data: { id: 'g-1', position, status: 'ONGOING', endReason: null, moveCount },
 });
@@ -49,6 +64,8 @@ describe('useGameState', () => {
     localStorage.clear();
     getGame.mockReset();
     playMove.mockReset();
+    listMoves.mockReset();
+    listMoves.mockResolvedValue({ data: { moves: [] } });
     isLegalMove.mockReset();
     isLegalMove.mockReturnValue(true);
     subscribeToGame.mockClear();
@@ -328,5 +345,66 @@ describe('useGameState', () => {
     expect(result.current.error).not.toBeNull();
     expect(result.current.deleted).toBe(false);
     expect(findGame('g-1')).toBeDefined();
+  });
+
+  it('lädt die Zughistorie beim Öffnen', async () => {
+    // ARRANGE
+    getGame.mockResolvedValue(gameResponse(START, 2));
+    listMoves.mockResolvedValue({ data: { moves: [E2E4, E7E5] } });
+
+    // ACT
+    const { result } = renderHook(() => useGameState('g-1', null));
+    await waitFor(() => expect(result.current.moves).toHaveLength(2));
+
+    // ASSERTIONS
+    expect(listMoves).toHaveBeenCalledWith('g-1');
+    expect(result.current.lastMove).toEqual({ from: 'e7', to: 'e5' });
+  });
+
+  it('hat ohne Züge keine Historie und keinen letzten Zug', async () => {
+    // ACT
+    const { result } = renderHook(() => useGameState('g-1', null));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // ASSERTIONS
+    expect(listMoves).not.toHaveBeenCalled();
+    expect(result.current.moves).toEqual([]);
+    expect(result.current.lastMove).toBeNull();
+  });
+
+  it('lädt die Historie nach, wenn moveCount wächst', async () => {
+    // ARRANGE
+    getGame.mockResolvedValue(gameResponse(START, 2));
+    listMoves.mockResolvedValue({ data: { moves: [E2E4, E7E5] } });
+    const { result } = renderHook(() => useGameState('g-1', null));
+    await waitFor(() => expect(result.current.moves).toHaveLength(2));
+    listMoves.mockResolvedValue({ data: { moves: [E2E4, E7E5, E1E2] } });
+
+    // ACT
+    act(() => receiveMessage(JSON.stringify(gameResponse(START, 3).data)));
+
+    // ASSERTIONS
+    await waitFor(() => expect(result.current.moves).toHaveLength(3));
+    expect(listMoves).toHaveBeenCalledTimes(2);
+    expect(result.current.lastMove).toEqual({ from: 'e1', to: 'e2' });
+  });
+
+  it('eine verspätete listMoves-Antwort mit weniger Zügen ersetzt keine längere Liste', async () => {
+    // ARRANGE — die erste Antwort (2 Züge) hängt, die zweite (3 Züge) kommt zuerst.
+    let resolveSlow: (v: unknown) => void = () => {};
+    getGame.mockResolvedValue(gameResponse(START, 2));
+    listMoves.mockReturnValueOnce(new Promise((r) => (resolveSlow = r)));
+    listMoves.mockResolvedValueOnce({ data: { moves: [E2E4, E7E5, E1E2] } });
+    const { result } = renderHook(() => useGameState('g-1', null));
+    await waitFor(() => expect(listMoves).toHaveBeenCalledTimes(1));
+
+    // ACT
+    act(() => receiveMessage(JSON.stringify(gameResponse(START, 3).data)));
+    await waitFor(() => expect(result.current.moves).toHaveLength(3));
+    await act(async () => resolveSlow({ data: { moves: [E2E4, E7E5] } }));
+
+    // ASSERTIONS
+    expect(result.current.moves).toHaveLength(3);
+    expect(result.current.lastMove).toEqual({ from: 'e1', to: 'e2' });
   });
 });

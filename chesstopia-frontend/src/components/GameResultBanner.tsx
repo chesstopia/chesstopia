@@ -1,21 +1,9 @@
 import type { GameResponse } from '@chesstopia/openapi-client';
+import { neutralResult } from '@/lib/outcome';
 
 type Props = {
   status: GameResponse['status'];
   endReason: GameResponse['endReason'] | null | undefined;
-};
-
-const OUTCOME: Record<string, string> = {
-  WHITE_WON: 'Schachmatt — Weiß gewinnt',
-  BLACK_WON: 'Schachmatt — Schwarz gewinnt',
-  DRAW: 'Remis',
-};
-
-const REASON: Record<string, string> = {
-  STALEMATE: 'Patt',
-  FIFTY_MOVE_RULE: '50-Züge-Regel',
-  INSUFFICIENT_MATERIAL: 'ungenügendes Material',
-  THREEFOLD_REPETITION: 'dreifache Stellungswiederholung',
 };
 
 /**
@@ -24,13 +12,11 @@ const REASON: Record<string, string> = {
  * „wer eine Rolle braucht, ändert die Komponente absichtlich und begründet").
  */
 export function GameResultBanner({ status, endReason }: Props) {
-  if (status === 'ONGOING') return null;
-  const base = OUTCOME[status] ?? 'Partie beendet';
-  const detail = status === 'DRAW' && endReason && REASON[endReason] ? ` (${REASON[endReason]})` : '';
+  const text = neutralResult(status, endReason);
+  if (text === null) return null;
   return (
     <p role="status" className="text-lg font-medium text-stone-200">
-      {base}
-      {detail}
+      {text}
     </p>
   );
 }
