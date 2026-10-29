@@ -15,18 +15,21 @@ describe('MoveList', () => {
     vi.restoreAllMocks();
   });
 
-  it('scrollt beim neuen Halbzug an das Ende', () => {
+  it('scrollt beim neuen Halbzug nur die Zugliste an das Ende, nicht die Seite', () => {
     // ARRANGE
     const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView');
-    const { rerender } = render(<MoveList moves={[e4]} />);
-    scrollIntoView.mockClear();
+    const { container, rerender } = render(<MoveList moves={[e4]} />);
+    const viewport = container.querySelector('[data-slot="scroll-area-viewport"]')!;
+    const setScrollTop = vi.fn();
+    Object.defineProperty(viewport, 'scrollHeight', { configurable: true, get: () => 500 });
+    Object.defineProperty(viewport, 'scrollTop', { configurable: true, get: () => 0, set: setScrollTop });
 
     // ACT
     rerender(<MoveList moves={[e4, e5]} />);
 
     // ASSERTIONS
-    expect(scrollIntoView).toHaveBeenCalledTimes(1);
-    expect(scrollIntoView.mock.contexts[0]).toBe(screen.getByText('e7–e5'));
+    expect(setScrollTop).toHaveBeenCalledWith(500);
+    expect(scrollIntoView).not.toHaveBeenCalled();
   });
 
   it('zeigt Nummer und beide Halbzüge einer Zeile', () => {

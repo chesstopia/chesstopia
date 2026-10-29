@@ -42,7 +42,7 @@ export function GameRow({ gameId, role, game, now, disabled = false, error, onDe
       data-color={side}
       data-invited={invited ? 'true' : 'false'}
       className={cn(
-        'flex items-center gap-3 rounded-xl border bg-card px-3.5 py-3 text-card-foreground',
+        'flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border bg-card px-3.5 py-3 text-card-foreground',
         !ongoing && 'bg-muted/40',
         game === null && 'text-muted-foreground',
       )}
@@ -51,7 +51,9 @@ export function GameRow({ gameId, role, game, now, disabled = false, error, onDe
         aria-hidden="true"
         className={cn('size-3.5 shrink-0 rounded-full border border-foreground/40', side === 'w' ? 'bg-white' : 'bg-neutral-800')}
       />
-      <div className="min-w-0 flex-1">
+      {/* Mindestbreite für den Text: Auf schmalen Bildschirmen rutschen Badge und
+          Knöpfe in eine eigene, rechtsbündige Zeile, statt den Text zu zerquetschen. */}
+      <div className="min-w-0 flex-1 basis-48">
         <div className="text-sm font-medium">
           {game === null ? 'Partie nicht mehr verfügbar' : `Du spielst ${side === 'w' ? 'Weiß' : 'Schwarz'}${invited ? ' · eingeladen' : ''}`}
         </div>
@@ -63,7 +65,7 @@ export function GameRow({ gameId, role, game, now, disabled = false, error, onDe
         {error && <div className="mt-0.5 text-xs text-destructive">Fehler: {error}</div>}
       </div>
       {badge && (
-        <Badge data-status-badge variant={myTurn ? 'default' : 'outline'} className="whitespace-nowrap">
+        <Badge data-status-badge variant={myTurn ? 'default' : 'outline'} className="ml-auto whitespace-nowrap">
           {badge}
         </Badge>
       )}

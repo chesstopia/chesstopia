@@ -19,8 +19,8 @@ if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.sho
   };
 }
 
-// jsdom implementiert `Element.scrollIntoView` nicht; `MoveList` ruft es beim
-// Rendern von Zügen auf. Tests, die den Aufruf prüfen, spionieren darauf.
+// jsdom implementiert `Element.scrollIntoView` nicht. Der `MoveList`-Test
+// spioniert darauf, um zu prüfen, dass die Zugliste die Seite nicht mitscrollt.
 Element.prototype.scrollIntoView ??= () => {};
 
 // jsdom implementiert `ResizeObserver` nicht; Radix-Popper (Tooltip) braucht ihn,
