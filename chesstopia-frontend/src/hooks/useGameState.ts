@@ -1,15 +1,40 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { GameResponse, MoveRecord, MoveRequest, Position } from '@chesstopia/openapi-client';
+import { useCallback, useEffect, useState } from 'react';
+import type { GameResponse, MoveRecord, MoveRequest } from '@chesstopia/openapi-client';
 import { asError, gameApi, isNotFound } from '@/lib/api';
 import { isLegalMove } from '@/lib/engine';
 import { formatSquare, parseSquare, sideOf, toBoard } from '@/lib/position';
 import type { Board, Side } from '@/lib/position';
 import { fromSquare } from '@/lib/squares';
-import { addInvitedGame, findGame, playerSideOf, playerTokenOf, removeGame } from '@/lib/gameStorage';
+import { addInvitedGame, findGame, inviteTokenOf, playerSideOf, playerTokenOf, removeGame } from '@/lib/gameStorage';
 import type { StoredGame } from '@/lib/gameStorage';
 import { subscribeToGame } from '@/lib/stomp';
 
 export type Role = Side | null;
+
+/** Die geladene Partie, wie die Seite sie braucht: Brett statt Stellungsobjekt, Seite am Zug als `Side`. */
+export type LoadedGame = {
+  board: Board;
+  sideToMove: Side;
+  status: GameResponse['status'];
+  endReason: NonNullable<GameResponse['endReason']> | null;
+  checkState: GameResponse['checkState'];
+  moveCount: number;
+};
+
+export type GameState = {
+  /** `null`, solange die Partie nicht geladen ist. */
+  game: LoadedGame | null;
+  role: Role;
+  /** Nur der Ersteller kennt den Einladungstoken. */
+  inviteToken: string | null;
+  loading: boolean;
+  deleted: boolean;
+  error: Error | null;
+  pending: boolean;
+  playMove: (from: string, to: string) => Promise<void>;
+  moves: MoveRecord[];
+  lastMove: { from: string; to: string } | null;
+};
 
 /**
  * Lädt eine bestehende Partie (kein createGame mehr — die Startseite hat sie
@@ -19,7 +44,7 @@ export type Role = Side | null;
  * dem bereits gehaltenen zurückfällt — sonst könnte eine verspätete Antwort
  * eine zwischenzeitlich über WS eingetroffene neuere Stellung zurückwerfen.
  */
-export function useGameState(gameId: string, inviteTokenFromUrl: string | null) {
+export function useGameState(gameId: string, inviteTokenFromUrl: string | null): GameState {
   // Lazy-Initializer statt Effekt: `findGame`/`addInvitedGame` lesen/schreiben
   // `chesstopia.games` genau einmal beim Mount. Ein Effekt, der hier `setEntry`
   // synchron aufruft, verletzt `react-hooks/set-state-in-effect` (Teil des
@@ -28,17 +53,12 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
   const [entry] = useState<StoredGame | undefined>(
     () => findGame(gameId) ?? (inviteTokenFromUrl ? addInvitedGame(gameId, inviteTokenFromUrl) : undefined),
   );
-  const [position, setPosition] = useState<Position | null>(null);
+  const [game, setGame] = useState<GameResponse | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [status, setStatus] = useState<GameResponse['status']>('ONGOING');
-  const [endReason, setEndReason] = useState<GameResponse['endReason'] | null>(null);
-  const [checkState, setCheckState] = useState<GameResponse['checkState']>('NO_CHECK');
   const [deleted, setDeleted] = useState(false);
-  const [moveCount, setMoveCount] = useState(0);
   const [moves, setMoves] = useState<MoveRecord[]>([]);
-  const moveCountRef = useRef(-1);
 
   // Aus `loadedFor` abgeleitet statt eines eigenen `loading`-States: Ein
   // Effekt, der bei jeder `gameId`-Änderung `setLoading(true)` synchron
@@ -49,14 +69,10 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
   const role: Role = playerSideOf(entry);
   const playerToken = playerTokenOf(entry);
 
+  // Stale-Regel: Eine Antwort, die hinter dem gehaltenen `moveCount` zurückfällt, wird verworfen;
+  // bei Gleichstand gewinnt die neuere Nachricht.
   const applyResponse = useCallback((data: GameResponse) => {
-    if (data.moveCount < moveCountRef.current) return;
-    moveCountRef.current = data.moveCount;
-    setMoveCount(data.moveCount);
-    setPosition(data.position);
-    setStatus(data.status);
-    setEndReason(data.endReason ?? null);
-    setCheckState(data.checkState);
+    setGame((held) => (held !== null && data.moveCount < held.moveCount ? held : data));
   }, []);
 
   const markDeleted = useCallback(() => {
@@ -83,32 +99,43 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
     });
   }, [gameId, applyResponse, markDeleted]);
 
+  const heldMoveCount = game?.moveCount ?? 0;
+
   // Die Historie wird nachgeladen, sobald `moveCount` der gehaltenen Liste
   // voraus ist. Eine Antwort gilt nur, wenn sie mindestens so lang ist wie die
-  // gehaltene Liste — dieselbe Stale-Regel wie bei `moveCountRef`: eine
+  // gehaltene Liste — dieselbe Stale-Regel wie bei `applyResponse`: eine
   // verspätete, kürzere Antwort darf keine neuere Liste zurückwerfen.
   // `setMoves` steht im Promise-Callback, nicht synchron im Effekt
   // (`react-hooks/set-state-in-effect`).
   useEffect(() => {
-    if (moveCount <= moves.length) return;
+    if (heldMoveCount <= moves.length) return;
     gameApi
       .listMoves(gameId)
       .then((res) => setMoves((held) => (res.data.moves.length >= held.length ? res.data.moves : held)))
       .catch((err: unknown) => setError(asError(err)));
-  }, [gameId, moveCount, moves.length]);
+  }, [gameId, heldMoveCount, moves.length]);
 
   const last = moves.length > 0 ? moves[moves.length - 1].move : null;
   const lastMove = last === null ? null : { from: formatSquare(last.from), to: formatSquare(last.to) };
 
-  const board: Board | null = position === null ? null : toBoard(position);
-  const sideToMove: Side | null = position === null ? null : sideOf(position);
+  const loaded: LoadedGame | null =
+    game === null
+      ? null
+      : {
+          board: toBoard(game.position),
+          sideToMove: sideOf(game.position),
+          status: game.status,
+          endReason: game.endReason ?? null,
+          checkState: game.checkState,
+          moveCount: game.moveCount,
+        };
 
   const playMove = useCallback(
     async (from: string, to: string) => {
-      if (deleted || position === null || status !== 'ONGOING' || !playerToken) return;
+      if (deleted || game === null || game.status !== 'ONGOING' || !playerToken) return;
 
       const origin = fromSquare(from);
-      const isPawn = toBoard(position)[origin.rankIdx][origin.fileIdx]?.[1] === 'P';
+      const isPawn = toBoard(game.position)[origin.rankIdx][origin.fileIdx]?.[1] === 'P';
       const promotes = to[1] === '8' || to[1] === '1';
       const move: MoveRequest = {
         from: parseSquare(from),
@@ -116,7 +143,7 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
         promotion: isPawn && promotes ? 'QUEEN' : undefined,
       };
 
-      if (!isLegalMove(position, move)) {
+      if (!isLegalMove(game.position, move)) {
         setError(new Error('Dieser Zug ist nicht legal.'));
         return;
       }
@@ -136,8 +163,8 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
         setPending(false);
       }
     },
-    [gameId, position, status, playerToken, deleted, applyResponse, markDeleted],
+    [gameId, game, playerToken, deleted, applyResponse, markDeleted],
   );
 
-  return { board, position, sideToMove, checkState, moveCount, status, endReason, error, loading, pending, role, entry, deleted, moves, lastMove, playMove };
+  return { game: loaded, role, inviteToken: inviteTokenOf(entry), loading, deleted, error, pending, playMove, moves, lastMove };
 }

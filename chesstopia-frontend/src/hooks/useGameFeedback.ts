@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import type { GameResponse } from '@chesstopia/openapi-client';
 import { useSoundTheme } from '@/components/sound/theme/SoundThemeProvider';
 import { detectFeedbackEvent, type FeedbackEvent, type GameSnapshot } from '@/lib/feedback';
 import { BASE_TITLE, gameTitle, withAttention } from '@/lib/gameTitle';
@@ -7,13 +6,7 @@ import type { Side } from '@/lib/position';
 import { playSound } from '@/lib/sound';
 import { useSoundMuted } from '@/lib/soundSettings';
 
-type Args = {
-  role: Side | null;
-  moveCount: number;
-  sideToMove: Side | null;
-  checkState: GameResponse['checkState'];
-  status: GameResponse['status'];
-};
+type Args = { role: Side | null; game: GameSnapshot | null };
 
 /** Der zuletzt ausgewertete Zustand und das Ereignis, das er ausgelöst hat; `seq` zählt Übergänge. */
 type Held = { snapshot: GameSnapshot | null; event: FeedbackEvent | null; seq: number };
@@ -32,12 +25,11 @@ function sameSnapshot(a: GameSnapshot, b: GameSnapshot): boolean {
  * verbietet `react-hooks/set-state-in-effect`. Ton und Titel sind
  * Seiteneffekte und laufen danach im Effekt, gesteuert über `seq`.
  */
-export function useGameFeedback({ role, moveCount, sideToMove, checkState, status }: Args): { animateCheck: boolean } {
+export function useGameFeedback({ role, game: snapshot }: Args): { animateCheck: boolean } {
   const theme = useSoundTheme();
   const [muted] = useSoundMuted();
   const [held, setHeld] = useState<Held>({ snapshot: null, event: null, seq: 0 });
 
-  const snapshot: GameSnapshot | null = sideToMove === null ? null : { moveCount, sideToMove, checkState, status };
   if (snapshot !== null && (held.snapshot === null || !sameSnapshot(held.snapshot, snapshot))) {
     const isTransition = held.snapshot !== null && snapshot.moveCount > held.snapshot.moveCount;
     setHeld({

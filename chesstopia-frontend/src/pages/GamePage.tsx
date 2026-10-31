@@ -23,28 +23,28 @@ export function GamePage() {
 }
 
 function LoadedGamePage({ gameId, inviteTokenFromUrl }: { gameId: string; inviteTokenFromUrl: string | null }) {
-  const {
-    board, sideToMove, checkState, moveCount, status, endReason, error, loading, pending, role, entry, deleted, playMove, moves,
-    lastMove,
-  } = useGameState(gameId, inviteTokenFromUrl);
-  const { animateCheck } = useGameFeedback({ role, moveCount, sideToMove, checkState, status });
+  const { game, error, loading, pending, role, inviteToken, deleted, playMove, moves, lastMove } = useGameState(
+    gameId,
+    inviteTokenFromUrl,
+  );
+  const { animateCheck } = useGameFeedback({ role, game });
   // Zuschauer wählen die Ansicht selbst; sie wird nicht gespeichert.
   const [spectatorFlipped, setSpectatorFlipped] = useState(false);
 
-  const over = status !== 'ONGOING';
+  const over = game !== null && game.status !== 'ONGOING';
+  const sideToMove = game?.sideToMove ?? null;
   const myTurn = role !== null && role === sideToMove;
   const orientation: Side = role ?? (spectatorFlipped ? 'b' : 'w');
   const opponentSide: Side = orientation === 'w' ? 'b' : 'w';
-  const showTurn = board && !over && !deleted;
+  const showTurn = game !== null && !over && !deleted;
 
   // Wer im Schach steht, sagt die Engine über `checkState`; nach dem Matt bleibt der König markiert.
-  const checked = checkedSide(checkState);
-  const checkedKing = board && checked ? kingSquare(board, checked) : null;
+  const checked = game === null ? null : checkedSide(game.checkState);
+  const checkedKing = game && checked ? kingSquare(game.board, checked) : null;
   const kingMarker: KingMarker | null = checkedKing ? { square: checkedKing, kind: over ? 'mate' : 'check' } : null;
   const checkBadge = (side: Side) => !over && checked === side;
 
-  const inviteLink =
-    entry?.role === 'OWNER' ? `${location.origin}/game/${gameId}?invite=${entry.inviteToken}` : null;
+  const inviteLink = inviteToken ? `${location.origin}/game/${gameId}?invite=${inviteToken}` : null;
   const spectatorLink = `${location.origin}/game/${gameId}`;
 
   const label = (side: Side) =>
@@ -63,7 +63,7 @@ function LoadedGamePage({ gameId, inviteTokenFromUrl }: { gameId: string; invite
       </div>
       {loading && <p className="text-muted-foreground">Lade Brett…</p>}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        {board && (
+        {game && (
           // `--board-size`: Brett und Spielerzeilen teilen sich die Breite. 11rem ist der Platz für
           // Kopfzeile, zwei Spielerzeilen und Abstände, den das Brett von 100dvh abzieht.
           <div
@@ -81,8 +81,8 @@ function LoadedGamePage({ gameId, inviteTokenFromUrl }: { gameId: string; invite
               />
             </div>
             <Chessboard
-              board={board}
-              sideToMove={sideToMove ?? 'w'}
+              board={game.board}
+              sideToMove={game.sideToMove}
               onMove={playMove}
               disabled={deleted || pending || over || !myTurn}
               orientation={orientation}
@@ -104,7 +104,7 @@ function LoadedGamePage({ gameId, inviteTokenFromUrl }: { gameId: string; invite
               />
             </div>
             <div className="w-[var(--board-size)] max-w-full">
-              <GameResultBanner status={status} endReason={endReason} role={role} />
+              <GameResultBanner status={game.status} endReason={game.endReason} role={role} />
             </div>
           </div>
         )}
@@ -124,7 +124,7 @@ function LoadedGamePage({ gameId, inviteTokenFromUrl }: { gameId: string; invite
           )}
           <MoveList moves={moves} />
           {inviteLink && <InviteButtons inviteLink={inviteLink} spectatorLink={spectatorLink} />}
-          {board && role === null && (
+          {game && role === null && (
             <Button variant="outline" onClick={() => setSpectatorFlipped((f) => !f)}>
               <RefreshCw /> Brett drehen
             </Button>

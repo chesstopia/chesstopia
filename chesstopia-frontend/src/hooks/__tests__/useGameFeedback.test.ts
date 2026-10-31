@@ -6,10 +6,18 @@ vi.mock('@/lib/sound', () => ({ playSound }));
 
 import { useGameFeedback } from '../useGameFeedback';
 import { STANDARD } from '@/components/sound/theme/soundTheme';
+import type { GameSnapshot } from '@/lib/feedback';
 
 type Args = Parameters<typeof useGameFeedback>[0];
 
-const WHITE_TO_MOVE: Args = { role: 'w', moveCount: 2, sideToMove: 'w', checkState: 'NO_CHECK', status: 'ONGOING' };
+const GAME: GameSnapshot = { moveCount: 2, sideToMove: 'w', checkState: 'NO_CHECK', status: 'ONGOING' };
+const WHITE_TO_MOVE: Args = { role: 'w', game: GAME };
+
+/** `WHITE_TO_MOVE` mit abweichender Partie und Rolle. */
+const at = (game: Partial<GameSnapshot> | null, role: Args['role'] = 'w'): Args => ({
+  role,
+  game: game === null ? null : { ...GAME, ...game },
+});
 
 function setHidden(hidden: boolean) {
   Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
@@ -27,7 +35,7 @@ describe('useGameFeedback', () => {
 
   it('spielt beim ersten Zustand keinen Ton und setzt den Titel ohne Markierung', () => {
     // ACT
-    renderHook(() => useGameFeedback({ ...WHITE_TO_MOVE, sideToMove: 'b', checkState: 'CHECK_BLACK', status: 'BLACK_WON' }));
+    renderHook(() => useGameFeedback(at({ sideToMove: 'b', checkState: 'CHECK_BLACK', status: 'BLACK_WON' })));
 
     // ASSERTIONS
     expect(playSound).not.toHaveBeenCalled();
@@ -37,7 +45,7 @@ describe('useGameFeedback', () => {
   it('wertet nichts aus, solange keine Stellung geladen ist', () => {
     // ARRANGE
     const { rerender } = renderHook((args: Args) => useGameFeedback(args), {
-      initialProps: { ...WHITE_TO_MOVE, sideToMove: null, moveCount: 0 } as Args,
+      initialProps: at(null),
     });
 
     // ACT
@@ -50,7 +58,7 @@ describe('useGameFeedback', () => {
   it('spielt den Zug-Ton, wenn der Gegner gezogen hat', () => {
     // ARRANGE
     const { rerender } = renderHook((args: Args) => useGameFeedback(args), {
-      initialProps: { ...WHITE_TO_MOVE, moveCount: 1, sideToMove: 'b' },
+      initialProps: at({ moveCount: 1, sideToMove: 'b' }),
     });
 
     // ACT
@@ -64,12 +72,12 @@ describe('useGameFeedback', () => {
   it('spielt bei gleichem moveCount nur einmal', () => {
     // ARRANGE
     const { rerender } = renderHook((args: Args) => useGameFeedback(args), {
-      initialProps: { ...WHITE_TO_MOVE, moveCount: 1, sideToMove: 'b' },
+      initialProps: at({ moveCount: 1, sideToMove: 'b' }),
     });
 
     // ACT
     rerender(WHITE_TO_MOVE);
-    rerender({ ...WHITE_TO_MOVE });
+    rerender(at({}));
 
     // ASSERTIONS
     expect(playSound).toHaveBeenCalledTimes(1);
@@ -80,7 +88,7 @@ describe('useGameFeedback', () => {
     localStorage.setItem('chesstopia.soundMuted', 'true');
     setHidden(true);
     const { rerender } = renderHook((args: Args) => useGameFeedback(args), {
-      initialProps: { ...WHITE_TO_MOVE, moveCount: 1, sideToMove: 'b' },
+      initialProps: at({ moveCount: 1, sideToMove: 'b' }),
     });
 
     // ACT
@@ -95,7 +103,7 @@ describe('useGameFeedback', () => {
     // ARRANGE
     setHidden(true);
     const { rerender } = renderHook((args: Args) => useGameFeedback(args), {
-      initialProps: { ...WHITE_TO_MOVE, moveCount: 1, sideToMove: 'b' },
+      initialProps: at({ moveCount: 1, sideToMove: 'b' }),
     });
     rerender(WHITE_TO_MOVE);
 
@@ -112,7 +120,7 @@ describe('useGameFeedback', () => {
   it('markiert den sichtbaren Tab nicht', () => {
     // ARRANGE
     const { rerender } = renderHook((args: Args) => useGameFeedback(args), {
-      initialProps: { ...WHITE_TO_MOVE, moveCount: 1, sideToMove: 'b' },
+      initialProps: at({ moveCount: 1, sideToMove: 'b' }),
     });
 
     // ACT
@@ -125,13 +133,13 @@ describe('useGameFeedback', () => {
   it('lässt den König bei Schach wackeln und beim nächsten Zug ohne Schach nicht mehr', () => {
     // ARRANGE
     const { result, rerender } = renderHook((args: Args) => useGameFeedback(args), {
-      initialProps: { ...WHITE_TO_MOVE, moveCount: 1, sideToMove: 'b' },
+      initialProps: at({ moveCount: 1, sideToMove: 'b' }),
     });
 
     // ACT
-    rerender({ ...WHITE_TO_MOVE, checkState: 'CHECK_WHITE' });
+    rerender(at({ checkState: 'CHECK_WHITE' }));
     const duringCheck = result.current.animateCheck;
-    rerender({ ...WHITE_TO_MOVE, moveCount: 3, sideToMove: 'b' });
+    rerender(at({ moveCount: 3, sideToMove: 'b' }));
 
     // ASSERTIONS
     expect(duringCheck).toBe(true);
@@ -141,7 +149,7 @@ describe('useGameFeedback', () => {
 
   it('lässt den König beim ersten Laden im Schach nicht wackeln', () => {
     // ACT
-    const { result } = renderHook(() => useGameFeedback({ ...WHITE_TO_MOVE, checkState: 'CHECK_WHITE' }));
+    const { result } = renderHook(() => useGameFeedback(at({ checkState: 'CHECK_WHITE' })));
 
     // ASSERTIONS
     expect(result.current.animateCheck).toBe(false);
@@ -163,11 +171,11 @@ describe('useGameFeedback', () => {
     // ARRANGE
     setHidden(true);
     const { rerender } = renderHook((args: Args) => useGameFeedback(args), {
-      initialProps: { ...WHITE_TO_MOVE, role: null, moveCount: 1, sideToMove: 'b' },
+      initialProps: at({ moveCount: 1, sideToMove: 'b' }, null),
     });
 
     // ACT
-    rerender({ ...WHITE_TO_MOVE, role: null });
+    rerender(at({}, null));
 
     // ASSERTIONS
     expect(playSound).toHaveBeenCalledWith(STANDARD.sounds.move);
@@ -178,11 +186,11 @@ describe('useGameFeedback', () => {
     // ARRANGE — eigener Mattzug, Antwort trifft erst ein, nachdem der Tab gewechselt wurde
     setHidden(true);
     const { rerender } = renderHook((args: Args) => useGameFeedback(args), {
-      initialProps: { ...WHITE_TO_MOVE, moveCount: 4 },
+      initialProps: at({ moveCount: 4 }),
     });
 
     // ACT
-    rerender({ ...WHITE_TO_MOVE, moveCount: 5, sideToMove: 'b', checkState: 'CHECK_BLACK', status: 'WHITE_WON' });
+    rerender(at({ moveCount: 5, sideToMove: 'b', checkState: 'CHECK_BLACK', status: 'WHITE_WON' }));
 
     // ASSERTIONS
     expect(playSound).toHaveBeenCalledWith(STANDARD.sounds.win);
