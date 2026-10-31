@@ -106,6 +106,7 @@ describe('useGameState', () => {
     // ASSERTIONS
     expect(result.current.role).toBe('b');
     expect(result.current.inviteToken).toBeNull();
+    expect(findGame('g-2')).toEqual({ gameId: 'g-2', role: 'INVITED', inviteToken: 'invite-tok' });
   });
 
   it('überschreibt einen bestehenden Owner-Eintrag nicht mit einem fremden Invite-Parameter aus der URL', async () => {
