@@ -1,6 +1,7 @@
 package io.chesstopia.backend.game.adapter.out.engine;
 
 import io.chesstopia.backend.game.application.port.out.ChessEngine;
+import io.chesstopia.backend.game.domain.CheckState;
 import io.chesstopia.backend.game.domain.GameConclusion;
 import io.chesstopia.backend.game.domain.Move;
 import io.chesstopia.backend.game.domain.Position;
@@ -47,5 +48,10 @@ class ChessEngineAdapter implements ChessEngine {
             .toArray(io.chesstopia.engine.Position[]::new);
         return mapper.toDomain(
             ChessEngineKt.gameOutcome(engineHistory, mapper.toEngine(ruleSet)));
+    }
+
+    @Override
+    public CheckState checkState(Position position) {
+        return mapper.toDomain(ChessEngineKt.checkState(mapper.toEngine(position)));
     }
 }
