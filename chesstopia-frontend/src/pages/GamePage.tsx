@@ -9,8 +9,10 @@ import { PlayerRow } from '@/components/game/PlayerRow';
 import { SoundToggle } from '@/components/sound/SoundToggle';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { useGameFeedback } from '@/hooks/useGameFeedback';
 import { useGameState } from '@/hooks/useGameState';
+import { useMoveSound } from '@/hooks/useMoveSound';
+import { useTabTitle } from '@/hooks/useTabTitle';
+import { BASE_TITLE, gameTitle } from '@/lib/gameTitle';
 import { checkedSide, kingSquare, type Side } from '@/lib/position';
 
 const SIDE_NAME: Record<Side, string> = { w: 'Weiß', b: 'Schwarz' };
@@ -23,11 +25,14 @@ export function GamePage() {
 }
 
 function LoadedGamePage({ gameId, inviteTokenFromUrl }: { gameId: string; inviteTokenFromUrl: string | null }) {
-  const { game, error, loading, pending, role, inviteToken, deleted, playMove, moves, lastMove } = useGameState(
+  const { game, error, loading, pending, role, inviteToken, deleted, playMove, moves, lastMove, feedback } = useGameState(
     gameId,
     inviteTokenFromUrl,
   );
-  const { animateCheck } = useGameFeedback({ role, game });
+  useMoveSound(feedback.event, feedback.seq);
+  useTabTitle(game ? gameTitle(game, role) : BASE_TITLE, feedback.attentionSeq);
+  // Der König wackelt, solange das letzte Ereignis ein Schach ist.
+  const animateCheck = feedback.event === 'check-given' || feedback.event === 'check-received';
   // Zuschauer wählen die Ansicht selbst; sie wird nicht gespeichert.
   const [spectatorFlipped, setSpectatorFlipped] = useState(false);
 

@@ -3,8 +3,13 @@ import type { GameResponse, MoveRecord } from '@chesstopia/openapi-client';
 import { gameReducer, initGameModel } from '../gameModel';
 import type { GameModel } from '../gameModel';
 
-const game = (moveCount: number, checkState: GameResponse['checkState'] = 'NO_CHECK'): GameResponse =>
-  ({ id: 'g-1', status: 'ONGOING', checkState, moveCount }) as GameResponse;
+const game = (
+  moveCount: number,
+  checkState: GameResponse['checkState'] = 'NO_CHECK',
+  status: GameResponse['status'] = 'ONGOING',
+): GameResponse =>
+  // Weiß zieht bei geradem `moveCount`.
+  ({ id: 'g-1', status, checkState, moveCount, position: { sideToMove: moveCount % 2 === 0 ? 'WHITE' : 'BLACK' } }) as GameResponse;
 const record = (n: number): MoveRecord => ({ moveNumber: n }) as MoveRecord;
 const model = (overrides: Partial<GameModel> = {}): GameModel => ({ ...initGameModel('w'), ...overrides });
 
@@ -58,6 +63,30 @@ describe('gameModel', () => {
     // ASSERTIONS
     expect(next.loaded).toBe(true);
     expect(next.game).toBe(loaded);
+  });
+
+  it('loadSucceeded verwirft einen kleineren moveCount, setzt aber loaded', () => {
+    // ARRANGE
+    const held = model({ game: game(3) });
+
+    // ACT
+    const next = gameReducer(held, { type: 'loadSucceeded', game: game(2) });
+
+    // ASSERTIONS
+    expect(next.game).toBe(held.game);
+    expect(next.loaded).toBe(true);
+    expect(next.feedback).toBe(held.feedback);
+  });
+
+  it('loadSucceeded gibt bei kleinerem moveCount und schon gesetztem loaded dasselbe Objekt zurück', () => {
+    // ARRANGE
+    const held = model({ game: game(3), loaded: true });
+
+    // ACT
+    const next = gameReducer(held, { type: 'loadSucceeded', game: game(2) });
+
+    // ASSERTIONS
+    expect(next).toBe(held);
   });
 
   it('loadFailed setzt loaded und error', () => {
@@ -150,5 +179,92 @@ describe('gameModel', () => {
     expect(afterEqual.moves).toBe(equal);
     expect(afterLonger.moves).toBe(longer);
     expect(afterShorter).toBe(held);
+  });
+
+  describe('feedback', () => {
+    it('löst beim ersten Stand kein Ereignis aus', () => {
+      // ACT
+      const next = gameReducer(initGameModel('w'), { type: 'loadSucceeded', game: game(2) });
+
+      // ASSERTIONS
+      expect(next.feedback).toEqual({ event: null, seq: 0, attentionSeq: 0 });
+    });
+
+    it('löst beim ersten Stand im Schach kein Schach-Ereignis aus', () => {
+      // ACT
+      const next = gameReducer(initGameModel('w'), { type: 'loadSucceeded', game: game(2, 'CHECK_WHITE') });
+
+      // ASSERTIONS
+      expect(next.feedback).toEqual({ event: null, seq: 0, attentionSeq: 0 });
+    });
+
+    it('meldet den Zug des Gegners und zählt seq und attentionSeq hoch', () => {
+      // ARRANGE
+      const held = model({ game: game(1) });
+
+      // ACT
+      const next = gameReducer(held, { type: 'serverUpdate', game: game(2) });
+
+      // ASSERTIONS
+      expect(next.feedback).toEqual({ event: 'move', seq: 1, attentionSeq: 1 });
+    });
+
+    it('lässt seq beim WS-Echo mit gleichem moveCount unverändert', () => {
+      // ARRANGE
+      const afterMove = gameReducer(model({ game: game(1) }), { type: 'serverUpdate', game: game(2) });
+
+      // ACT
+      const next = gameReducer(afterMove, { type: 'serverUpdate', game: game(2) });
+
+      // ASSERTIONS
+      expect(next.feedback).toBe(afterMove.feedback);
+    });
+
+    it('zählt beim eigenen Zug ohne Schach nur seq hoch, ohne Ereignis und ohne attentionSeq', () => {
+      // ARRANGE
+      const held = model({ game: game(2), feedback: { event: 'move', seq: 1, attentionSeq: 1 } });
+
+      // ACT
+      const next = gameReducer(held, { type: 'serverUpdate', game: game(3) });
+
+      // ASSERTIONS
+      expect(next.feedback).toEqual({ event: null, seq: 2, attentionSeq: 1 });
+    });
+
+    it('meldet Schach und beim nächsten Zug ohne Schach kein Schach-Ereignis mehr', () => {
+      // ARRANGE
+      const held = model({ game: game(1) });
+
+      // ACT
+      const inCheck = gameReducer(held, { type: 'serverUpdate', game: game(2, 'CHECK_WHITE') });
+      const next = gameReducer(inCheck, { type: 'serverUpdate', game: game(3) });
+
+      // ASSERTIONS
+      expect(inCheck.feedback.event).toBe('check-received');
+      expect(next.feedback.event).toBeNull();
+    });
+
+    it('zählt attentionSeq für Zuschauer nicht hoch', () => {
+      // ARRANGE
+      const held = { ...initGameModel(null), game: game(1) };
+
+      // ACT
+      const next = gameReducer(held, { type: 'serverUpdate', game: game(2) });
+
+      // ASSERTIONS
+      expect(next.feedback).toEqual({ event: 'move', seq: 1, attentionSeq: 0 });
+    });
+
+    it('nimmt bei zwei Zügen vor einem Render das Ereignis aus dem neuesten Stand', () => {
+      // ARRANGE
+      const held = model({ game: game(1) });
+
+      // ACT
+      const afterOpponent = gameReducer(held, { type: 'serverUpdate', game: game(2) });
+      const next = gameReducer(afterOpponent, { type: 'serverUpdate', game: game(3, 'CHECK_BLACK') });
+
+      // ASSERTIONS
+      expect(next.feedback.event).toBe('check-given');
+    });
   });
 });

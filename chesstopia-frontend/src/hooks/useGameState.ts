@@ -3,7 +3,7 @@ import type { GameResponse, MoveRecord } from '@chesstopia/openapi-client';
 import { asError, gameApi, isNotFound } from '@/lib/api';
 import { isLegalMove } from '@/lib/engine';
 import { gameReducer, initGameModel } from '@/lib/gameModel';
-import type { Role } from '@/lib/gameModel';
+import type { FeedbackState, Role } from '@/lib/gameModel';
 import { toMoveRequest } from '@/lib/moveRequest';
 import { formatSquare, sideOf, toBoard } from '@/lib/position';
 import type { Board, Side } from '@/lib/position';
@@ -34,13 +34,14 @@ export type GameState = {
   playMove: (from: string, to: string) => Promise<void>;
   moves: MoveRecord[];
   lastMove: { from: string; to: string } | null;
+  feedback: FeedbackState;
 };
 
 /**
  * IO-Hülle um `gameReducer`: lädt eine bestehende Partie (kein createGame mehr —
  * die Startseite hat sie angelegt), löst die eigene Rolle über `chesstopia.games`
  * auf und speist die eigene HTTP-Antwort und den WS-Broadcast als Aktionen ein.
- * Zustandsregeln (Stale-Regel, Fehlerfeld) stehen in `lib/gameModel.ts`.
+ * Zustandsregeln (Stale-Regel, Fehlerfeld, Feedback-Übergang) stehen in `lib/gameModel.ts`.
  * Ein Mount gehört genau einer Partie (`GamePage` rendert mit `key={gameId}`).
  */
 export function useGameState(gameId: string, inviteTokenFromUrl: string | null): GameState {
@@ -148,5 +149,6 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null):
     playMove,
     moves,
     lastMove,
+    feedback: model.feedback,
   };
 }

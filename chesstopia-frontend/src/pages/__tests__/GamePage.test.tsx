@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes, RouterProvider, createMemoryRouter } from 
 
 const { useGameState } = vi.hoisted(() => ({ useGameState: vi.fn<typeof import('@/hooks/useGameState').useGameState>() }));
 vi.mock('@/hooks/useGameState', () => ({ useGameState }));
+vi.mock('@/lib/sound', () => ({ playSound: vi.fn() }));
 
 // Das echte Brett, nur mit sichtbarem `disabled` umhüllt.
 vi.mock('@/components/board/Chessboard', async (importOriginal) => {
@@ -29,7 +30,7 @@ const LOADED: LoadedGame = {
 
 const BASE: GameState = {
   game: LOADED, role: null, inviteToken: null, loading: false, deleted: false, error: null, pending: false,
-  playMove: vi.fn(), moves: [], lastMove: null,
+  playMove: vi.fn(), moves: [], lastMove: null, feedback: { event: null, seq: 0, attentionSeq: 0 },
 };
 
 const state = (over: Partial<GameState> = {}, game: Partial<LoadedGame> = {}): GameState => ({
@@ -302,6 +303,22 @@ describe('GamePage', () => {
       // ASSERTIONS
       expect(document.querySelector('[data-square="e1"]')).toHaveAttribute('data-check', 'mate');
       expect(screen.queryByText('Schach')).not.toBeInTheDocument();
+    });
+
+    it('lässt den König wackeln, wenn das letzte Ereignis Schach ist', () => {
+      // ARRANGE
+      useGameState.mockReturnValue(
+        state(
+          { role: 'w', feedback: { event: 'check-received', seq: 1, attentionSeq: 1 } },
+          { board: KING_BOARD, sideToMove: 'w', checkState: 'CHECK_WHITE', moveCount: 3 },
+        ),
+      );
+
+      // ACT
+      renderAt('/game/g-1');
+
+      // ASSERTIONS
+      expect(document.querySelector('[data-square="e1"] .motion-safe\\:animate-king-wiggle')).not.toBeNull();
     });
 
     it('rahmt den König der Seite aus checkState, nicht aus sideToMove', () => {
