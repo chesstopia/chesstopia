@@ -15,8 +15,8 @@ vi.mock('@chesstopia/openapi-client', () => ({
   },
 }));
 
-const { isLegalMove } = vi.hoisted(() => ({ isLegalMove: vi.fn() }));
-vi.mock('@/lib/engine', () => ({ isLegalMove }));
+const { isLegalMove, isInCheck } = vi.hoisted(() => ({ isLegalMove: vi.fn(), isInCheck: vi.fn() }));
+vi.mock('@/lib/engine', () => ({ isLegalMove, isInCheck }));
 
 const { subscribeToGame, receiveMessage, receiveDeleted } = vi.hoisted(() => {
   type Handlers = { onUpdate: (raw: string) => void; onDeleted: () => void };
@@ -68,6 +68,8 @@ describe('useGameState', () => {
     listMoves.mockResolvedValue({ data: { moves: [] } });
     isLegalMove.mockReset();
     isLegalMove.mockReturnValue(true);
+    isInCheck.mockReset();
+    isInCheck.mockReturnValue(false);
     subscribeToGame.mockClear();
     getGame.mockResolvedValue(gameResponse(START));
   });
@@ -406,5 +408,32 @@ describe('useGameState', () => {
     // ASSERTIONS
     expect(result.current.moves).toHaveLength(3);
     expect(result.current.lastMove).toEqual({ from: 'e1', to: 'e2' });
+  });
+
+  it('meldet Schach und moveCount der gehaltenen Stellung', async () => {
+    // ARRANGE
+    isInCheck.mockReturnValue(true);
+    getGame.mockResolvedValue(gameResponse(START, 7));
+
+    // ACT
+    const { result } = renderHook(() => useGameState('g-1', null));
+
+    // ASSERTIONS
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.inCheck).toBe(true);
+    expect(result.current.moveCount).toBe(7);
+    expect(isInCheck).toHaveBeenCalledWith(START);
+  });
+
+  it('meldet kein Schach, solange keine Stellung geladen ist', () => {
+    // ARRANGE
+    getGame.mockReturnValue(new Promise(() => {}));
+    isInCheck.mockReturnValue(true);
+
+    // ACT
+    const { result } = renderHook(() => useGameState('g-1', null));
+
+    // ASSERTIONS
+    expect(result.current.inCheck).toBe(false);
   });
 });

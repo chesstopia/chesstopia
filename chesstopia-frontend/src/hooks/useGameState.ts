@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GameApi } from '@chesstopia/openapi-client';
 import type { GameResponse, MoveRecord, MoveRequest, Position } from '@chesstopia/openapi-client';
 import { apiConfig, isNotFound } from '@/lib/api';
-import { isLegalMove } from '@/lib/engine';
+import { isInCheck, isLegalMove } from '@/lib/engine';
 import { formatSquare, parseSquare, sideOf, toBoard } from '@/lib/position';
 import type { Board, Side } from '@/lib/position';
 import { fromSquare } from '@/lib/squares';
@@ -107,6 +107,7 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
 
   const board: Board | null = position === null ? null : toBoard(position);
   const sideToMove: Side | null = position === null ? null : sideOf(position);
+  const inCheck = useMemo(() => (position === null ? false : isInCheck(position)), [position]);
 
   const playMove = useCallback(
     async (from: string, to: string) => {
@@ -144,5 +145,5 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
     [gameId, position, status, playerToken, deleted, applyResponse, markDeleted],
   );
 
-  return { board, position, sideToMove, status, endReason, error, loading, pending, role, entry, deleted, moves, lastMove, playMove };
+  return { board, position, sideToMove, inCheck, moveCount, status, endReason, error, loading, pending, role, entry, deleted, moves, lastMove, playMove };
 }
