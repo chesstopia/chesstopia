@@ -5,7 +5,7 @@ import type { MoveRequest, Position, Square } from '@chesstopia/openapi-client';
 const engine = (ChessEngineModule as any).io.chesstopia.engine;
 const {
   CastlingRights, Color, File, Move, PieceType, PlacedPiece, Piece,
-  Position: EnginePosition, Rank, RuleSet, Square: EngineSquare, Variant, validateMove,
+  Position: EnginePosition, Rank, RuleSet, Square: EngineSquare, Variant, validateMove, isInCheck: engineIsInCheck,
 } = engine;
 
 const FILE: Record<string, unknown> = {
@@ -55,4 +55,9 @@ function move(m: MoveRequest): any {
 /** Ob der Zug nach den Schachregeln legal ist. Die Engine ist die einzige Instanz, die das entscheidet (ADR-0001). */
 export function isLegalMove(p: Position, m: MoveRequest): boolean {
   return validateMove(position(p), move(m), STANDARD_RULES);
+}
+
+/** Ob die Seite am Zug im Schach steht (auch im Matt). Die Regel liegt in der Engine (ADR-0001). */
+export function isInCheck(p: Position): boolean {
+  return engineIsInCheck(position(p));
 }

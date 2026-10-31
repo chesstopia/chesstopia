@@ -86,6 +86,13 @@ fun gameOutcome(history: Array<Position>, ruleSet: RuleSet): GameOutcome {
     }
 }
 
+/**
+ * Ob die Seite am Zug im Schach steht — auch im Matt. Ohne [RuleSet], weil
+ * ein Angriff auf den König von der Variante nicht abhängt.
+ */
+@JsExport
+fun isInCheck(position: Position): Boolean = position.isCheck()
+
 /** Ob der Zug in dieser Stellung nach den Regeln legal ist (Gangart, Weg, Fesselung, Schach). */
 @JsExport
 fun validateMove(position: Position, move: Move, ruleSet: RuleSet): Boolean =
