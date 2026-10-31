@@ -42,6 +42,7 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 | [0030](0030-schichtung-der-e2e-tests.md) | Schichtung der E2E-Tests | Accepted | complete |
 | [0031](0031-partien-sind-durch-den-ersteller-loeschbar.md) | Partien sind durch den Ersteller löschbar | Accepted | complete |
 | [0032](0032-shadcn-ui-als-komponentenbasis.md) | shadcn/ui als Komponentenbasis des Frontends | Accepted | complete |
+| [0033](0033-schachzustand-am-partiezustand.md) | Schachzustand am Partiezustand, von der Engine geliefert | Accepted | complete |
 
 ¹ Die `SecurityFilterChain`-Bean existiert, das vorgesehene JWT-Filter-Skelett nicht — dort steht ein `TODO`.
 
@@ -65,7 +66,7 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 
 **0009 bis 0011 waren reserviert; die Lücke ist mit dem Merge von PR #2 am 9. August 2026 geschlossen.** Die drei ADRs lagen auf `CHESS-8-Initial-pipeline` und vergaben ihre Nummern zuerst — sie wurden nicht umnummeriert, weil sie sich gegenseitig unter genau diesen Nummern verlinken. Ihr Frontmatter ist beim Zusammenführen nachgetragen worden; die Körper sind unangetastet.
 
-Genau hier ist die Nummernvergabe zweimal fehlgeschlagen: Ein Blick in `docs/adr/` zeigt nur den eigenen Branch. Die nächste freie Nummer wird deshalb über **alle** Branches ermittelt, nicht über das Arbeitsverzeichnis — das Skill `/adr` tut das. **Ein dritter Fall ist beim Zusammenführen aufgelöst:** `0024` war doppelt vergeben — `0024-datei-getriebener-e2e-korpus.md` auf `CHESS-21` und `0024-flache-schemas-statt-allof-fuer-typescript-client.md` auf `CHESS-19`. Umnummeriert wurde die noch nicht gemergte Seite: Das E2E-ADR heißt jetzt [ADR-0029](0029-datei-getriebener-e2e-korpus.md). Offen bleibt `0020` (`0020-lernkonzept.md` auf `CHESS-10`). **Die nächste freie Nummer ist 0032.**
+Genau hier ist die Nummernvergabe zweimal fehlgeschlagen: Ein Blick in `docs/adr/` zeigt nur den eigenen Branch. Die nächste freie Nummer wird deshalb über **alle** Branches ermittelt, nicht über das Arbeitsverzeichnis — das Skill `/adr` tut das. **Ein dritter Fall ist beim Zusammenführen aufgelöst:** `0024` war doppelt vergeben — `0024-datei-getriebener-e2e-korpus.md` auf `CHESS-21` und `0024-flache-schemas-statt-allof-fuer-typescript-client.md` auf `CHESS-19`. Umnummeriert wurde die noch nicht gemergte Seite: Das E2E-ADR heißt jetzt [ADR-0029](0029-datei-getriebener-e2e-korpus.md). Offen bleibt `0020` (`0020-lernkonzept.md` auf `CHESS-10`). **Die nächste freie Nummer ist 0034.**
 
 **0013 bis 0015 sind nachträglich verschriftlicht.** Die Entscheidungen wurden beim Aufsetzen des Backends getroffen und lagen bis dahin in einem einzelnen Dokument (`chesstopia-backend/SpringDesign.MD`), das keine ADR-Form hatte und neben diesem Register eine zweite Entscheidungsablage bildete. Begründungen und verworfene Alternativen stammen von dort; das Dokument ist aufgelöst.
 

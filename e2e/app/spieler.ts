@@ -30,6 +30,7 @@ export interface Spieler {
   erwarteFigur(feld: Feld, figur: Figur | null): Promise<void>;
   erwarteZuganzeige(soll: Zuganzeige): Promise<void>;
   erwarteErgebnis(text: string | null): Promise<void>;
+  erwarteSchach(feld: Feld | null): Promise<void>;
   erwarteFehler(text: string | RegExp | null): Promise<void>;
   erwartePartieGeloescht(): Promise<void>;
 }
@@ -143,6 +144,7 @@ export async function erzeugeSpieler(
     erwarteFigur: (feld, figur) => partieseite.brett.erwarteFigur(feld, figur),
     erwarteZuganzeige: (soll) => partieseite.zugzeile.erwarteAnzeige(soll),
     erwarteErgebnis: (text) => partieseite.ergebnis.erwarteText(text),
+    erwarteSchach: (feld) => partieseite.brett.erwarteSchach(feld),
     erwarteFehler: (text) => partieseite.fehleranzeige.erwarte(text),
     erwartePartieGeloescht: () => partieseite.loeschhinweis.erwarteSichtbar(),
   };

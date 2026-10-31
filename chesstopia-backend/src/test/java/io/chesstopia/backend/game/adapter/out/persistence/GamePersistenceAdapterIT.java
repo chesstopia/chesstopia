@@ -6,6 +6,7 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.OffsetDateTime;
@@ -20,6 +21,7 @@ class GamePersistenceAdapterIT {
 
     @Autowired GamePersistenceAdapter adapter;
     @Autowired ZugJpaRepository zugRepo;
+    @Autowired JdbcTemplate jdbc;
 
     private static final OffsetDateTime T0 = OffsetDateTime.parse("2026-09-02T10:00:00Z");
     private final Position start = new Position(
@@ -59,7 +61,7 @@ class GamePersistenceAdapterIT {
         adapter.save(g);
 
         // ACT
-        adapter.save(adapter.findById(g.id()).orElseThrow().play(move, afterMove, inProgress, T0.plusMinutes(1)));
+        adapter.save(adapter.findById(g.id()).orElseThrow().play(move, afterMove, inProgress, CheckState.NO_CHECK, T0.plusMinutes(1)));
 
         // ASSERTIONS
         assertThat(adapter.findById(g.id())).get().satisfies(loaded -> {
@@ -80,7 +82,7 @@ class GamePersistenceAdapterIT {
         GameConclusion checkmate = new GameConclusion(GameStatus.WHITE_WON, EndReason.CHECKMATE);
 
         // ACT
-        adapter.save(adapter.findById(g.id()).orElseThrow().play(move, afterMove, checkmate, T0.plusMinutes(1)));
+        adapter.save(adapter.findById(g.id()).orElseThrow().play(move, afterMove, checkmate, CheckState.NO_CHECK, T0.plusMinutes(1)));
 
         // ASSERTIONS
         assertThat(adapter.findById(g.id())).get().satisfies(loaded -> {
@@ -100,7 +102,7 @@ class GamePersistenceAdapterIT {
         // ARRANGE
         Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0);
         adapter.save(g);
-        adapter.save(adapter.findById(g.id()).orElseThrow().play(move, afterMove, inProgress, T0.plusMinutes(1)));
+        adapter.save(adapter.findById(g.id()).orElseThrow().play(move, afterMove, inProgress, CheckState.NO_CHECK, T0.plusMinutes(1)));
 
         // ACT
         adapter.delete(g.id());
@@ -108,5 +110,35 @@ class GamePersistenceAdapterIT {
         // ASSERTIONS
         assertThat(adapter.findById(g.id())).isEmpty();
         assertThat(zugRepo.countByPartieId(g.id().value())).isZero();
+    }
+
+    @Test
+    void derSchachzustandUeberlebtDenRoundtrip() {
+        // ARRANGE
+        Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0);
+        adapter.save(g);
+
+        // ACT
+        adapter.save(adapter.findById(g.id()).orElseThrow()
+            .play(move, afterMove, inProgress, CheckState.CHECK_BLACK, T0.plusMinutes(1)));
+
+        // ASSERTIONS
+        assertThat(adapter.findById(g.id())).get()
+            .satisfies(loaded -> assertThat(loaded.checkState()).isEqualTo(CheckState.CHECK_BLACK));
+    }
+
+    @Test
+    void eineAltpartieOhneGesetztenSchachzustandLiestSichAlsNoCheck() {
+        // ARRANGE — wie eine Zeile von vor V5: die Spalte bekommt nur ihren Default
+        Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0);
+        adapter.save(adapter.findById(adapter.save(g).id()).orElseThrow()
+            .play(move, afterMove, inProgress, CheckState.CHECK_BLACK, T0.plusMinutes(1)));
+        jdbc.update("UPDATE partie SET check_state = DEFAULT WHERE id = ?", g.id().value());
+
+        // ACT
+        var loaded = adapter.findById(g.id());
+
+        // ASSERTIONS
+        assertThat(loaded).get().satisfies(l -> assertThat(l.checkState()).isEqualTo(CheckState.NO_CHECK));
     }
 }

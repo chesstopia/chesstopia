@@ -62,6 +62,11 @@ export async function runCase(
     }
   }
 
+  // Der Schach-Rahmen erscheint bei beiden Seiten; ohne `check` darf keiner da sein.
+  for (const s of [weiss, schwarz]) {
+    await s.erwarteSchach(testCase.check);
+  }
+
   // Die Fehlermeldung erscheint nur bei der Seite, die den Zug versucht hat.
   const letzterZiehender = spielerVon(letzter);
   for (const s of [weiss, schwarz]) {

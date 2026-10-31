@@ -53,6 +53,8 @@ interface EngineMapper {
     @Mapping(target = "pieces", source = "board")
     Position toDomain(io.chesstopia.engine.Position position);
 
+    io.chesstopia.backend.game.domain.CheckState toDomain(io.chesstopia.engine.CheckState checkState);
+
     Square toDomain(io.chesstopia.engine.Square square);
 
     Piece toDomain(io.chesstopia.engine.Piece piece);

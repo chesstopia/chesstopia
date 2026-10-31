@@ -3,6 +3,10 @@ import type { Board, Side } from '@/lib/position';
 import { fromSquare, toSquare } from '@/lib/squares';
 import { Piece } from './Piece';
 import { Square } from './Square';
+import { useBoardTheme } from './theme/BoardThemeProvider';
+
+/** Der König, der einen Rahmen bekommt: im Schach oder mattgesetzt. */
+export type KingMarker = { square: string; kind: 'check' | 'mate' };
 
 type ChessboardProps = {
   board: Board;
@@ -12,6 +16,11 @@ type ChessboardProps = {
   /** Aus wessen Sicht das Brett steht; Schwarz sieht es um 180° gedreht. */
   orientation?: Side;
   lastMove?: { from: string; to: string } | null;
+  kingMarker?: KingMarker | null;
+  /** Der markierte König wackelt einmal (nur beim Eintreffen des Schachs). */
+  animateCheck?: boolean;
+  /** Beendete Partie: das Brett wird nach dem Theme gedämpft. */
+  ended?: boolean;
 };
 
 /** `size` ist die Feldkante in px, gemessen beim Aufnehmen. */
@@ -32,7 +41,9 @@ const FILES = 'abcdefgh';
  */
 export function Chessboard({
   board, sideToMove = 'w', onMove, disabled = false, orientation = 'w', lastMove = null,
+  kingMarker = null, animateCheck = false, ended = false,
 }: ChessboardProps) {
+  const theme = useBoardTheme();
   const [drag, setDrag] = useState<Drag | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
 
@@ -63,7 +74,10 @@ export function Chessboard({
     <div
       className="relative grid grid-cols-8 aspect-square border-2 border-stone-700 shadow-xl"
       // `--board-size` setzt die Partieseite; ohne sie füllt das Brett seine Spalte.
-      style={{ width: 'var(--board-size, 100%)' }}
+      style={{
+        width: 'var(--board-size, 100%)',
+        ...(ended ? { opacity: theme.ended.opacity, filter: `saturate(${theme.ended.saturate})` } : {}),
+      }}
       onPointerMove={(event) =>
         setDrag((current) =>
           current === null ? null : { ...current, x: event.clientX, y: event.clientY },
@@ -81,6 +95,8 @@ export function Chessboard({
               light={(rankIdx + fileIdx) % 2 === 0}
               piece={piece}
               lastMove={lastMove !== null && (lastMove.from === square || lastMove.to === square)}
+              marker={kingMarker?.square === square ? kingMarker.kind : null}
+              animate={animateCheck && kingMarker?.square === square}
               fileLabel={row === 7 ? FILES[fileIdx] : undefined}
               rankLabel={col === 0 ? String(8 - rankIdx) : undefined}
               draggable={!disabled && piece !== null && piece[0] === sideToMove}

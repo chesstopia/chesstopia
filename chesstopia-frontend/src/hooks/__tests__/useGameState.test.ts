@@ -55,8 +55,8 @@ const moveRecord = (n: number, from: [string, string], to: [string, string]) => 
 const E2E4 = moveRecord(1, ['E', 'TWO'], ['E', 'FOUR']);
 const E7E5 = moveRecord(2, ['E', 'SEVEN'], ['E', 'FIVE']);
 const E1E2 = moveRecord(3, ['E', 'ONE'], ['E', 'TWO']);
-const gameResponse = (position: Position, moveCount = 0) => ({
-  data: { id: 'g-1', position, status: 'ONGOING', endReason: null, moveCount },
+const gameResponse = (position: Position, moveCount = 0, checkState = 'NO_CHECK') => ({
+  data: { id: 'g-1', position, status: 'ONGOING', endReason: null, checkState, moveCount },
 });
 
 describe('useGameState', () => {
@@ -406,5 +406,43 @@ describe('useGameState', () => {
     // ASSERTIONS
     expect(result.current.moves).toHaveLength(3);
     expect(result.current.lastMove).toEqual({ from: 'e1', to: 'e2' });
+  });
+
+  it('übernimmt checkState und moveCount aus der geladenen Partie', async () => {
+    // ARRANGE
+    getGame.mockResolvedValue(gameResponse(START, 7, 'CHECK_WHITE'));
+
+    // ACT
+    const { result } = renderHook(() => useGameState('g-1', null));
+
+    // ASSERTIONS
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.checkState).toBe('CHECK_WHITE');
+    expect(result.current.inCheck).toBe(true);
+    expect(result.current.moveCount).toBe(7);
+  });
+
+  it('übernimmt checkState aus einer WS-Nachricht', async () => {
+    // ARRANGE
+    const { result } = renderHook(() => useGameState('g-1', null));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // ACT
+    act(() => receiveMessage(JSON.stringify(gameResponse({ ...START, sideToMove: 'BLACK' }, 1, 'CHECK_BLACK').data)));
+
+    // ASSERTIONS
+    await waitFor(() => expect(result.current.checkState).toBe('CHECK_BLACK'));
+  });
+
+  it('meldet kein Schach, solange keine Partie geladen ist', () => {
+    // ARRANGE
+    getGame.mockReturnValue(new Promise(() => {}));
+
+    // ACT
+    const { result } = renderHook(() => useGameState('g-1', null));
+
+    // ASSERTIONS
+    expect(result.current.checkState).toBe('NO_CHECK');
+    expect(result.current.inCheck).toBe(false);
   });
 });

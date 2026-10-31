@@ -1,6 +1,7 @@
 import type { GameResponse } from '@chesstopia/openapi-client';
 import { Alert } from '@/components/ui/alert';
-import { neutralResult, ownResult } from '@/lib/outcome';
+import { neutralResult, outcomeKind, ownResult } from '@/lib/outcome';
+import { cn } from '@/lib/utils';
 import type { Side } from '@/lib/position';
 
 type Props = {
@@ -18,14 +19,23 @@ type Props = {
  * das wird hier ausdrücklich auf `status` überschrieben, damit nichts doppelt
  * angesagt wird.
  */
+/** Gold für den Sieg, ruhiges Schiefergrau für die Niederlage — kein Rot —, neutral für Remis. */
+const OUTCOME_STYLE = {
+  won: 'border-transparent bg-gradient-to-r from-amber-300 to-amber-500 text-amber-950',
+  lost: 'border-transparent bg-slate-700 text-slate-50',
+  draw: 'border-stone-300 bg-stone-100 text-stone-800',
+} as const;
+
 export function GameResultBanner({ status, endReason, role = null }: Props) {
   const text = neutralResult(status, endReason);
   if (text === null) return null;
   const own = ownResult(status, role);
+  // Zuschauer bekommen die neutrale Fassung — für sie gibt es weder Sieg noch Niederlage.
+  const outcome = role === null ? 'draw' : (outcomeKind(status, role) ?? 'draw');
   return (
-    <Alert role="presentation" className="gap-1">
+    <Alert role="presentation" data-outcome={outcome} className={cn('gap-1 text-center', OUTCOME_STYLE[outcome])}>
       {own && <p className="text-xl font-semibold">{own}</p>}
-      <p role="status" data-game-result className="text-muted-foreground">
+      <p role="status" data-game-result className="opacity-85">
         {text}
       </p>
     </Alert>

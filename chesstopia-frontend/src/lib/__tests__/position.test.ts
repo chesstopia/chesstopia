@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toBoard, sideOf, parseSquare } from '../position';
+import { toBoard, sideOf, parseSquare, kingSquare } from '../position';
 import type { Position } from '@chesstopia/openapi-client';
 
 const startish: Position = {
@@ -53,6 +53,29 @@ describe('position', () => {
       // ACT & ASSERTIONS
       expect(() => parseSquare('x9')).toThrow(RangeError);
       expect(() => parseSquare('e')).toThrow(RangeError);
+    });
+  });
+
+  describe('kingSquare', () => {
+    it('findet den weißen König', () => {
+      // ACT & ASSERTIONS
+      expect(kingSquare(toBoard(startish), 'w')).toBe('e1');
+    });
+
+    it('findet den schwarzen König', () => {
+      // ARRANGE
+      const board = toBoard({
+        ...startish,
+        board: [{ square: { file: 'G', rank: 'EIGHT' }, piece: { type: 'KING', color: 'BLACK' } }],
+      });
+
+      // ACT & ASSERTIONS
+      expect(kingSquare(board, 'b')).toBe('g8');
+    });
+
+    it('liefert null ohne König der Seite', () => {
+      // ACT & ASSERTIONS
+      expect(kingSquare(toBoard(startish), 'b')).toBeNull();
     });
   });
 });

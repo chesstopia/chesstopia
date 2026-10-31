@@ -41,6 +41,7 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
   const [pending, setPending] = useState(false);
   const [status, setStatus] = useState<GameResponse['status']>('ONGOING');
   const [endReason, setEndReason] = useState<GameResponse['endReason'] | null>(null);
+  const [checkState, setCheckState] = useState<GameResponse['checkState']>('NO_CHECK');
   const [deleted, setDeleted] = useState(false);
   const [moveCount, setMoveCount] = useState(0);
   const [moves, setMoves] = useState<MoveRecord[]>([]);
@@ -62,6 +63,7 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
     setPosition(data.position);
     setStatus(data.status);
     setEndReason(data.endReason ?? null);
+    setCheckState(data.checkState);
   }, []);
 
   const markDeleted = useCallback(() => {
@@ -107,6 +109,7 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
 
   const board: Board | null = position === null ? null : toBoard(position);
   const sideToMove: Side | null = position === null ? null : sideOf(position);
+  const inCheck = checkState !== 'NO_CHECK';
 
   const playMove = useCallback(
     async (from: string, to: string) => {
@@ -144,5 +147,5 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
     [gameId, position, status, playerToken, deleted, applyResponse, markDeleted],
   );
 
-  return { board, position, sideToMove, status, endReason, error, loading, pending, role, entry, deleted, moves, lastMove, playMove };
+  return { board, position, sideToMove, checkState, inCheck, moveCount, status, endReason, error, loading, pending, role, entry, deleted, moves, lastMove, playMove };
 }
