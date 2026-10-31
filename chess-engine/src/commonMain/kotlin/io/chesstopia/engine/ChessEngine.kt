@@ -86,13 +86,6 @@ fun gameOutcome(history: Array<Position>, ruleSet: RuleSet): GameOutcome {
     }
 }
 
-/**
- * Ob die Seite am Zug im Schach steht — auch im Matt. Ohne [RuleSet], weil
- * ein Angriff auf den König von der Variante nicht abhängt.
- */
-@JsExport
-fun isInCheck(position: Position): Boolean = position.isCheck()
-
 /** Welche Seite im Schach steht. Im Matt ist es die mattgesetzte; im Patt keine. */
 @JsExport
 enum class CheckState { NO_CHECK, CHECK_WHITE, CHECK_BLACK }

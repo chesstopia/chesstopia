@@ -21,7 +21,7 @@ export function GamePage() {
   const inviteTokenFromUrl = searchParams.get('invite');
 
   const {
-    board, sideToMove, inCheck, moveCount, status, endReason, error, loading, pending, role, entry, deleted, playMove, moves,
+    board, sideToMove, checkState, inCheck, moveCount, status, endReason, error, loading, pending, role, entry, deleted, playMove, moves,
     lastMove,
   } = useGameState(gameId, inviteTokenFromUrl);
   const { animateCheck } = useGameFeedback({ role, moveCount, sideToMove, inCheck, status });
@@ -34,10 +34,11 @@ export function GamePage() {
   const opponentSide: Side = orientation === 'w' ? 'b' : 'w';
   const showTurn = board && !over && !deleted;
 
-  // Im Schach steht immer die Seite am Zug; nach dem Matt bleibt ihr König markiert.
-  const checkedKing = board && sideToMove && inCheck ? kingSquare(board, sideToMove) : null;
+  // Wer im Schach steht, sagt die Engine über `checkState`; nach dem Matt bleibt der König markiert.
+  const checkedSide: Side | null = checkState === 'CHECK_WHITE' ? 'w' : checkState === 'CHECK_BLACK' ? 'b' : null;
+  const checkedKing = board && checkedSide ? kingSquare(board, checkedSide) : null;
   const kingMarker: KingMarker | null = checkedKing ? { square: checkedKing, kind: over ? 'mate' : 'check' } : null;
-  const checkBadge = (side: Side) => inCheck && !over && sideToMove === side;
+  const checkBadge = (side: Side) => !over && checkedSide === side;
 
   const inviteLink =
     entry?.role === 'OWNER' ? `${location.origin}/game/${gameId}?invite=${entry.inviteToken}` : null;
@@ -65,7 +66,8 @@ export function GamePage() {
           <div
             data-board-column
             className="flex min-w-0 flex-col gap-2"
-            style={{ '--board-size': 'clamp(280px, min(100%, calc(100dvh - 11rem)), 720px)' } as React.CSSProperties}
+            // Bei beendeter Partie zieht das Brett zusätzlich die Höhe des Ergebnisbanners ab, damit es sichtbar bleibt.
+            style={{ '--board-size': `clamp(280px, min(100%, calc(100dvh - ${over ? '17rem' : '11rem'})), 720px)` } as React.CSSProperties}
           >
             <div className="w-[var(--board-size)] max-w-full">
               <PlayerRow

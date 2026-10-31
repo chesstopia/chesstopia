@@ -274,7 +274,7 @@ describe('GamePage', () => {
 
     it('rahmt den König im Schach und zeigt die Marke in seiner Zeile', () => {
       // ARRANGE
-      useGameState.mockReturnValue({ ...BASE, board: KING_BOARD, role: 'w', sideToMove: 'w', inCheck: true, moveCount: 3 });
+      useGameState.mockReturnValue({ ...BASE, board: KING_BOARD, role: 'w', sideToMove: 'w', checkState: 'CHECK_WHITE', inCheck: true, moveCount: 3 });
 
       // ACT
       renderAt('/game/g-1');
@@ -288,7 +288,7 @@ describe('GamePage', () => {
     it('markiert den mattgesetzten König als mate und zeigt keine Schach-Marke', () => {
       // ARRANGE
       useGameState.mockReturnValue({
-        ...BASE, board: KING_BOARD, role: 'w', sideToMove: 'w', inCheck: true, moveCount: 4,
+        ...BASE, board: KING_BOARD, role: 'w', sideToMove: 'w', checkState: 'CHECK_WHITE', inCheck: true, moveCount: 4,
         status: 'BLACK_WON', endReason: 'CHECKMATE',
       });
 
@@ -298,6 +298,37 @@ describe('GamePage', () => {
       // ASSERTIONS
       expect(document.querySelector('[data-square="e1"]')).toHaveAttribute('data-check', 'mate');
       expect(screen.queryByText('Schach')).not.toBeInTheDocument();
+    });
+
+    it('rahmt den König der Seite aus checkState, nicht aus sideToMove', () => {
+      // ARRANGE — bewusst widersprüchlich: nur checkState darf entscheiden
+      useGameState.mockReturnValue({
+        ...BASE, board: KING_BOARD, role: 'w', sideToMove: 'w', checkState: 'CHECK_BLACK', inCheck: true, moveCount: 5,
+      });
+
+      // ACT
+      renderAt('/game/g-1');
+
+      // ASSERTIONS
+      expect(document.querySelector('[data-square="e8"]')).toHaveAttribute('data-check', 'check');
+      expect(screen.getByText('Schach').closest('[data-testid="player-row"]')).toHaveTextContent('Gegner · Schwarz');
+    });
+
+    it('verkleinert das Brett bei beendeter Partie, damit das Ergebnis sichtbar bleibt', () => {
+      // ARRANGE
+      useGameState.mockReturnValue({ ...BASE, role: 'w' });
+      const { unmount } = renderAt('/game/g-1');
+      const running = (document.querySelector('[data-board-column]') as HTMLElement).style.getPropertyValue('--board-size');
+      unmount();
+      useGameState.mockReturnValue({ ...BASE, role: 'w', status: 'WHITE_WON', endReason: 'CHECKMATE' });
+
+      // ACT
+      renderAt('/game/g-1');
+
+      // ASSERTIONS
+      const ended = (document.querySelector('[data-board-column]') as HTMLElement).style.getPropertyValue('--board-size');
+      expect(running).toContain('11rem');
+      expect(ended).toContain('17rem');
     });
 
     it('zeigt das Ergebnis in der Brett-Spalte, nicht in der Seitenleiste', () => {

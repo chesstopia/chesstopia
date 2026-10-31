@@ -42,7 +42,7 @@ Alle Architekturentscheidungen des Projekts. Ein ADR beantwortet **warum** etwas
 | [0030](0030-schichtung-der-e2e-tests.md) | Schichtung der E2E-Tests | Accepted | complete |
 | [0031](0031-partien-sind-durch-den-ersteller-loeschbar.md) | Partien sind durch den Ersteller löschbar | Accepted | complete |
 | [0032](0032-shadcn-ui-als-komponentenbasis.md) | shadcn/ui als Komponentenbasis des Frontends | Accepted | complete |
-| [0033](0033-schachzustand-am-partiezustand.md) | Schachzustand am Partiezustand, von der Engine geliefert | Accepted | partial |
+| [0033](0033-schachzustand-am-partiezustand.md) | Schachzustand am Partiezustand, von der Engine geliefert | Accepted | complete |
 
 ¹ Die `SecurityFilterChain`-Bean existiert, das vorgesehene JWT-Filter-Skelett nicht — dort steht ein `TODO`.
 

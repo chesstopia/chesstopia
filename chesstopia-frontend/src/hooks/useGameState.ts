@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameApi } from '@chesstopia/openapi-client';
 import type { GameResponse, MoveRecord, MoveRequest, Position } from '@chesstopia/openapi-client';
 import { apiConfig, isNotFound } from '@/lib/api';
-import { isInCheck, isLegalMove } from '@/lib/engine';
+import { isLegalMove } from '@/lib/engine';
 import { formatSquare, parseSquare, sideOf, toBoard } from '@/lib/position';
 import type { Board, Side } from '@/lib/position';
 import { fromSquare } from '@/lib/squares';
@@ -41,6 +41,7 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
   const [pending, setPending] = useState(false);
   const [status, setStatus] = useState<GameResponse['status']>('ONGOING');
   const [endReason, setEndReason] = useState<GameResponse['endReason'] | null>(null);
+  const [checkState, setCheckState] = useState<GameResponse['checkState']>('NO_CHECK');
   const [deleted, setDeleted] = useState(false);
   const [moveCount, setMoveCount] = useState(0);
   const [moves, setMoves] = useState<MoveRecord[]>([]);
@@ -62,6 +63,7 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
     setPosition(data.position);
     setStatus(data.status);
     setEndReason(data.endReason ?? null);
+    setCheckState(data.checkState);
   }, []);
 
   const markDeleted = useCallback(() => {
@@ -107,7 +109,7 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
 
   const board: Board | null = position === null ? null : toBoard(position);
   const sideToMove: Side | null = position === null ? null : sideOf(position);
-  const inCheck = useMemo(() => (position === null ? false : isInCheck(position)), [position]);
+  const inCheck = checkState !== 'NO_CHECK';
 
   const playMove = useCallback(
     async (from: string, to: string) => {
@@ -145,5 +147,5 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
     [gameId, position, status, playerToken, deleted, applyResponse, markDeleted],
   );
 
-  return { board, position, sideToMove, inCheck, moveCount, status, endReason, error, loading, pending, role, entry, deleted, moves, lastMove, playMove };
+  return { board, position, sideToMove, checkState, inCheck, moveCount, status, endReason, error, loading, pending, role, entry, deleted, moves, lastMove, playMove };
 }
