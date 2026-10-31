@@ -1,6 +1,6 @@
 import { Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useSoundMuted } from '@/lib/soundSettings';
+import { useSoundMuted } from '@/hooks/useSoundMuted';
 
 /** Lautsprecher-Schalter für die Töne der Partieseite. */
 export function SoundToggle() {

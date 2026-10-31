@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useSoundTheme } from '@/components/sound/theme/SoundThemeProvider';
 import type { FeedbackEvent } from '@/lib/feedback';
 import { playSound } from '@/lib/sound';
-import { useSoundMuted } from '@/lib/soundSettings';
+import { useSoundMuted } from '@/hooks/useSoundMuted';
 
 /**
  * Spielt den Ton eines Feedback-Ereignisses, einmal pro neuem `seq`. Der

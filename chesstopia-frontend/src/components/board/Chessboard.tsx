@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Board, KingMarker, Side } from '@/lib/position';
-import { fromSquare, toSquare } from '@/lib/squares';
+import { FILES, fromSquare, toSquare } from '@/lib/squares';
 import { Piece } from './Piece';
 import { Square } from './Square';
 import { useBoardTheme } from './theme/BoardThemeProvider';
@@ -22,8 +22,6 @@ type ChessboardProps = {
 
 /** `size` ist die Feldkante in px, gemessen beim Aufnehmen. */
 type Drag = { from: string; x: number; y: number; size: number };
-
-const FILES = 'abcdefgh';
 
 /**
  * Das Brett und die Zeigergeste darauf.

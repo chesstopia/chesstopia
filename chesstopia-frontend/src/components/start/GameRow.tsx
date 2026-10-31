@@ -24,8 +24,8 @@ interface GameRowProps {
 }
 
 const OUTCOME_CLASS: Record<OutcomeKind, string> = {
-  won: 'border-green-200 bg-green-100 text-green-800',
-  lost: 'border-red-200 bg-red-100 text-red-800',
+  won: 'border-amber-300 bg-amber-100 text-amber-900',
+  lost: 'border-slate-300 bg-slate-200 text-slate-800',
   draw: '',
 };
 

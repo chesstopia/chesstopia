@@ -11,6 +11,13 @@ type Props = {
   role?: Side | null;
 };
 
+/** Gold für den Sieg, ruhiges Schiefergrau für die Niederlage — kein Rot —, neutral für Remis. */
+const OUTCOME_STYLE = {
+  won: 'border-transparent bg-gradient-to-r from-amber-300 to-amber-500 text-amber-950',
+  lost: 'border-transparent bg-slate-700 text-slate-50',
+  draw: 'border-stone-300 bg-stone-100 text-stone-800',
+} as const;
+
 /**
  * Das Partieende in zwei Ebenen: groß die eigene Sicht, darunter die neutrale
  * Zeile. Nur die neutrale Zeile trägt `role="status"` und `data-game-result` —
@@ -19,13 +26,6 @@ type Props = {
  * das wird hier ausdrücklich auf `status` überschrieben, damit nichts doppelt
  * angesagt wird.
  */
-/** Gold für den Sieg, ruhiges Schiefergrau für die Niederlage — kein Rot —, neutral für Remis. */
-const OUTCOME_STYLE = {
-  won: 'border-transparent bg-gradient-to-r from-amber-300 to-amber-500 text-amber-950',
-  lost: 'border-transparent bg-slate-700 text-slate-50',
-  draw: 'border-stone-300 bg-stone-100 text-stone-800',
-} as const;
-
 export function GameResultBanner({ status, endReason, role = null }: Props) {
   const text = neutralResult(status, endReason);
   if (text === null) return null;

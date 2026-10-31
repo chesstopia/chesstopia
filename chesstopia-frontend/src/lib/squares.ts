@@ -7,7 +7,7 @@
  * der ein Brett unbemerkt auf dem Kopf steht.
  */
 
-const FILES = 'abcdefgh';
+export const FILES = 'abcdefgh';
 
 export function toSquare(rankIdx: number, fileIdx: number): string {
   if (rankIdx < 0 || rankIdx > 7 || fileIdx < 0 || fileIdx > 7) {

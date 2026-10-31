@@ -9,7 +9,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { GameRow } from '@/components/start/GameRow';
 
-
 type Row = {
   gameId: string;
   role: GameRole;

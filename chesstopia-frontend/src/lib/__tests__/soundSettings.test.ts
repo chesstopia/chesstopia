@@ -1,6 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
-import { isMuted, setMuted, useSoundMuted } from '../soundSettings';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { isMuted, setMuted, subscribeMuted } from '../soundSettings';
 
 describe('soundSettings', () => {
   beforeEach(() => localStorage.clear());
@@ -19,25 +18,17 @@ describe('soundSettings', () => {
     expect(localStorage.getItem('chesstopia.soundMuted')).toBe('true');
   });
 
-  it('der Hook folgt dem Setter', () => {
+  it('subscribeMuted meldet setMuted und lässt sich abmelden', () => {
     // ARRANGE
-    const { result } = renderHook(() => useSoundMuted());
+    const listener = vi.fn();
+    const unsubscribe = subscribeMuted(listener);
 
     // ACT
-    act(() => result.current[1](true));
+    setMuted(true);
+    unsubscribe();
+    setMuted(false);
 
     // ASSERTIONS
-    expect(result.current[0]).toBe(true);
-  });
-
-  it('der Hook folgt einer Änderung von anderer Stelle', () => {
-    // ARRANGE
-    const { result } = renderHook(() => useSoundMuted());
-
-    // ACT
-    act(() => setMuted(true));
-
-    // ASSERTIONS
-    expect(result.current[0]).toBe(true);
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 });
