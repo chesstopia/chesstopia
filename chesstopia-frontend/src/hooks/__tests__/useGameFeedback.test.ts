@@ -158,4 +158,34 @@ describe('useGameFeedback', () => {
     // ASSERTIONS
     expect(document.title).toBe('Chesstopia');
   });
+
+  it('markiert den verborgenen Tab eines Zuschauers nicht', () => {
+    // ARRANGE
+    setHidden(true);
+    const { rerender } = renderHook((args: Args) => useGameFeedback(args), {
+      initialProps: { ...WHITE_TO_MOVE, role: null, moveCount: 1, sideToMove: 'b' },
+    });
+
+    // ACT
+    rerender({ ...WHITE_TO_MOVE, role: null });
+
+    // ASSERTIONS
+    expect(playSound).toHaveBeenCalledWith(STANDARD.sounds.move);
+    expect(document.title).toBe('Chesstopia');
+  });
+
+  it('markiert den verborgenen Tab nicht für die Folgen des eigenen Zugs', () => {
+    // ARRANGE — eigener Mattzug, Antwort trifft erst ein, nachdem der Tab gewechselt wurde
+    setHidden(true);
+    const { rerender } = renderHook((args: Args) => useGameFeedback(args), {
+      initialProps: { ...WHITE_TO_MOVE, moveCount: 4 },
+    });
+
+    // ACT
+    rerender({ ...WHITE_TO_MOVE, moveCount: 5, sideToMove: 'b', inCheck: true, status: 'WHITE_WON' });
+
+    // ASSERTIONS
+    expect(playSound).toHaveBeenCalledWith(STANDARD.sounds.win);
+    expect(document.title).toBe('Schachmatt – gewonnen · Chesstopia');
+  });
 });

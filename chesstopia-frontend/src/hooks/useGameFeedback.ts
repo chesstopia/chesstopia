@@ -57,8 +57,11 @@ export function useGameFeedback({ role, moveCount, sideToMove, inCheck, status }
     handledSeq.current = held.seq;
     if (held.event === null) return;
     if (!muted) playSound(theme.sounds[held.event]);
-    if (document.hidden) attention.current = true;
-  }, [held, muted, theme]);
+    // `●` heißt „hier wartet etwas auf dich“: nur für Spieler, und nur wenn der
+    // Gegner gezogen hat — also man selbst jetzt am Zug ist (auch nach seinem Matt).
+    const opponentMoved = role !== null && held.snapshot?.sideToMove === role;
+    if (document.hidden && opponentMoved) attention.current = true;
+  }, [held, muted, theme, role]);
 
   useEffect(() => {
     currentTitle.current = title;
