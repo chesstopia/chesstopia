@@ -418,7 +418,6 @@ describe('useGameState', () => {
     // ASSERTIONS
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.checkState).toBe('CHECK_WHITE');
-    expect(result.current.inCheck).toBe(true);
     expect(result.current.moveCount).toBe(7);
   });
 
@@ -432,17 +431,5 @@ describe('useGameState', () => {
 
     // ASSERTIONS
     await waitFor(() => expect(result.current.checkState).toBe('CHECK_BLACK'));
-  });
-
-  it('meldet kein Schach, solange keine Partie geladen ist', () => {
-    // ARRANGE
-    getGame.mockReturnValue(new Promise(() => {}));
-
-    // ACT
-    const { result } = renderHook(() => useGameState('g-1', null));
-
-    // ASSERTIONS
-    expect(result.current.checkState).toBe('NO_CHECK');
-    expect(result.current.inCheck).toBe(false);
   });
 });

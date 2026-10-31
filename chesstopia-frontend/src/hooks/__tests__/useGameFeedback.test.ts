@@ -9,7 +9,7 @@ import { STANDARD } from '@/components/sound/theme/soundTheme';
 
 type Args = Parameters<typeof useGameFeedback>[0];
 
-const WHITE_TO_MOVE: Args = { role: 'w', moveCount: 2, sideToMove: 'w', inCheck: false, status: 'ONGOING' };
+const WHITE_TO_MOVE: Args = { role: 'w', moveCount: 2, sideToMove: 'w', checkState: 'NO_CHECK', status: 'ONGOING' };
 
 function setHidden(hidden: boolean) {
   Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
@@ -27,7 +27,7 @@ describe('useGameFeedback', () => {
 
   it('spielt beim ersten Zustand keinen Ton und setzt den Titel ohne Markierung', () => {
     // ACT
-    renderHook(() => useGameFeedback({ ...WHITE_TO_MOVE, sideToMove: 'b', inCheck: true, status: 'BLACK_WON' }));
+    renderHook(() => useGameFeedback({ ...WHITE_TO_MOVE, sideToMove: 'b', checkState: 'CHECK_BLACK', status: 'BLACK_WON' }));
 
     // ASSERTIONS
     expect(playSound).not.toHaveBeenCalled();
@@ -129,7 +129,7 @@ describe('useGameFeedback', () => {
     });
 
     // ACT
-    rerender({ ...WHITE_TO_MOVE, inCheck: true });
+    rerender({ ...WHITE_TO_MOVE, checkState: 'CHECK_WHITE' });
     const duringCheck = result.current.animateCheck;
     rerender({ ...WHITE_TO_MOVE, moveCount: 3, sideToMove: 'b' });
 
@@ -141,7 +141,7 @@ describe('useGameFeedback', () => {
 
   it('lässt den König beim ersten Laden im Schach nicht wackeln', () => {
     // ACT
-    const { result } = renderHook(() => useGameFeedback({ ...WHITE_TO_MOVE, inCheck: true }));
+    const { result } = renderHook(() => useGameFeedback({ ...WHITE_TO_MOVE, checkState: 'CHECK_WHITE' }));
 
     // ASSERTIONS
     expect(result.current.animateCheck).toBe(false);
@@ -182,7 +182,7 @@ describe('useGameFeedback', () => {
     });
 
     // ACT
-    rerender({ ...WHITE_TO_MOVE, moveCount: 5, sideToMove: 'b', inCheck: true, status: 'WHITE_WON' });
+    rerender({ ...WHITE_TO_MOVE, moveCount: 5, sideToMove: 'b', checkState: 'CHECK_BLACK', status: 'WHITE_WON' });
 
     // ASSERTIONS
     expect(playSound).toHaveBeenCalledWith(STANDARD.sounds.win);

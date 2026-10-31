@@ -1,4 +1,4 @@
-import type { Position, Square } from '@chesstopia/openapi-client';
+import type { GameResponse, Position, Square } from '@chesstopia/openapi-client';
 import { toSquare } from './squares';
 
 export type PieceCode =
@@ -42,6 +42,11 @@ export function kingSquare(board: Board, side: Side): string | null {
 
 export function sideOf(position: Position): Side {
   return position.sideToMove === 'BLACK' ? 'b' : 'w';
+}
+
+/** Wer im Schach steht, sagt allein `checkState` (ADR-0033); `null` ohne Schach. */
+export function checkedSide(checkState: GameResponse['checkState']): Side | null {
+  return checkState === 'CHECK_WHITE' ? 'w' : checkState === 'CHECK_BLACK' ? 'b' : null;
 }
 
 const FILE_BY_LETTER: Record<string, Square['file']> = {

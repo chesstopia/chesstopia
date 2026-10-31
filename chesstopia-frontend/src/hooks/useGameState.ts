@@ -109,7 +109,6 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
 
   const board: Board | null = position === null ? null : toBoard(position);
   const sideToMove: Side | null = position === null ? null : sideOf(position);
-  const inCheck = checkState !== 'NO_CHECK';
 
   const playMove = useCallback(
     async (from: string, to: string) => {
@@ -147,5 +146,5 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
     [gameId, position, status, playerToken, deleted, applyResponse, markDeleted],
   );
 
-  return { board, position, sideToMove, checkState, inCheck, moveCount, status, endReason, error, loading, pending, role, entry, deleted, moves, lastMove, playMove };
+  return { board, position, sideToMove, checkState, moveCount, status, endReason, error, loading, pending, role, entry, deleted, moves, lastMove, playMove };
 }

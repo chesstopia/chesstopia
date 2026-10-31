@@ -3,14 +3,14 @@ import { BASE_TITLE, gameTitle, withAttention } from '../gameTitle';
 import type { GameSnapshot } from '../feedback';
 
 function snap(overrides: Partial<GameSnapshot> = {}): GameSnapshot {
-  return { moveCount: 1, sideToMove: 'w', inCheck: false, status: 'ONGOING', ...overrides };
+  return { moveCount: 1, sideToMove: 'w', checkState: 'NO_CHECK', status: 'ONGOING', ...overrides };
 }
 
 describe('gameTitle', () => {
   describe('gameTitle', () => {
     it('zeigt Zuschauern immer den Basistitel', () => {
       // ACT & ASSERTIONS
-      expect(gameTitle(snap({ inCheck: true }), null)).toBe(BASE_TITLE);
+      expect(gameTitle(snap({ checkState: 'CHECK_WHITE' }), null)).toBe(BASE_TITLE);
       expect(gameTitle(snap({ status: 'WHITE_WON' }), null)).toBe('Chesstopia');
     });
 
@@ -31,7 +31,12 @@ describe('gameTitle', () => {
 
     it('zeigt Schach, wenn man selbst am Zug ist und im Schach steht', () => {
       // ACT & ASSERTIONS
-      expect(gameTitle(snap({ inCheck: true }), 'w')).toBe('Schach! · Chesstopia');
+      expect(gameTitle(snap({ checkState: 'CHECK_WHITE' }), 'w')).toBe('Schach! · Chesstopia');
+    });
+
+    it('zeigt Schach nur, wenn checkState die eigene Seite nennt', () => {
+      // ACT & ASSERTIONS
+      expect(gameTitle(snap({ sideToMove: 'w', checkState: 'CHECK_BLACK' }), 'w')).toBe('Du bist am Zug · Chesstopia');
     });
 
     it('zeigt den Zug, wenn man selbst am Zug ist', () => {
@@ -42,7 +47,7 @@ describe('gameTitle', () => {
     it('zeigt den Basistitel, wenn der Gegner am Zug ist, auch wenn er im Schach steht', () => {
       // ACT & ASSERTIONS
       expect(gameTitle(snap({ sideToMove: 'b' }), 'w')).toBe(BASE_TITLE);
-      expect(gameTitle(snap({ sideToMove: 'b', inCheck: true }), 'w')).toBe(BASE_TITLE);
+      expect(gameTitle(snap({ sideToMove: 'b', checkState: 'CHECK_BLACK' }), 'w')).toBe(BASE_TITLE);
     });
   });
 

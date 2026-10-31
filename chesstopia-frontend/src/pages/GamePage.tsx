@@ -11,7 +11,7 @@ import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useGameFeedback } from '@/hooks/useGameFeedback';
 import { useGameState } from '@/hooks/useGameState';
-import { kingSquare, type Side } from '@/lib/position';
+import { checkedSide, kingSquare, type Side } from '@/lib/position';
 
 const SIDE_NAME: Record<Side, string> = { w: 'Weiß', b: 'Schwarz' };
 
@@ -21,10 +21,10 @@ export function GamePage() {
   const inviteTokenFromUrl = searchParams.get('invite');
 
   const {
-    board, sideToMove, checkState, inCheck, moveCount, status, endReason, error, loading, pending, role, entry, deleted, playMove, moves,
+    board, sideToMove, checkState, moveCount, status, endReason, error, loading, pending, role, entry, deleted, playMove, moves,
     lastMove,
   } = useGameState(gameId, inviteTokenFromUrl);
-  const { animateCheck } = useGameFeedback({ role, moveCount, sideToMove, inCheck, status });
+  const { animateCheck } = useGameFeedback({ role, moveCount, sideToMove, checkState, status });
   // Zuschauer wählen die Ansicht selbst; sie wird nicht gespeichert.
   const [spectatorFlipped, setSpectatorFlipped] = useState(false);
 
@@ -35,10 +35,10 @@ export function GamePage() {
   const showTurn = board && !over && !deleted;
 
   // Wer im Schach steht, sagt die Engine über `checkState`; nach dem Matt bleibt der König markiert.
-  const checkedSide: Side | null = checkState === 'CHECK_WHITE' ? 'w' : checkState === 'CHECK_BLACK' ? 'b' : null;
-  const checkedKing = board && checkedSide ? kingSquare(board, checkedSide) : null;
+  const checked = checkedSide(checkState);
+  const checkedKing = board && checked ? kingSquare(board, checked) : null;
   const kingMarker: KingMarker | null = checkedKing ? { square: checkedKing, kind: over ? 'mate' : 'check' } : null;
-  const checkBadge = (side: Side) => !over && checkedSide === side;
+  const checkBadge = (side: Side) => !over && checked === side;
 
   const inviteLink =
     entry?.role === 'OWNER' ? `${location.origin}/game/${gameId}?invite=${entry.inviteToken}` : null;

@@ -1,6 +1,6 @@
 import type { GameResponse } from '@chesstopia/openapi-client';
 import { outcomeKind } from './outcome';
-import type { Side } from './position';
+import { checkedSide, type Side } from './position';
 
 /** Was der Spieler hören soll; zugleich die Schlüssel des Sound-Themes. */
 export type FeedbackEvent = 'move' | 'check-received' | 'check-given' | 'win' | 'loss' | 'draw';
@@ -9,7 +9,7 @@ export type FeedbackEvent = 'move' | 'check-received' | 'check-given' | 'win' | 
 export type GameSnapshot = {
   moveCount: number;
   sideToMove: Side;
-  inCheck: boolean;
+  checkState: GameResponse['checkState'];
   status: GameResponse['status'];
 };
 
@@ -35,6 +35,7 @@ export function detectFeedbackEvent(prev: GameSnapshot | null, next: GameSnapsho
     const kind = outcomeKind(next.status, role);
     return kind === null ? null : OUTCOME_EVENT[kind];
   }
-  if (next.inCheck) return role === null || ownMove ? 'check-given' : 'check-received';
+  const checked = checkedSide(next.checkState);
+  if (checked !== null) return role !== null && checked === role ? 'check-received' : 'check-given';
   return ownMove ? null : 'move';
 }

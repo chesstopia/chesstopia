@@ -11,7 +11,7 @@ type Args = {
   role: Side | null;
   moveCount: number;
   sideToMove: Side | null;
-  inCheck: boolean;
+  checkState: GameResponse['checkState'];
   status: GameResponse['status'];
 };
 
@@ -19,7 +19,7 @@ type Args = {
 type Held = { snapshot: GameSnapshot | null; event: FeedbackEvent | null; seq: number };
 
 function sameSnapshot(a: GameSnapshot, b: GameSnapshot): boolean {
-  return a.moveCount === b.moveCount && a.sideToMove === b.sideToMove && a.inCheck === b.inCheck && a.status === b.status;
+  return a.moveCount === b.moveCount && a.sideToMove === b.sideToMove && a.checkState === b.checkState && a.status === b.status;
 }
 
 /**
@@ -32,12 +32,12 @@ function sameSnapshot(a: GameSnapshot, b: GameSnapshot): boolean {
  * verbietet `react-hooks/set-state-in-effect`. Ton und Titel sind
  * Seiteneffekte und laufen danach im Effekt, gesteuert über `seq`.
  */
-export function useGameFeedback({ role, moveCount, sideToMove, inCheck, status }: Args): { animateCheck: boolean } {
+export function useGameFeedback({ role, moveCount, sideToMove, checkState, status }: Args): { animateCheck: boolean } {
   const theme = useSoundTheme();
   const [muted] = useSoundMuted();
   const [held, setHeld] = useState<Held>({ snapshot: null, event: null, seq: 0 });
 
-  const snapshot: GameSnapshot | null = sideToMove === null ? null : { moveCount, sideToMove, inCheck, status };
+  const snapshot: GameSnapshot | null = sideToMove === null ? null : { moveCount, sideToMove, checkState, status };
   if (snapshot !== null && (held.snapshot === null || !sameSnapshot(held.snapshot, snapshot))) {
     const isTransition = held.snapshot !== null && snapshot.moveCount > held.snapshot.moveCount;
     setHeld({

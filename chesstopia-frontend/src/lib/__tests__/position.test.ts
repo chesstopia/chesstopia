@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toBoard, sideOf, parseSquare, kingSquare } from '../position';
+import { toBoard, sideOf, checkedSide, parseSquare, kingSquare } from '../position';
 import type { Position } from '@chesstopia/openapi-client';
 
 const startish: Position = {
@@ -39,6 +39,19 @@ describe('position', () => {
     it('bildet WHITE/BLACK auf w/b ab', () => {
       // ACT & ASSERTIONS
       expect(sideOf(startish)).toBe('b');
+    });
+  });
+
+  describe('checkedSide', () => {
+    it('liefert null ohne Schach', () => {
+      // ACT & ASSERTIONS
+      expect(checkedSide('NO_CHECK')).toBeNull();
+    });
+
+    it('liefert die Seite, die im Schach steht', () => {
+      // ACT & ASSERTIONS
+      expect(checkedSide('CHECK_WHITE')).toBe('w');
+      expect(checkedSide('CHECK_BLACK')).toBe('b');
     });
   });
 

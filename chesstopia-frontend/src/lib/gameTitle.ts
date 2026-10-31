@@ -1,6 +1,6 @@
 import type { GameSnapshot } from './feedback';
 import { outcomeKind } from './outcome';
-import type { Side } from './position';
+import { checkedSide, type Side } from './position';
 
 export const BASE_TITLE = 'Chesstopia';
 
@@ -18,7 +18,7 @@ export function gameTitle(s: GameSnapshot, role: Side | null): string {
   const kind = outcomeKind(s.status, role);
   if (kind !== null) return OUTCOME_TITLE[kind] + SEPARATOR + BASE_TITLE;
   if (s.sideToMove !== role) return BASE_TITLE;
-  return (s.inCheck ? 'Schach!' : 'Du bist am Zug') + SEPARATOR + BASE_TITLE;
+  return (checkedSide(s.checkState) === role ? 'Schach!' : 'Du bist am Zug') + SEPARATOR + BASE_TITLE;
 }
 
 /** `● ` davor markiert „hier ist etwas passiert, während du weg warst“. */

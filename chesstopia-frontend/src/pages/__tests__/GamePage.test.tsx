@@ -274,7 +274,7 @@ describe('GamePage', () => {
 
     it('rahmt den König im Schach und zeigt die Marke in seiner Zeile', () => {
       // ARRANGE
-      useGameState.mockReturnValue({ ...BASE, board: KING_BOARD, role: 'w', sideToMove: 'w', checkState: 'CHECK_WHITE', inCheck: true, moveCount: 3 });
+      useGameState.mockReturnValue({ ...BASE, board: KING_BOARD, role: 'w', sideToMove: 'w', checkState: 'CHECK_WHITE', moveCount: 3 });
 
       // ACT
       renderAt('/game/g-1');
@@ -288,7 +288,7 @@ describe('GamePage', () => {
     it('markiert den mattgesetzten König als mate und zeigt keine Schach-Marke', () => {
       // ARRANGE
       useGameState.mockReturnValue({
-        ...BASE, board: KING_BOARD, role: 'w', sideToMove: 'w', checkState: 'CHECK_WHITE', inCheck: true, moveCount: 4,
+        ...BASE, board: KING_BOARD, role: 'w', sideToMove: 'w', checkState: 'CHECK_WHITE', moveCount: 4,
         status: 'BLACK_WON', endReason: 'CHECKMATE',
       });
 
@@ -303,7 +303,7 @@ describe('GamePage', () => {
     it('rahmt den König der Seite aus checkState, nicht aus sideToMove', () => {
       // ARRANGE — bewusst widersprüchlich: nur checkState darf entscheiden
       useGameState.mockReturnValue({
-        ...BASE, board: KING_BOARD, role: 'w', sideToMove: 'w', checkState: 'CHECK_BLACK', inCheck: true, moveCount: 5,
+        ...BASE, board: KING_BOARD, role: 'w', sideToMove: 'w', checkState: 'CHECK_BLACK', moveCount: 5,
       });
 
       // ACT
