@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { addOwnedGame, addInvitedGame, findGame, myGames, removeGame } from '../gameStorage';
+import { addOwnedGame, addInvitedGame, allGames, findGame, myGames, removeGame } from '../gameStorage';
 
 describe('gameStorage', () => {
   beforeEach(() => {
@@ -87,5 +87,22 @@ describe('gameStorage', () => {
 
     // ASSERTIONS
     expect(myGames()).toEqual([owned]);
+  });
+
+  it('allGames liefert Owner- und Invited-Partien in Einfuegereihenfolge', () => {
+    // ARRANGE
+    addOwnedGame('g1', 'o1', 'i1');
+    addInvitedGame('g2', 'i2');
+    addOwnedGame('g3', 'o3', 'i3');
+
+    // ACT
+    const games = allGames();
+
+    // ASSERTIONS
+    expect(games.map((g) => [g.gameId, g.role])).toEqual([
+      ['g1', 'OWNER'],
+      ['g2', 'INVITED'],
+      ['g3', 'OWNER'],
+    ]);
   });
 });

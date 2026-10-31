@@ -47,3 +47,8 @@ export function removeGame(gameId: string): void {
 export function myGames(): StoredGame[] {
   return loadGames().filter((g) => g.role === 'OWNER');
 }
+
+/** Alle gemerkten Partien, eigene und eingeladene, in Einfügereihenfolge. */
+export function allGames(): StoredGame[] {
+  return loadGames();
+}

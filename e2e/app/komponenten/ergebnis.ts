@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 import type { Farbe } from '../../modell/schach';
 import { warteAufWert } from '../intern/warten';
 
-/** Die Ergebniszeile einer beendeten Partie (`role="status"`). */
+/** Die Ergebniszeile einer beendeten Partie (`data-game-result`). */
 export class Ergebnis {
   constructor(
     private readonly page: Page,
@@ -10,7 +10,7 @@ export class Ergebnis {
   ) {}
 
   async text(): Promise<string | null> {
-    const treffer = this.page.getByRole('status');
+    const treffer = this.page.locator('[data-game-result]');
     if ((await treffer.count()) === 0) return null;
     return ((await treffer.first().textContent()) ?? '').trim();
   }

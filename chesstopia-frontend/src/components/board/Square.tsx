@@ -1,5 +1,6 @@
 import type { PieceCode } from '@/lib/position';
 import { Piece } from './Piece';
+import { useBoardTheme } from './theme/BoardThemeProvider';
 
 type SquareProps = {
   square: string;
@@ -9,16 +10,23 @@ type SquareProps = {
   draggable: boolean;
   dragging: boolean;
   hovered: boolean;
-  onPickUp: (square: string, x: number, y: number) => void;
+  lastMove: boolean;
+  /** Liniebuchstabe bzw. Reihenziffer; nur Randfelder tragen eine. */
+  fileLabel?: string;
+  rankLabel?: string;
+  /** `size` ist die gemessene Feldkante, damit das Geisterbild gleich groß wird. */
+  onPickUp: (square: string, x: number, y: number, size: number) => void;
   onHover: (square: string) => void;
   onDrop: (square: string) => void;
 };
 
 export function Square({
-  square, light, piece, draggable, dragging, hovered, onPickUp, onHover, onDrop,
+  square, light, piece, draggable, dragging, hovered, lastMove, fileLabel, rankLabel, onPickUp, onHover, onDrop,
 }: SquareProps) {
-  const base = light ? 'bg-amber-100' : 'bg-amber-800';
-  const mark = dragging ? 'ring-4 ring-inset ring-sky-400' : hovered ? 'ring-4 ring-inset ring-sky-200' : '';
+  const { colors } = useBoardTheme();
+  // Beschriftung in der Gegenfarbe des Feldes, damit sie auf beiden lesbar bleibt.
+  const labelColor = light ? colors.darkSquare : colors.lightSquare;
+  const ring = dragging ? colors.dragSource : hovered ? colors.dragTarget : null;
 
   return (
     <div
@@ -26,20 +34,49 @@ export function Square({
       // eine Vorlesehilfe 64 leere Kästen.
       aria-label={square}
       data-square={square}
-      className={`flex items-center justify-center w-full aspect-square ${base} ${mark} ${
+      data-last-move={lastMove || undefined}
+      className={`relative flex items-center justify-center w-full aspect-square ${
         draggable ? 'cursor-grab' : ''
       }`}
       // Ohne diese Zeile scrollt der Browser auf einem Tablet das Brett weg,
       // statt die Figur zu ziehen.
-      style={{ touchAction: 'none' }}
+      style={{
+        touchAction: 'none',
+        backgroundColor: light ? colors.lightSquare : colors.darkSquare,
+        // Als Hintergrundebene statt Overlay: so liegt die Markierung sicher unter der Figur.
+        backgroundImage: lastMove
+          ? `linear-gradient(${colors.lastMove}, ${colors.lastMove})`
+          : undefined,
+        boxShadow: ring ? `inset 0 0 0 4px ${ring}` : undefined,
+      }}
       onPointerDown={(event) => {
         if (!draggable) return;
         event.preventDefault();
-        onPickUp(square, event.clientX, event.clientY);
+        onPickUp(square, event.clientX, event.clientY, event.currentTarget.getBoundingClientRect().width);
       }}
       onPointerEnter={() => onHover(square)}
       onPointerUp={() => onDrop(square)}
     >
+      {rankLabel && (
+        <span
+          aria-hidden
+          data-coord-rank
+          className="absolute left-0.5 top-0 text-[10px] leading-none font-semibold select-none pointer-events-none"
+          style={{ color: labelColor }}
+        >
+          {rankLabel}
+        </span>
+      )}
+      {fileLabel && (
+        <span
+          aria-hidden
+          data-coord-file
+          className="absolute right-0.5 bottom-0.5 text-[10px] leading-none font-semibold select-none pointer-events-none"
+          style={{ color: labelColor }}
+        >
+          {fileLabel}
+        </span>
+      )}
       {piece && <Piece code={piece} dragging={dragging} />}
     </div>
   );

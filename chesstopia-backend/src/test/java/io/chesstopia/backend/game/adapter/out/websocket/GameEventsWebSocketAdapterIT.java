@@ -93,6 +93,7 @@ class GameEventsWebSocketAdapterIT {
         GameResponse broadcast = received.get(5, TimeUnit.SECONDS);
         assertThat(broadcast.getId()).isEqualTo(created.getId());
         assertThat(broadcast.getMoveCount()).isEqualTo(1);
+        assertThat(broadcast.getLastActivityAt()).isNotNull();
         assertThat(eventHeader.get(5, TimeUnit.SECONDS)).isEqualTo("null");
         assertThat(broadcast.getPosition().getSideToMove()).isEqualTo(Position.SideToMoveEnum.BLACK);
 

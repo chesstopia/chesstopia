@@ -4,6 +4,8 @@ import { createBrowserRouter, RouterProvider } from 'react-router';
 import './index.css';
 import { StartPage } from './pages/StartPage';
 import { GamePage } from './pages/GamePage';
+import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const router = createBrowserRouter([
   { path: '/', element: <StartPage /> },
@@ -12,6 +14,9 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <TooltipProvider>
+      <RouterProvider router={router} />
+      <Toaster />
+    </TooltipProvider>
   </StrictMode>,
 );

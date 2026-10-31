@@ -62,6 +62,19 @@
     group: root
     mode: "0644"
 
+# Kernel updates only take effect after a reboot. Containers come back via
+# restart: unless-stopped and the enabled docker service.
+- name: Reboot automatically after unattended-upgrades when required
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/52chesstopia-auto-reboot
+    content: |
+      Unattended-Upgrade::Automatic-Reboot "true";
+      Unattended-Upgrade::Automatic-Reboot-WithUsers "true";
+      Unattended-Upgrade::Automatic-Reboot-Time "03:00";
+    owner: root
+    group: root
+    mode: "0644"
+
 # --- fail2ban (default sshd jail) ---
 - name: Enable fail2ban
   ansible.builtin.service:

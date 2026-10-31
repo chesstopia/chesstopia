@@ -1,52 +1,55 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useNavigate } from 'react-router';
+import { Plus } from 'lucide-react';
 import { GameApi } from '@chesstopia/openapi-client';
 import type { GameResponse } from '@chesstopia/openapi-client';
 import { apiConfig, isNotFound } from '@/lib/api';
-import { addOwnedGame, myGames, removeGame } from '@/lib/gameStorage';
+import { addOwnedGame, allGames, myGames, removeGame, type GameRole } from '@/lib/gameStorage';
 import { Button } from '@/components/ui/button';
-import { DeleteGameDialog } from '@/components/DeleteGameDialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { GameRow } from '@/components/start/GameRow';
 
 const gameApi = new GameApi(apiConfig);
 
-const STATUS_LABEL: Record<string, string> = {
-  ONGOING: 'Läuft',
-  WHITE_WON: 'Weiß hat gewonnen',
-  BLACK_WON: 'Schwarz hat gewonnen',
-  DRAW: 'Remis',
-};
-
-type Row = ({ gameId: string; label: string; unavailable?: false } | { gameId: string; unavailable: true }) & {
+type Row = {
+  gameId: string;
+  role: GameRole;
+  /** `null`, wenn die Partie nicht mehr abrufbar ist. */
+  game: GameResponse | null;
   deleteError?: string;
 };
 
-function statusLabel(response: GameResponse): string {
-  const base = STATUS_LABEL[response.status] ?? response.status;
-  return response.endReason ? `${base} (${response.endReason})` : base;
+/** Neueste zuerst; nicht abrufbare Partien (ohne Zeitstempel) ans Ende. */
+function byRecency(a: Row, b: Row): number {
+  return (b.game?.lastActivityAt ?? '').localeCompare(a.game?.lastActivityAt ?? '');
 }
 
 export function StartPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(() => allGames().length > 0);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [pending, setPending] = useState<{ gameId: string; kind: 'delete' | 'remove' } | null>(null);
   const [deletingNow, setDeletingNow] = useState(false);
   const deleting = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
     Promise.all(
-      myGames().map(async ({ gameId }): Promise<Row> => {
+      allGames().map(async ({ gameId, role }): Promise<Row> => {
         try {
           const res = await gameApi.getGame(gameId);
-          return { gameId, label: statusLabel(res.data) };
+          return { gameId, role, game: res.data };
         } catch {
-          return { gameId, unavailable: true };
+          return { gameId, role, game: null };
         }
       }),
     ).then((results) => {
-      if (!cancelled) setRows(results);
+      if (cancelled) return;
+      setRows(results);
+      setLoading(false);
     });
     return () => {
       cancelled = true;
@@ -67,12 +70,21 @@ export function StartPage() {
     }
   };
 
+  const confirmRemove = () => {
+    const gameId = pending?.gameId;
+    setPending(null);
+    if (gameId === undefined) return;
+    // Nur die Merkliste: Löschen darf serverseitig allein der Ersteller.
+    removeGame(gameId);
+    setRows((current) => current.filter((r) => r.gameId !== gameId));
+  };
+
   const confirmDelete = async () => {
-    const gameId = pendingDelete;
-    if (gameId === null || deleting.current) return;
+    const gameId = pending?.gameId;
+    if (gameId === undefined || deleting.current) return;
     deleting.current = true;
     setDeletingNow(true);
-    setPendingDelete(null);
+    setPending(null);
     const ownerToken = myGames().find((g) => g.gameId === gameId)?.ownerToken;
     try {
       await gameApi.deleteGame(gameId, ownerToken);
@@ -92,39 +104,87 @@ export function StartPage() {
     }
   };
 
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-stone-900 text-stone-200">
-      <h1 className="text-2xl font-semibold">Chesstopia</h1>
-      <Button onClick={createGame} disabled={creating}>
-        Neue Partie starten
-      </Button>
-      {error && <p className="text-red-400">Fehler: {error.message}</p>}
-      {rows.length > 0 && (
+  const now = new Date();
+  // Nicht abrufbare Partie: Der Hinweis auf den Einladungslink träfe nicht zu.
+  const unavailable = rows.find((r) => r.gameId === pending?.gameId)?.game === null;
+  const ongoing = rows.filter((r) => r.game?.status === 'ONGOING').sort(byRecency);
+  const finished = rows.filter((r) => r.game?.status !== 'ONGOING').sort(byRecency);
+
+  const newGameButton = (
+    <Button onClick={createGame} disabled={creating}>
+      <Plus /> Neue Partie
+    </Button>
+  );
+
+  const section = (title: string, list: Row[]) =>
+    list.length > 0 && (
+      <section className="flex flex-col gap-2">
+        <h2 className="mt-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</h2>
         <ul className="flex flex-col gap-2">
-          {rows.map((row) => (
-            <li key={row.gameId} data-game-id={row.gameId} className="flex items-center gap-3">
-              {row.unavailable ? (
-                <span className="text-stone-500">Partie nicht verfügbar</span>
-              ) : (
-                <>
-                  <span>{row.label}</span>
-                  <Link className="underline" to={`/game/${row.gameId}`}>
-                    Öffnen
-                  </Link>
-                </>
-              )}
-              <Button variant="outline" size="sm"
-                disabled={deletingNow}
-                onClick={() => setPendingDelete(row.gameId)}
-              >
-                Löschen
-              </Button>
-              {row.deleteError && <span className="text-red-400">Fehler: {row.deleteError}</span>}
-            </li>
+          {list.map((row) => (
+            <GameRow
+              key={row.gameId}
+              gameId={row.gameId}
+              role={row.role}
+              game={row.game}
+              now={now}
+              disabled={deletingNow}
+              error={row.deleteError}
+              onDelete={() => setPending({ gameId: row.gameId, kind: 'delete' })}
+              onRemove={() => setPending({ gameId: row.gameId, kind: 'remove' })}
+            />
           ))}
         </ul>
+      </section>
+    );
+
+  return (
+    <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-2 px-4 py-6">
+      <header className="mb-2 flex items-center justify-between">
+        <h1 className="text-lg font-semibold">
+          <span aria-hidden="true">♞</span> Chesstopia
+        </h1>
+        {(loading || rows.length > 0) && newGameButton}
+      </header>
+      {error && <p className="text-destructive">Fehler: {error.message}</p>}
+      {loading ? (
+        <div className="flex flex-col gap-2" aria-busy="true">
+          {allGames().map(({ gameId }) => (
+            <Skeleton key={gameId} className="h-16 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="mt-10 flex flex-col items-center gap-4 text-center text-muted-foreground">
+          <p>Noch keine Partien. Starte eine neue und lade jemanden ein.</p>
+          {newGameButton}
+        </div>
+      ) : (
+        <>
+          {section('Laufend', ongoing)}
+          {section('Beendet', finished)}
+        </>
       )}
-      <DeleteGameDialog open={pendingDelete !== null} onConfirm={confirmDelete} onCancel={() => setPendingDelete(null)} />
+      <ConfirmDialog
+        open={pending?.kind === 'delete'}
+        title="Partie löschen?"
+        description="Partie wirklich löschen? Das lässt sich nicht rückgängig machen."
+        confirmLabel="Löschen"
+        destructive
+        onConfirm={confirmDelete}
+        onCancel={() => setPending(null)}
+      />
+      <ConfirmDialog
+        open={pending?.kind === 'remove'}
+        title="Partie aus Liste entfernen?"
+        description={
+          unavailable
+            ? 'Die Partie ist nicht mehr abrufbar.'
+            : 'Die Partie selbst bleibt bestehen und ist über den Einladungslink wieder erreichbar.'
+        }
+        confirmLabel="Entfernen"
+        onConfirm={confirmRemove}
+        onCancel={() => setPending(null)}
+      />
     </main>
   );
 }

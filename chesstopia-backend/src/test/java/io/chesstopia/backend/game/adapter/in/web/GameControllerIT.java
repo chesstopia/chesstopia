@@ -110,6 +110,28 @@ class GameControllerIT {
     }
 
     @Test
+    void createGame_liefertLastActivityAt() {
+        // ACT
+        GameCreatedResponse response = createGame();
+
+        // ASSERTIONS
+        assertThat(response.getLastActivityAt()).isNotNull();
+    }
+
+    @Test
+    void playMove_setztLastActivityAtNichtZurueck() {
+        // ARRANGE
+        GameCreatedResponse created = createGame();
+
+        // ACT
+        playMove(created.getId(), created.getOwnerToken(), move("E", "TWO", "E", "FOUR"));
+
+        // ASSERTIONS
+        assertThat(getGame(created.getId()).getLastActivityAt())
+            .isAfterOrEqualTo(created.getLastActivityAt());
+    }
+
+    @Test
     void createGame_zweiPartienHabenVerschiedeneIds() {
         // ACT & ASSERTIONS
         assertThat(createGame().getId()).isNotEqualTo(createGame().getId());

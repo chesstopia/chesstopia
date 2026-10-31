@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameApi } from '@chesstopia/openapi-client';
-import type { GameResponse, MoveRequest, Position } from '@chesstopia/openapi-client';
+import type { GameResponse, MoveRecord, MoveRequest, Position } from '@chesstopia/openapi-client';
 import { apiConfig, isNotFound } from '@/lib/api';
 import { isLegalMove } from '@/lib/engine';
-import { parseSquare, sideOf, toBoard } from '@/lib/position';
+import { formatSquare, parseSquare, sideOf, toBoard } from '@/lib/position';
 import type { Board, Side } from '@/lib/position';
 import { fromSquare } from '@/lib/squares';
 import { addInvitedGame, findGame, removeGame } from '@/lib/gameStorage';
@@ -42,6 +42,8 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
   const [status, setStatus] = useState<GameResponse['status']>('ONGOING');
   const [endReason, setEndReason] = useState<GameResponse['endReason'] | null>(null);
   const [deleted, setDeleted] = useState(false);
+  const [moveCount, setMoveCount] = useState(0);
+  const [moves, setMoves] = useState<MoveRecord[]>([]);
   const moveCountRef = useRef(-1);
 
   // Aus `loadedFor` abgeleitet statt eines eigenen `loading`-States: Ein
@@ -56,6 +58,7 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
   const applyResponse = useCallback((data: GameResponse) => {
     if (data.moveCount < moveCountRef.current) return;
     moveCountRef.current = data.moveCount;
+    setMoveCount(data.moveCount);
     setPosition(data.position);
     setStatus(data.status);
     setEndReason(data.endReason ?? null);
@@ -84,6 +87,23 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
       onDeleted: markDeleted,
     });
   }, [gameId, applyResponse, markDeleted]);
+
+  // Die Historie wird nachgeladen, sobald `moveCount` der gehaltenen Liste
+  // voraus ist. Eine Antwort gilt nur, wenn sie mindestens so lang ist wie die
+  // gehaltene Liste — dieselbe Stale-Regel wie bei `moveCountRef`: eine
+  // verspätete, kürzere Antwort darf keine neuere Liste zurückwerfen.
+  // `setMoves` steht im Promise-Callback, nicht synchron im Effekt
+  // (`react-hooks/set-state-in-effect`).
+  useEffect(() => {
+    if (moveCount <= moves.length) return;
+    gameApi
+      .listMoves(gameId)
+      .then((res) => setMoves((held) => (res.data.moves.length >= held.length ? res.data.moves : held)))
+      .catch((err: unknown) => setError(asError(err)));
+  }, [gameId, moveCount, moves.length]);
+
+  const last = moves.length > 0 ? moves[moves.length - 1].move : null;
+  const lastMove = last === null ? null : { from: formatSquare(last.from), to: formatSquare(last.to) };
 
   const board: Board | null = position === null ? null : toBoard(position);
   const sideToMove: Side | null = position === null ? null : sideOf(position);
@@ -124,5 +144,5 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
     [gameId, position, status, playerToken, deleted, applyResponse, markDeleted],
   );
 
-  return { board, position, sideToMove, status, endReason, error, loading, pending, role, entry, deleted, playMove };
+  return { board, position, sideToMove, status, endReason, error, loading, pending, role, entry, deleted, moves, lastMove, playMove };
 }

@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 import { figurVon, zeichne } from '../../modell/brettbild';
-import { leereStellung, type Farbe, type Feld, type Figur, type Stellung, type Zug } from '../../modell/schach';
+import { leereStellung, type Ausrichtung, type Farbe, type Feld, type Figur, type Stellung, type Zug } from '../../modell/schach';
 import { ziehePerZeiger } from '../intern/geste';
 import { warteAufWert } from '../intern/warten';
 
@@ -19,6 +19,14 @@ export class Brett {
   /** Nur die Geste — was danach geschieht, entscheidet der Aufrufer. */
   async ziehe(zug: Zug): Promise<void> {
     await ziehePerZeiger(this.page, zug.von, zug.nach);
+  }
+
+  /** Vergleicht die Bildschirmlage von a1 und a8; die DOM-Reihenfolge zählt nicht. */
+  async ausrichtung(): Promise<Ausrichtung> {
+    const a1 = await this.page.locator('[data-square="a1"]').boundingBox();
+    const a8 = await this.page.locator('[data-square="a8"]').boundingBox();
+    if (a1 === null || a8 === null) throw new Error(`${this.farbe}: a1 oder a8 nicht sichtbar`);
+    return a1.y > a8.y ? 'weiss-unten' : 'schwarz-unten';
   }
 
   /** Momentaufnahme in einem Zug durch die Seite, damit sie nicht zwischen zwei Feldern kippt. */

@@ -1,25 +1,31 @@
 import type { PieceCode } from '@/lib/position';
+import { useBoardTheme } from './theme/BoardThemeProvider';
 
-const SYMBOLS: Record<PieceCode, string> = {
-  wK: '♔', wQ: '♕', wR: '♖', wB: '♗', wN: '♘', wP: '♙',
-  bK: '♚', bQ: '♛', bR: '♜', bB: '♝', bN: '♞', bP: '♟',
-};
+const COLOR_NAME = { w: 'weißer', b: 'schwarzer' } as const;
+const TYPE_NAME = {
+  K: 'König', Q: 'Dame', R: 'Turm', B: 'Läufer', N: 'Springer', P: 'Bauer',
+} as const;
 
 type PieceProps = {
   code: PieceCode;
   /** Die Figur hängt am Zeiger — ihr Feld zeigt sie nur noch blass. */
   dragging?: boolean;
+  /** Kantenlänge in px; ohne Angabe füllt die Figur ~90 % ihres Feldes. */
+  size?: number;
 };
 
-export function Piece({ code, dragging = false }: PieceProps) {
+export function Piece({ code, dragging = false, size }: PieceProps) {
+  const theme = useBoardTheme();
   return (
-    <span
+    <img
       data-piece={code}
-      className={`text-4xl leading-none select-none drop-shadow-sm ${
+      alt={`${COLOR_NAME[code[0] as 'w' | 'b']} ${TYPE_NAME[code[1] as keyof typeof TYPE_NAME]}`}
+      src={theme.pieces[code]}
+      draggable={false}
+      className={`select-none ${size === undefined ? 'w-[90%] h-auto' : ''} ${
         dragging ? 'opacity-30' : ''
       }`}
-    >
-      {SYMBOLS[code]}
-    </span>
+      style={size === undefined ? undefined : { width: size, height: size }}
+    />
   );
 }

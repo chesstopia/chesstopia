@@ -59,8 +59,8 @@ A mode in which a [Nutzer](#nutzer) is presented with a [Trainingsposition](#tra
 ## Trainingsposition
 A chess puzzle consisting of a [Stellung](#stellung) (FEN), the engine-computed best solution (calculated by [MoveEngine](#moveengine)), difficulty level, and topic tags. Two sources: (1) automatically extracted from asynchronously analyzed [Partien](#partie) when the engine detects a significant tactical opportunity or blunder; (2) imported from the Lichess open puzzle database. Persisted permanently. When a [Nutzer](#nutzer) attempts a Trainingsposition, their move sequence is evaluated by [MoveEngine](#moveengine); [ChessCoach](#chesscoach) (LLM) then provides a natural-language explanation of the user's choices relative to the best line. Nutzer progress (solved/unsolved) is tracked per Trainingsposition.
 
-## Design
-A user-customizable visual configuration consisting of a Figuren-Sprite-Set (12 SVG/PNG piece images, server-side sanitized on upload) and Farb-Tokens (board light/dark square colors and highlight colors, configured via color picker). Designs are owned by a [Nutzer](#nutzer) and can be applied to any [Partie](#partie). Full CSS uploads are not supported.
+## Theme
+A user-customizable visual configuration consisting of a Figuren-Sprite-Set (12 SVG/PNG piece images, server-side sanitized on upload) and Farb-Tokens (board light/dark square colors and highlight colors, configured via color picker). Themes are owned by a [Nutzer](#nutzer) and can be applied to any [Partie](#partie). Full CSS uploads are not supported.
 
 ## RuleSet
 A configuration object attached to a [Partie](#partie) that defines which chess rules are active. Consists of a base Variant (e.g., Standard, Chess960, King of the Hill, Three-Check) plus a set of optional rule Toggles (e.g., disable en passant). The [Schach-Engine](#schach-engine) receives the RuleSet and applies it during move validation. Arbitrary scripted or free-form rules are out of scope.

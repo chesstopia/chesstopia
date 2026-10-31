@@ -2,15 +2,7 @@ import type { Page } from '@playwright/test';
 import type { Farbe, Zuganzeige } from '../../modell/schach';
 import { warteAufWert } from '../intern/warten';
 
-// Die Texte stehen in GamePage.tsx; hier die einzige Zuordnung zur Zuganzeige.
-const TEXTE: ReadonlyArray<readonly [string, Zuganzeige]> = [
-  ['Du bist am Zug', 'du-bist-am-zug'],
-  ['Gegner ist am Zug', 'gegner-ist-am-zug'],
-  ['Zug wird gespielt…', 'zug-wird-gespielt'],
-  ['Zuschauer', 'zuschauer'],
-];
-
-/** Die Zeile unter dem Brett, die sagt, wer am Zug ist. */
+/** Die Anzeige, die sagt, wer am Zug ist (`data-turn-indicator`). */
 export class Zugzeile {
   constructor(
     private readonly page: Page,
@@ -18,11 +10,8 @@ export class Zugzeile {
   ) {}
 
   async anzeige(): Promise<Zuganzeige> {
-    const absaetze = await this.page.locator('main p').allTextContents();
-    for (const [text, anzeige] of TEXTE) {
-      if (absaetze.some((absatz) => absatz.trim() === text)) return anzeige;
-    }
-    return 'keine';
+    const wert = await this.page.locator('[data-turn-indicator]').first().getAttribute('data-turn-indicator', { timeout: 500 }).catch(() => null);
+    return (wert as Zuganzeige | null) ?? 'keine';
   }
 
   async erwarteAnzeige(soll: Zuganzeige): Promise<void> {

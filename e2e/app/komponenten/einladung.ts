@@ -9,8 +9,8 @@ export class Einladung {
   ) {}
 
   async einladungslink(): Promise<string> {
-    const code = this.page.getByText(/^Einladungslink:/).locator('code');
-    const text = await code.textContent({ timeout: 5_000 }).catch((fehler: Error) => {
+    const knopf = this.page.getByRole('button', { name: 'Einladungslink kopieren' });
+    const text = await knopf.getAttribute('data-link', { timeout: 5_000 }).catch((fehler: Error) => {
       throw new Error(`${this.farbe}: kein Einladungslink sichtbar: ${fehler.message}`);
     });
     if (text === null) throw new Error(`${this.farbe}: kein Einladungslink sichtbar`);
