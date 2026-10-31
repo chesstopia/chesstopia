@@ -279,4 +279,81 @@ describe('Chessboard', () => {
       rect.mockRestore();
     });
   });
+
+  describe('Schach und Partieende', () => {
+    const CHECK = { square: 'e1', kind: 'check' as const };
+
+    it('rahmt das Königsfeld bei Schach in der Theme-Farbe', () => {
+      // ACT
+      render(<Chessboard board={KINGS_ONLY} kingMarker={CHECK} />);
+
+      // ASSERTIONS
+      const e1 = screen.getByLabelText('e1');
+      expect(e1.getAttribute('data-check')).toBe('check');
+      expect(e1.style.boxShadow).toMatch(/#ea580c|rgb\(234, 88, 12\)/i);
+    });
+
+    it('markiert den mattgesetzten König als mate', () => {
+      // ACT
+      render(<Chessboard board={KINGS_ONLY} kingMarker={{ square: 'e8', kind: 'mate' }} />);
+
+      // ASSERTIONS
+      expect(screen.getByLabelText('e8').getAttribute('data-check')).toBe('mate');
+    });
+
+    it('markiert ohne kingMarker kein Feld', () => {
+      // ACT
+      const { container } = render(<Chessboard board={KINGS_ONLY} />);
+
+      // ASSERTIONS
+      expect(container.querySelectorAll('[data-check]')).toHaveLength(0);
+    });
+
+    it('dämpft das Brett bei beendeter Partie', () => {
+      // ACT
+      const { container } = render(<Chessboard board={KINGS_ONLY} ended />);
+
+      // ASSERTIONS
+      const grid = container.firstElementChild as HTMLElement;
+      expect(grid.style.opacity).toBe(String(FLACH.ended.opacity));
+      expect(grid.style.filter).toBe(`saturate(${FLACH.ended.saturate})`);
+    });
+
+    it('lässt das Brett ungedämpft, solange die Partie läuft', () => {
+      // ACT
+      const { container } = render(<Chessboard board={KINGS_ONLY} />);
+
+      // ASSERTIONS
+      const grid = container.firstElementChild as HTMLElement;
+      expect(grid.style.opacity).toBe('');
+      expect(grid.style.filter).toBe('');
+    });
+
+    it('lässt den König nur bei animateCheck wackeln', () => {
+      // ACT
+      const { rerender } = render(<Chessboard board={KINGS_ONLY} kingMarker={CHECK} animateCheck />);
+      const animated = screen.getByLabelText('e1').querySelector('.motion-safe\\:animate-king-wiggle');
+      rerender(<Chessboard board={KINGS_ONLY} kingMarker={CHECK} />);
+      const still = screen.getByLabelText('e1').querySelector('.motion-safe\\:animate-king-wiggle');
+
+      // ASSERTIONS
+      expect(animated).not.toBeNull();
+      expect(animated?.querySelector('[data-piece="wK"]')).not.toBeNull();
+      expect(still).toBeNull();
+    });
+
+    it('zeigt beim Aufnehmen des Königs den Drag-Ring statt des Schach-Rahmens', async () => {
+      // ARRANGE
+      const user = userEvent.setup();
+      render(<Chessboard board={KINGS_ONLY} sideToMove="w" kingMarker={CHECK} />);
+      const e1 = screen.getByLabelText('e1');
+
+      // ACT
+      await user.pointer({ keys: '[MouseLeft>]', target: e1 });
+
+      // ASSERTIONS
+      expect(e1.style.boxShadow).toMatch(/28,\s*25,\s*23/);
+      expect(e1.style.boxShadow).not.toMatch(/#ea580c|rgb\(234, 88, 12\)/i);
+    });
+  });
 });

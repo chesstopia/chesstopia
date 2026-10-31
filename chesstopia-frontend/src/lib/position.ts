@@ -1,4 +1,5 @@
 import type { Position, Square } from '@chesstopia/openapi-client';
+import { toSquare } from './squares';
 
 export type PieceCode =
   | 'wK' | 'wQ' | 'wR' | 'wB' | 'wN' | 'wP'
@@ -28,6 +29,15 @@ export function toBoard(position: Position): Board {
     board[rankIdx(square)][fileIdx(square)] = code as PieceCode;
   }
   return board;
+}
+
+/** Feldname des Königs von `side` (z. B. `"e1"`); `null`, wenn er nicht auf dem Brett steht. */
+export function kingSquare(board: Board, side: Side): string | null {
+  for (let rank = 0; rank < 8; rank++) {
+    const file = board[rank].indexOf(`${side}K`);
+    if (file >= 0) return toSquare(rank, file);
+  }
+  return null;
 }
 
 export function sideOf(position: Position): Side {
