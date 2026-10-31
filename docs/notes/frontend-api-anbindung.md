@@ -21,11 +21,12 @@ Der `typescript-axios`-Generator backt `servers[0].url` aus `openapi.yaml` als a
 Deshalb wird der Client **nie ohne Konfiguration** instanziiert:
 
 ```ts
-// src/lib/api.ts — eine Instanz, überall wiederverwendet
+// src/lib/api.ts — ein geteilter Client, überall wiederverwendet
 export const apiConfig = new Configuration({ basePath: '' });
+export const gameApi = new GameApi(apiConfig);
 
-// im Hook / Service
-const gameApi = new GameApi(apiConfig);
+// im Hook / Service: importieren, nicht neu instanziieren
+import { gameApi } from '@/lib/api';
 ```
 
 `basePath: ''` erzwingt relative Requests (`/api/v1/…`) gegen dieselbe Origin, unter der das Frontend ausgeliefert wird. Das Frontend-Image bleibt damit hostname-frei — die Domain ist eine reine Ansible-Änderung (`SITE_HOSTNAME`), kein Neubau.

@@ -275,7 +275,7 @@ describe('gameModel', () => {
       const next = gameReducer(afterOpponent, { type: 'serverUpdate', game: game(3, 'CHECK_BLACK') });
 
       // ASSERTIONS
-      expect(next.feedback.event).toBe('check-given');
+      expect(next.feedback).toEqual({ event: 'check-given', seq: 2, attentionSeq: 1 });
     });
   });
 });

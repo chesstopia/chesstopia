@@ -26,7 +26,7 @@ function game(overrides: Partial<LoadedGame> = {}): LoadedGame {
 const base = { pending: false, deleted: false, spectatorFlipped: false, feedbackEvent: null };
 
 describe('gameView', () => {
-  it('zeigt Zuschauern Weiß unten, ohne Hinweis und ohne Sperre durch die Rolle', () => {
+  it('zeigt Zuschauern Weiß unten, ohne Hinweis, Brett gesperrt', () => {
     // ARRANGE
     const g = game();
 
