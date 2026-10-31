@@ -349,6 +349,22 @@ describe('useGameState', () => {
     expect(findGame('g-1')).toBeDefined();
   });
 
+  it('ein Ladefehler bleibt stehen, wenn danach eine WS-Stellung kommt', async () => {
+    // ARRANGE
+    getGame.mockRejectedValue({ response: { status: 500 } });
+    const { result } = renderHook(() => useGameState('g-1', null));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    const loadError = result.current.error;
+
+    // ACT
+    act(() => receiveMessage(JSON.stringify(gameResponse(START, 0).data)));
+    await waitFor(() => expect(result.current.game).not.toBeNull());
+
+    // ASSERTIONS
+    expect(loadError).not.toBeNull();
+    expect(result.current.error).toBe(loadError);
+  });
+
   it('lädt die Zughistorie beim Öffnen', async () => {
     // ARRANGE
     getGame.mockResolvedValue(gameResponse(START, 2));
