@@ -9,6 +9,9 @@ export type PieceCode =
 export type Board = (PieceCode | null)[][];
 export type Side = 'w' | 'b';
 
+/** Der König, der einen Rahmen bekommt: im Schach oder mattgesetzt. */
+export type KingMarker = { square: string; kind: 'check' | 'mate' };
+
 const RANKS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT'];
 const FILES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 const TYPE_LETTER: Record<string, string> = {

@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react';
-import type { Board, Side } from '@/lib/position';
+import type { Board, KingMarker, Side } from '@/lib/position';
 import { fromSquare, toSquare } from '@/lib/squares';
 import { Piece } from './Piece';
 import { Square } from './Square';
 import { useBoardTheme } from './theme/BoardThemeProvider';
-
-/** Der König, der einen Rahmen bekommt: im Schach oder mattgesetzt. */
-export type KingMarker = { square: string; kind: 'check' | 'mate' };
 
 type ChessboardProps = {
   board: Board;

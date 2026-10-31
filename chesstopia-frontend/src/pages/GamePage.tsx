@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { RefreshCw } from 'lucide-react';
-import { Chessboard, type KingMarker } from '@/components/board/Chessboard';
+import { Chessboard } from '@/components/board/Chessboard';
 import { GameResultBanner } from '@/components/GameResultBanner';
 import { InviteButtons } from '@/components/game/InviteButtons';
 import { MoveList } from '@/components/game/MoveList';
@@ -13,9 +13,7 @@ import { useGameState } from '@/hooks/useGameState';
 import { useMoveSound } from '@/hooks/useMoveSound';
 import { useTabTitle } from '@/hooks/useTabTitle';
 import { BASE_TITLE, gameTitle } from '@/lib/gameTitle';
-import { checkedSide, kingSquare, type Side } from '@/lib/position';
-
-const SIDE_NAME: Record<Side, string> = { w: 'Weiß', b: 'Schwarz' };
+import { deriveGameView } from '@/lib/gameView';
 
 export function GamePage() {
   const { gameId } = useParams() as { gameId: string };
@@ -31,32 +29,14 @@ function LoadedGamePage({ gameId, inviteTokenFromUrl }: { gameId: string; invite
   );
   useMoveSound(feedback.event, feedback.seq);
   useTabTitle(game ? gameTitle(game, role) : BASE_TITLE, feedback.attentionSeq);
-  // Der König wackelt, solange das letzte Ereignis ein Schach ist.
-  const animateCheck = feedback.event === 'check-given' || feedback.event === 'check-received';
   // Zuschauer wählen die Ansicht selbst; sie wird nicht gespeichert.
   const [spectatorFlipped, setSpectatorFlipped] = useState(false);
-
-  const over = game !== null && game.status !== 'ONGOING';
-  const sideToMove = game?.sideToMove ?? null;
-  const myTurn = role !== null && role === sideToMove;
-  const orientation: Side = role ?? (spectatorFlipped ? 'b' : 'w');
-  const opponentSide: Side = orientation === 'w' ? 'b' : 'w';
-  const showTurn = game !== null && !over && !deleted;
-
-  // Wer im Schach steht, sagt die Engine über `checkState`; nach dem Matt bleibt der König markiert.
-  const checked = game === null ? null : checkedSide(game.checkState);
-  const checkedKing = game && checked ? kingSquare(game.board, checked) : null;
-  const kingMarker: KingMarker | null = checkedKing ? { square: checkedKing, kind: over ? 'mate' : 'check' } : null;
-  const checkBadge = (side: Side) => !over && checked === side;
+  const view = game
+    ? deriveGameView({ game, role, pending, deleted, spectatorFlipped, feedbackEvent: feedback.event })
+    : null;
 
   const inviteLink = inviteToken ? `${location.origin}/game/${gameId}?invite=${inviteToken}` : null;
   const spectatorLink = `${location.origin}/game/${gameId}`;
-
-  const label = (side: Side) =>
-    role === null ? SIDE_NAME[side] : `${side === role ? 'Du' : 'Gegner'} · ${SIDE_NAME[side]}`;
-  const turnState = role === null ? 'zuschauer' : pending ? 'zug-wird-gespielt' : myTurn ? 'du-bist-am-zug' : 'gegner-ist-am-zug';
-  // Hinweis in der eigenen Zeile; beim Zug des Gegners spricht dessen hervorgehobene Zeile.
-  const ownNote = { zuschauer: undefined, 'zug-wird-gespielt': 'Zug wird gespielt…', 'du-bist-am-zug': 'Du bist am Zug', 'gegner-ist-am-zug': undefined }[turnState];
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
@@ -68,45 +48,31 @@ function LoadedGamePage({ gameId, inviteTokenFromUrl }: { gameId: string; invite
       </div>
       {loading && <p className="text-muted-foreground">Lade Brett…</p>}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        {game && (
+        {game && view && (
           // `--board-size`: Brett und Spielerzeilen teilen sich die Breite. 11rem ist der Platz für
           // Kopfzeile, zwei Spielerzeilen und Abstände, den das Brett von 100dvh abzieht.
           <div
             data-board-column
             className="flex min-w-0 flex-col gap-2"
             // Bei beendeter Partie zieht das Brett zusätzlich die Höhe des Ergebnisbanners ab, damit es sichtbar bleibt.
-            style={{ '--board-size': `clamp(280px, min(100%, calc(100dvh - ${over ? '17rem' : '11rem'})), 720px)` } as React.CSSProperties}
+            style={{ '--board-size': `clamp(280px, min(100%, calc(100dvh - ${view.over ? '17rem' : '11rem'})), 720px)` } as React.CSSProperties}
           >
             <div className="w-[var(--board-size)] max-w-full">
-              <PlayerRow
-                side={opponentSide}
-                label={label(opponentSide)}
-                active={!over && sideToMove === opponentSide}
-                check={checkBadge(opponentSide)}
-              />
+              <PlayerRow {...view.top} />
             </div>
             <Chessboard
               board={game.board}
               sideToMove={game.sideToMove}
               onMove={playMove}
-              disabled={deleted || pending || over || !myTurn}
-              orientation={orientation}
+              disabled={view.boardDisabled}
+              orientation={view.orientation}
               lastMove={lastMove}
-              kingMarker={kingMarker}
-              animateCheck={animateCheck}
-              ended={over}
+              kingMarker={view.kingMarker}
+              animateCheck={view.animateCheck}
+              ended={view.over}
             />
-            <div
-              data-turn-indicator={showTurn ? turnState : undefined}
-              className="w-[var(--board-size)] max-w-full"
-            >
-              <PlayerRow
-                side={orientation}
-                label={label(orientation)}
-                active={!over && sideToMove === orientation}
-                note={showTurn ? ownNote : undefined}
-                check={checkBadge(orientation)}
-              />
+            <div data-turn-indicator={view.turnIndicator} className="w-[var(--board-size)] max-w-full">
+              <PlayerRow {...view.bottom} />
             </div>
             <div className="w-[var(--board-size)] max-w-full">
               <GameResultBanner status={game.status} endReason={game.endReason} role={role} />
