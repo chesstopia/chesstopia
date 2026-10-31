@@ -231,6 +231,17 @@ describe('gameModel', () => {
       expect(next.feedback).toEqual({ event: null, seq: 2, attentionSeq: 1 });
     });
 
+    it('zählt attentionSeq für die Folgen des eigenen Zugs nicht hoch, auch beim eigenen Matt', () => {
+      // ARRANGE
+      const held = model({ game: game(4) });
+
+      // ACT
+      const next = gameReducer(held, { type: 'serverUpdate', game: game(5, 'CHECK_BLACK', 'WHITE_WON') });
+
+      // ASSERTIONS
+      expect(next.feedback).toEqual({ event: 'win', seq: 1, attentionSeq: 0 });
+    });
+
     it('meldet Schach und beim nächsten Zug ohne Schach kein Schach-Ereignis mehr', () => {
       // ARRANGE
       const held = model({ game: game(1) });
