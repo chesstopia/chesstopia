@@ -1,0 +1,15 @@
+description = die Dame gibt Schach und beide Seiten sehen den Rahmen am schwarzen König
+moves       = e2e4 f7f6 d1h5
+turn        = black
+check       = e8
+
+     BOARD
+  8  r n b q k b n r
+  7  p p p p p . p p
+  6  . . . . . p . .
+  5  . . . . . . . Q
+  4  . . . . P . . .
+  3  . . . . . . . .
+  2  P P P P . P P P
+  1  R N B . K B N R
+     a b c d e f g h

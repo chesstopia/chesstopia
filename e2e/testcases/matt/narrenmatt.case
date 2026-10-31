@@ -2,6 +2,7 @@ description = Schachmatt zeigt das Ergebnisbanner und sperrt das Brett
 moves       = f2f3 e7e5 g2g4 d8h4
 banner      = Schachmatt — Schwarz gewinnt
 locked      = d2 d4
+check       = e1
 
      BOARD
   8  r n b . k b n r
