@@ -133,4 +133,45 @@ class ChessEngineTest {
         assertTrue(isInCheck(mate))
         assertFalse(isInCheck(stalemate))
     }
+
+    @Test fun `checkState nennt die Seite im Schach`() {
+        // ARRANGE — schwarze Dame h4 greift den weißen König e1 an
+        val check = position(
+            sq(File.E, Rank.ONE) to Piece(PieceType.KING, Color.WHITE),
+            sq(File.H, Rank.FOUR) to Piece(PieceType.QUEEN, Color.BLACK),
+            sq(File.E, Rank.EIGHT) to Piece(PieceType.KING, Color.BLACK),
+            sideToMove = Color.WHITE,
+        )
+
+        // ACT & ASSERTIONS
+        assertEquals(CheckState.CHECK_WHITE, checkState(check))
+    }
+
+    @Test fun `checkState ist NO_CHECK in der Grundstellung`() {
+        // ACT & ASSERTIONS
+        assertEquals(CheckState.NO_CHECK, checkState(start))
+    }
+
+    @Test fun `checkState nennt im Matt den mattgesetzten Koenig und im Patt keinen`() {
+        // ARRANGE
+        val mate = position(
+            sq(File.A, Rank.EIGHT) to Piece(PieceType.ROOK, Color.WHITE),
+            sq(File.G, Rank.ONE) to Piece(PieceType.KING, Color.WHITE),
+            sq(File.G, Rank.EIGHT) to Piece(PieceType.KING, Color.BLACK),
+            sq(File.F, Rank.SEVEN) to Piece(PieceType.PAWN, Color.BLACK),
+            sq(File.G, Rank.SEVEN) to Piece(PieceType.PAWN, Color.BLACK),
+            sq(File.H, Rank.SEVEN) to Piece(PieceType.PAWN, Color.BLACK),
+            sideToMove = Color.BLACK,
+        )
+        val stalemate = position(
+            sq(File.A, Rank.EIGHT) to Piece(PieceType.KING, Color.BLACK),
+            sq(File.B, Rank.SIX) to Piece(PieceType.QUEEN, Color.WHITE),
+            sq(File.A, Rank.SIX) to Piece(PieceType.KING, Color.WHITE),
+            sideToMove = Color.BLACK,
+        )
+
+        // ACT & ASSERTIONS
+        assertEquals(CheckState.CHECK_BLACK, checkState(mate))
+        assertEquals(CheckState.NO_CHECK, checkState(stalemate))
+    }
 }
