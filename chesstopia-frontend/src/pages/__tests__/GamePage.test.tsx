@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter, Route, Routes, RouterProvider, createMemoryRouter } from 'react-router';
 
 const { useGameState } = vi.hoisted(() => ({ useGameState: vi.fn() }));
 vi.mock('@/hooks/useGameState', () => ({ useGameState }));
@@ -184,6 +184,24 @@ describe('GamePage', () => {
     expect(firstSquare()).toBe('h1');
     await userEvent.click(screen.getByRole('button', { name: 'Brett drehen' }));
     expect(firstSquare()).toBe('a8');
+  });
+
+  it('beginnt beim Wechsel der Partie mit frischem Zustand', async () => {
+    // ARRANGE
+    useGameState.mockReturnValue({ ...BASE });
+    const router = createMemoryRouter([{ path: '/game/:gameId', element: <GamePage /> }], {
+      initialEntries: ['/game/g-1'],
+    });
+    render(<RouterProvider router={router} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Brett drehen' }));
+    expect(firstSquare()).toBe('h1');
+
+    // ACT
+    await act(() => router.navigate('/game/g-2'));
+
+    // ASSERTIONS
+    expect(firstSquare()).toBe('a8');
+    expect(useGameState).toHaveBeenLastCalledWith('g-2', null);
   });
 
   it('Spieler sehen keinen Drehknopf', () => {

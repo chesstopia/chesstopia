@@ -18,8 +18,11 @@ const SIDE_NAME: Record<Side, string> = { w: 'Weiß', b: 'Schwarz' };
 export function GamePage() {
   const { gameId } = useParams() as { gameId: string };
   const [searchParams] = useSearchParams();
-  const inviteTokenFromUrl = searchParams.get('invite');
+  // `key`: Eine andere Partie mountet die Seite neu, damit kein Zustand der vorigen stehen bleibt.
+  return <LoadedGamePage key={gameId} gameId={gameId} inviteTokenFromUrl={searchParams.get('invite')} />;
+}
 
+function LoadedGamePage({ gameId, inviteTokenFromUrl }: { gameId: string; inviteTokenFromUrl: string | null }) {
   const {
     board, sideToMove, checkState, moveCount, status, endReason, error, loading, pending, role, entry, deleted, playMove, moves,
     lastMove,
@@ -51,7 +54,7 @@ export function GamePage() {
   const ownNote = { zuschauer: undefined, 'zug-wird-gespielt': 'Zug wird gespielt…', 'du-bist-am-zug': 'Du bist am Zug', 'gegner-ist-am-zug': undefined }[turnState];
 
   return (
-    <main key={gameId} className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
+    <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
         <Link to="/" className="text-sm text-muted-foreground underline">
           ← Meine Partien
