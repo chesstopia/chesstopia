@@ -266,4 +266,62 @@ describe('GamePage', () => {
     expect(screen.getByText('Du hast gewonnen')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('Schachmatt — Weiß gewinnt');
   });
+
+  describe('Schach und Ergebnis', () => {
+    const KING_BOARD = Array.from({ length: 8 }, () => Array(8).fill(null));
+    KING_BOARD[7][4] = 'wK';
+    KING_BOARD[0][4] = 'bK';
+
+    it('rahmt den König im Schach und zeigt die Marke in seiner Zeile', () => {
+      // ARRANGE
+      useGameState.mockReturnValue({ ...BASE, board: KING_BOARD, role: 'w', sideToMove: 'w', inCheck: true, moveCount: 3 });
+
+      // ACT
+      renderAt('/game/g-1');
+
+      // ASSERTIONS
+      expect(document.querySelector('[data-square="e1"]')).toHaveAttribute('data-check', 'check');
+      const badge = screen.getByText('Schach');
+      expect(badge.closest('[data-testid="player-row"]')).toHaveTextContent('Du · Weiß');
+    });
+
+    it('markiert den mattgesetzten König als mate und zeigt keine Schach-Marke', () => {
+      // ARRANGE
+      useGameState.mockReturnValue({
+        ...BASE, board: KING_BOARD, role: 'w', sideToMove: 'w', inCheck: true, moveCount: 4,
+        status: 'BLACK_WON', endReason: 'CHECKMATE',
+      });
+
+      // ACT
+      renderAt('/game/g-1');
+
+      // ASSERTIONS
+      expect(document.querySelector('[data-square="e1"]')).toHaveAttribute('data-check', 'mate');
+      expect(screen.queryByText('Schach')).not.toBeInTheDocument();
+    });
+
+    it('zeigt das Ergebnis in der Brett-Spalte, nicht in der Seitenleiste', () => {
+      // ARRANGE
+      useGameState.mockReturnValue({ ...BASE, role: 'w', status: 'WHITE_WON', endReason: 'CHECKMATE' });
+
+      // ACT
+      renderAt('/game/g-1');
+
+      // ASSERTIONS
+      const result = screen.getByRole('status');
+      expect(result.closest('aside')).toBeNull();
+      expect(result.closest('[data-board-column]')).not.toBeNull();
+    });
+
+    it('bietet den Stumm-Schalter an', () => {
+      // ARRANGE
+      useGameState.mockReturnValue({ ...BASE, role: 'w' });
+
+      // ACT
+      renderAt('/game/g-1');
+
+      // ASSERTIONS
+      expect(screen.getByRole('button', { name: /Ton (aus|ein)schalten/ })).toBeInTheDocument();
+    });
+  });
 });

@@ -6,9 +6,11 @@ interface PlayerRowProps {
   label: string;
   active: boolean;
   note?: string;
+  /** Diese Seite steht im Schach. */
+  check?: boolean;
 }
 
-export function PlayerRow({ side, label, active, note }: PlayerRowProps) {
+export function PlayerRow({ side, label, active, note, check = false }: PlayerRowProps) {
   return (
     <div
       data-testid="player-row"
@@ -23,6 +25,14 @@ export function PlayerRow({ side, label, active, note }: PlayerRowProps) {
         className={cn('size-3 rounded-full border border-foreground/40', side === 'w' ? 'bg-white' : 'bg-black')}
       />
       <span className="font-medium">{label}</span>
+      {/* Immer gerendert: Eine Live-Region muss vor ihrem Inhalt im DOM stehen, sonst wird nichts angesagt. */}
+      <span aria-live="polite">
+        {check && (
+          <span data-check-badge className="rounded-full bg-orange-600 px-2 py-0.5 text-xs font-semibold text-white">
+            Schach
+          </span>
+        )}
+      </span>
       {note && <span className="ml-auto opacity-70">{note}</span>}
     </div>
   );
