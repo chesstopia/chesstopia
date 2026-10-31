@@ -1,20 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { GameApi } from '@chesstopia/openapi-client';
 import type { GameResponse, MoveRecord, MoveRequest, Position } from '@chesstopia/openapi-client';
-import { apiConfig, isNotFound } from '@/lib/api';
+import { asError, gameApi, isNotFound } from '@/lib/api';
 import { isLegalMove } from '@/lib/engine';
 import { formatSquare, parseSquare, sideOf, toBoard } from '@/lib/position';
 import type { Board, Side } from '@/lib/position';
 import { fromSquare } from '@/lib/squares';
-import { addInvitedGame, findGame, removeGame } from '@/lib/gameStorage';
+import { addInvitedGame, findGame, playerSideOf, playerTokenOf, removeGame } from '@/lib/gameStorage';
 import type { StoredGame } from '@/lib/gameStorage';
 import { subscribeToGame } from '@/lib/stomp';
-
-const gameApi = new GameApi(apiConfig);
-
-function asError(err: unknown): Error {
-  return err instanceof Error ? err : new Error(String(err));
-}
 
 export type Role = Side | null;
 
@@ -53,8 +46,8 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
   // wahr, bis die Antwort für genau diese `gameId` eingetroffen ist.
   const loading = loadedFor !== gameId;
 
-  const role: Role = entry?.role === 'OWNER' ? 'w' : entry?.role === 'INVITED' ? 'b' : null;
-  const playerToken = entry?.role === 'OWNER' ? entry.ownerToken : entry?.role === 'INVITED' ? entry.inviteToken : undefined;
+  const role: Role = playerSideOf(entry);
+  const playerToken = playerTokenOf(entry);
 
   const applyResponse = useCallback((data: GameResponse) => {
     if (data.moveCount < moveCountRef.current) return;

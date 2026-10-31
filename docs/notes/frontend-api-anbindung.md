@@ -1,7 +1,7 @@
 ---
 type: note
 status: current
-updated: 2026-09-03
+updated: 2026-10-31
 verifies:
   - "chesstopia-frontend/src/lib/api.ts :: basePath: ''"
   - 'chesstopia-frontend/vite.config.ts :: "/api": "http://localhost:8080"'
@@ -53,6 +53,6 @@ Der Caddyfile ist Ansible-verwaltet (`infra/roles/edge/`) und wird **nicht** von
 
 ## Tests
 
-Wer `@chesstopia/openapi-client` in einem Vitest-`vi.mock` ersetzt, muss `Configuration` mitmocken — `src/lib/api.ts` importiert es beim Modulladen (`useGameState.test.ts` zeigt das Muster).
+Wer `@chesstopia/openapi-client` in einem Vitest-`vi.mock` ersetzt, muss `Configuration` **und `GameApi`** mitmocken — `src/lib/api.ts` importiert beide beim Modulladen und legt `gameApi` an (`useGameState.test.ts` zeigt das Muster).
 
 Eine Komponente/Hook, die `@chesstopia/chess-engine` (direkt oder über `src/lib/engine.ts`) zieht, mockt im Vitest entweder `@/lib/engine` oder braucht das gebaute JS-Artefakt (`./gradlew buildAll`).

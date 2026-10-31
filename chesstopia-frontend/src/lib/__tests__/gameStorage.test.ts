@@ -1,5 +1,16 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { addOwnedGame, addInvitedGame, allGames, findGame, myGames, removeGame } from '../gameStorage';
+import {
+  addOwnedGame,
+  addInvitedGame,
+  allGames,
+  findGame,
+  inviteTokenOf,
+  myGames,
+  playerSideOf,
+  playerTokenOf,
+  removeGame,
+  sideOfGameRole,
+} from '../gameStorage';
 
 describe('gameStorage', () => {
   beforeEach(() => {
@@ -104,5 +115,37 @@ describe('gameStorage', () => {
       ['g2', 'INVITED'],
       ['g3', 'OWNER'],
     ]);
+  });
+
+  describe('Rollen-Abbildung', () => {
+    const owner = { gameId: 'g', role: 'OWNER' as const, ownerToken: 'o', inviteToken: 'i' };
+    const invited = { gameId: 'g', role: 'INVITED' as const, inviteToken: 'i' };
+
+    it('sideOfGameRole bildet OWNER auf Weiß und INVITED auf Schwarz ab', () => {
+      // ACT & ASSERTIONS
+      expect(sideOfGameRole('OWNER')).toBe('w');
+      expect(sideOfGameRole('INVITED')).toBe('b');
+    });
+
+    it('playerSideOf liefert die Farbe des Eintrags, ohne Eintrag null', () => {
+      // ACT & ASSERTIONS
+      expect(playerSideOf(owner)).toBe('w');
+      expect(playerSideOf(invited)).toBe('b');
+      expect(playerSideOf(undefined)).toBeNull();
+    });
+
+    it('playerTokenOf liefert den Token, mit dem der Eintrag Züge macht', () => {
+      // ACT & ASSERTIONS
+      expect(playerTokenOf(owner)).toBe('o');
+      expect(playerTokenOf(invited)).toBe('i');
+      expect(playerTokenOf(undefined)).toBeUndefined();
+    });
+
+    it('inviteTokenOf liefert den Einladungstoken nur für den Besitzer', () => {
+      // ACT & ASSERTIONS
+      expect(inviteTokenOf(owner)).toBe('i');
+      expect(inviteTokenOf(invited)).toBeNull();
+      expect(inviteTokenOf(undefined)).toBeNull();
+    });
   });
 });

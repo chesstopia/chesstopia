@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isNotFound } from '../api';
+import { asError, isNotFound } from '../api';
 
 describe('api', () => {
   it('isNotFound erkennt einen 404-Fehler der Axios-Form', () => {
@@ -41,5 +41,32 @@ describe('api', () => {
 
     // ASSERTIONS
     expect(result).toBe(false);
+  });
+
+  it('asError gibt einen Error unverändert zurück', () => {
+    // ARRANGE
+    const err = new Error('x');
+
+    // ACT
+    const result = asError(err);
+
+    // ASSERTIONS
+    expect(result).toBe(err);
+  });
+
+  it('asError macht aus einem Nicht-Error dessen String', () => {
+    // ACT
+    const result = asError('boom');
+
+    // ASSERTIONS
+    expect(result.message).toBe('boom');
+  });
+
+  it('asError nutzt den Fallback für einen Nicht-Error', () => {
+    // ACT
+    const result = asError(42, 'Fallback');
+
+    // ASSERTIONS
+    expect(result.message).toBe('Fallback');
   });
 });
