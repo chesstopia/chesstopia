@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "playwright test --project=chromium --project=mechanik",
+    "test:ui": "playwright test --ui",
     "smoke": "playwright test smoke.spec.ts --project=chromium"
   },
   "devDependencies": {
