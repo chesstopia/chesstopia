@@ -31,6 +31,7 @@ const LOADED: LoadedGame = {
 const BASE: GameState = {
   game: LOADED, role: null, inviteToken: null, loading: false, deleted: false, error: null, pending: false,
   playMove: vi.fn(), moves: [], lastMove: null, feedback: { event: null, seq: 0, attentionSeq: 0 },
+  promotion: null, confirmPromotion: vi.fn(), cancelPromotion: vi.fn(),
 };
 
 const state = (over: Partial<GameState> = {}, game: Partial<LoadedGame> = {}): GameState => ({

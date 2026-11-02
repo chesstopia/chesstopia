@@ -152,23 +152,100 @@ describe('useGameState', () => {
     );
   });
 
-  it('wählt bei einem Bauern auf der Grundreihe die Dame', async () => {
-    // ARRANGE
-    addOwnedGame('g-1', 'owner-tok', 'invite-tok');
-    const promo: Position = {
+  describe('Umwandlung', () => {
+    const PROMO: Position = {
       ...START,
       board: [{ square: { file: 'E', rank: 'SEVEN' }, piece: { type: 'PAWN', color: 'WHITE' } }],
     };
-    getGame.mockResolvedValue(gameResponse(promo));
-    playMove.mockResolvedValue(gameResponse(promo, 1));
-    const { result } = renderHook(() => useGameState('g-1', null));
-    await waitFor(() => expect(result.current.loading).toBe(false));
 
-    // ACT
-    await act(() => result.current.playMove('e7', 'e8'));
+    async function loadPromotionGame() {
+      addOwnedGame('g-1', 'owner-tok', 'invite-tok');
+      getGame.mockResolvedValue(gameResponse(PROMO));
+      const hook = renderHook(() => useGameState('g-1', null));
+      await waitFor(() => expect(hook.result.current.loading).toBe(false));
+      return hook;
+    }
 
-    // ASSERTIONS
-    expect(playMove).toHaveBeenCalledWith('g-1', expect.objectContaining({ promotion: 'QUEEN' }), expect.anything());
+    it('öffnet bei einer Umwandlung die Auswahl, statt zu senden', async () => {
+      // ARRANGE
+      const { result } = await loadPromotionGame();
+
+      // ACT
+      await act(() => result.current.playMove('e7', 'e8'));
+
+      // ASSERTIONS
+      expect(playMove).not.toHaveBeenCalled();
+      expect(result.current.promotion).toEqual({ from: 'e7', to: 'e8' });
+    });
+
+    it('schickt nach Bestätigung die gewählte Figur', async () => {
+      // ARRANGE
+      playMove.mockResolvedValue(gameResponse(PROMO, 1));
+      const { result } = await loadPromotionGame();
+      await act(() => result.current.playMove('e7', 'e8'));
+
+      // ACT
+      await act(() => result.current.confirmPromotion('KNIGHT'));
+
+      // ASSERTIONS
+      expect(playMove).toHaveBeenCalledWith('g-1', expect.objectContaining({ promotion: 'KNIGHT' }), 'owner-tok');
+      expect(result.current.promotion).toBeNull();
+    });
+
+    it('verwirft die Umwandlung beim Abbruch ohne Request', async () => {
+      // ARRANGE
+      const { result } = await loadPromotionGame();
+      await act(() => result.current.playMove('e7', 'e8'));
+
+      // ACT
+      act(() => result.current.cancelPromotion());
+
+      // ASSERTIONS
+      expect(result.current.promotion).toBeNull();
+      expect(playMove).not.toHaveBeenCalled();
+    });
+
+    it('öffnet bei illegaler Umwandlung keine Auswahl', async () => {
+      // ARRANGE
+      isLegalMove.mockReturnValue(false);
+      const { result } = await loadPromotionGame();
+
+      // ACT
+      await act(() => result.current.playMove('e7', 'e8'));
+
+      // ASSERTIONS
+      expect(result.current.promotion).toBeNull();
+      expect(result.current.error?.message).toBe('Dieser Zug ist nicht legal.');
+      expect(isLegalMove).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ promotion: 'QUEEN' }));
+    });
+
+    it('sendet bei doppeltem Bestätigen nur einmal', async () => {
+      // ARRANGE
+      playMove.mockResolvedValue(gameResponse(PROMO, 1));
+      const { result } = await loadPromotionGame();
+      await act(() => result.current.playMove('e7', 'e8'));
+
+      // ACT
+      await act(async () => {
+        const first = result.current.confirmPromotion('QUEEN');
+        const second = result.current.confirmPromotion('QUEEN');
+        await Promise.all([first, second]);
+      });
+
+      // ASSERTIONS
+      expect(playMove).toHaveBeenCalledTimes(1);
+    });
+
+    it('bestätigt ohne offene Auswahl nichts', async () => {
+      // ARRANGE
+      const { result } = await loadPromotionGame();
+
+      // ACT
+      await act(() => result.current.confirmPromotion('QUEEN'));
+
+      // ASSERTIONS
+      expect(playMove).not.toHaveBeenCalled();
+    });
   });
 
   it('schickt einen von der Engine als illegal gemeldeten Zug nicht ans Backend', async () => {

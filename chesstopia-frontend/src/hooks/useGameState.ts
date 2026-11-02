@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useReducer, useState } from 'react';
-import type { GameResponse, MoveRecord } from '@chesstopia/openapi-client';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import type { GameResponse, MoveRecord, MoveRequest } from '@chesstopia/openapi-client';
 import { asError, gameApi, isNotFound } from '@/lib/api';
 import { isLegalMove } from '@/lib/engine';
 import { gameReducer, initGameModel } from '@/lib/gameModel';
-import type { FeedbackState, Role } from '@/lib/gameModel';
-import { toMoveRequest } from '@/lib/moveRequest';
+import type { FeedbackState, PendingPromotion, Role } from '@/lib/gameModel';
+import { isPromotion, toMoveRequest } from '@/lib/moveRequest';
+import type { Promotion } from '@/lib/moveRequest';
 import { formatSquare, sideOf, toBoard } from '@/lib/position';
 import type { Board, Side } from '@/lib/position';
 import { addInvitedGame, findGame, inviteTokenOf, playerSideOf, playerTokenOf, removeGame } from '@/lib/gameStorage';
@@ -35,6 +36,12 @@ export type GameState = {
   moves: MoveRecord[];
   lastMove: { from: string; to: string } | null;
   feedback: FeedbackState;
+  /** Offene Umwandlungsauswahl; `null`, solange keine aufgeklappt ist. */
+  promotion: PendingPromotion | null;
+  /** Schickt den offenen Umwandlungszug mit der gewählten Figur ab. */
+  confirmPromotion: (piece: Promotion) => Promise<void>;
+  /** Schließt die Auswahl ohne Netzverkehr; der Bauer bleibt stehen. */
+  cancelPromotion: () => void;
 };
 
 /**
@@ -110,17 +117,14 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null):
           moveCount: game.moveCount,
         };
 
-  const playMove = useCallback(
-    async (from: string, to: string) => {
-      if (deleted || game === null || game.status !== 'ONGOING' || !playerToken) return;
+  // Sperre gegen ein zweites Absenden, bevor der Reducer `pending` gesetzt und
+  // der Callback neu gebunden hat — etwa bei einem Doppelklick auf ✓.
+  const sending = useRef(false);
 
-      const move = toMoveRequest(toBoard(game.position), from, to);
-
-      if (!isLegalMove(game.position, move)) {
-        dispatch({ type: 'failed', error: new Error('Dieser Zug ist nicht legal.') });
-        return;
-      }
-
+  const send = useCallback(
+    async (move: MoveRequest) => {
+      if (sending.current || !playerToken) return;
+      sending.current = true;
       dispatch({ type: 'moveStarted' });
       try {
         // `X-Player-Token` ist im Kontrakt ein Header-Parameter
@@ -132,11 +136,49 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null):
         if (isNotFound(err)) markDeleted(false);
         else dispatch({ type: 'failed', error: asError(err) });
       } finally {
+        sending.current = false;
         dispatch({ type: 'moveSettled' });
       }
     },
-    [gameId, game, playerToken, deleted, markDeleted],
+    [gameId, playerToken, markDeleted],
   );
+
+  const playMove = useCallback(
+    async (from: string, to: string) => {
+      if (deleted || game === null || game.status !== 'ONGOING' || !playerToken) return;
+
+      const board = toBoard(game.position);
+      const promotes = isPromotion(board, from, to);
+      // Die Zielfigur ändert die Legalität nicht — geprüft wird mit der Dame,
+      // gewählt erst danach.
+      const move = toMoveRequest(board, from, to, promotes ? 'QUEEN' : undefined);
+
+      if (!isLegalMove(game.position, move)) {
+        dispatch({ type: 'failed', error: new Error('Dieser Zug ist nicht legal.') });
+        return;
+      }
+
+      if (promotes) {
+        dispatch({ type: 'promotionStarted', from, to });
+        return;
+      }
+
+      await send(move);
+    },
+    [game, playerToken, deleted, send],
+  );
+
+  const pendingPromotion = model.promotion;
+
+  const confirmPromotion = useCallback(
+    async (piece: Promotion) => {
+      if (pendingPromotion === null || game === null || model.pending) return;
+      await send(toMoveRequest(toBoard(game.position), pendingPromotion.from, pendingPromotion.to, piece));
+    },
+    [pendingPromotion, game, model.pending, send],
+  );
+
+  const cancelPromotion = useCallback(() => dispatch({ type: 'promotionCancelled' }), []);
 
   return {
     game: loaded,
@@ -150,5 +192,8 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null):
     moves,
     lastMove,
     feedback: model.feedback,
+    promotion: pendingPromotion,
+    confirmPromotion,
+    cancelPromotion,
   };
 }
