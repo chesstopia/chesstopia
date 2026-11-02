@@ -55,6 +55,37 @@ describe('GamePage', () => {
     useGameState.mockReset();
   });
 
+  it('reicht die offene Umwandlung ans Brett und meldet die Wahl zurück', async () => {
+    // ARRANGE
+    const board = Array.from({ length: 8 }, () => Array(8).fill(null));
+    board[1][4] = 'wP';
+    const confirmPromotion = vi.fn();
+    useGameState.mockReturnValue(state({ role: 'w', promotion: { from: 'e7', to: 'e8' }, confirmPromotion }, { board }));
+    renderAt('/game/g-1');
+
+    // ACT
+    await userEvent.click(screen.getByRole('button', { name: 'Springer' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Umwandlung bestätigen' }));
+
+    // ASSERTIONS
+    expect(confirmPromotion).toHaveBeenCalledExactlyOnceWith('KNIGHT');
+  });
+
+  it('meldet den Abbruch der Umwandlung zurück', async () => {
+    // ARRANGE
+    const board = Array.from({ length: 8 }, () => Array(8).fill(null));
+    board[1][4] = 'wP';
+    const cancelPromotion = vi.fn();
+    useGameState.mockReturnValue(state({ role: 'w', promotion: { from: 'e7', to: 'e8' }, cancelPromotion }, { board }));
+    renderAt('/game/g-1');
+
+    // ACT
+    await userEvent.click(screen.getByRole('button', { name: 'Umwandlung abbrechen' }));
+
+    // ASSERTIONS
+    expect(cancelPromotion).toHaveBeenCalledTimes(1);
+  });
+
   it('zeigt neutrale Seitennamen ohne Du/Gegner, wenn keine Rolle aufgelöst ist', () => {
     // ARRANGE
     useGameState.mockReturnValue(state());

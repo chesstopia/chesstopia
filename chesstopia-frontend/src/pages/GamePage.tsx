@@ -23,7 +23,10 @@ export function GamePage() {
 }
 
 function LoadedGamePage({ gameId, inviteTokenFromUrl }: { gameId: string; inviteTokenFromUrl: string | null }) {
-  const { game, error, loading, pending, role, inviteToken, deleted, playMove, moves, lastMove, feedback } = useGameState(
+  const {
+    game, error, loading, pending, role, inviteToken, deleted, playMove, moves, lastMove, feedback,
+    promotion, confirmPromotion, cancelPromotion,
+  } = useGameState(
     gameId,
     inviteTokenFromUrl,
   );
@@ -70,6 +73,9 @@ function LoadedGamePage({ gameId, inviteTokenFromUrl }: { gameId: string; invite
               kingMarker={view.kingMarker}
               animateCheck={view.animateCheck}
               ended={view.over}
+              promotion={promotion}
+              onPromote={confirmPromotion}
+              onCancelPromotion={cancelPromotion}
             />
             <div data-turn-indicator={view.turnIndicator} className="w-[var(--board-size)] max-w-full">
               <PlayerRow {...view.bottom} />
