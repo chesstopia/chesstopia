@@ -356,4 +356,188 @@ describe('Chessboard', () => {
       expect(e1.style.boxShadow).not.toMatch(/#ea580c|rgb\(234, 88, 12\)/i);
     });
   });
+  describe('Umwandlung', () => {
+    // Weißer Bauer e7, schwarze Dame d8 (Schlagziel), Könige h8/e1.
+    const PROMO = board(['3q3k', '4P3', '8', '8', '8', '8', '8', '4K3']);
+    // Schwarzer Bauer e2, weiße Dame d1, Könige e8/h1.
+    const BLACK_PROMO = board(['4k3', '8', '8', '8', '8', '8', '4p3', '3Q3K']);
+    const E7E8 = { from: 'e7', to: 'e8' };
+
+    function setup(props: Partial<Parameters<typeof Chessboard>[0]> = {}) {
+      const onMove = vi.fn();
+      const onPromote = vi.fn();
+      const onCancelPromotion = vi.fn();
+      const user = userEvent.setup();
+      const view = render(
+        <Chessboard
+          board={PROMO}
+          sideToMove="w"
+          onMove={onMove}
+          promotion={E7E8}
+          onPromote={onPromote}
+          onCancelPromotion={onCancelPromotion}
+          {...props}
+        />,
+      );
+      return { onMove, onPromote, onCancelPromotion, user, ...view };
+    }
+
+    const square = (container: HTMLElement, name: string) =>
+      container.querySelector(`[data-square="${name}"]`) as HTMLElement;
+
+    it('zeigt die Dame als Vorschau auf dem Zielfeld und leert das Ausgangsfeld', () => {
+      // ACT
+      const { container } = setup();
+
+      // ASSERTIONS
+      expect(square(container, 'e8').querySelector('[data-promotion-preview="wQ"]')).not.toBeNull();
+      expect(square(container, 'e8').querySelector('[data-piece]')).toBeNull();
+      expect(square(container, 'e7').querySelector('[data-piece]')).toBeNull();
+    });
+
+    it('ändert die Vorschau, wenn der Springer angewählt wird', async () => {
+      // ARRANGE
+      const { container, user } = setup();
+
+      // ACT
+      await user.click(screen.getByRole('button', { name: 'Springer' }));
+
+      // ASSERTIONS
+      expect(square(container, 'e8').querySelector('[data-promotion-preview="wN"]')).not.toBeNull();
+    });
+
+    it('meldet mit ✓ die angewählte Figur', async () => {
+      // ARRANGE
+      const { onPromote, user } = setup();
+
+      // ACT
+      await user.click(screen.getByRole('button', { name: 'Springer' }));
+      await user.click(screen.getByRole('button', { name: 'Umwandlung bestätigen' }));
+
+      // ASSERTIONS
+      expect(onPromote).toHaveBeenCalledExactlyOnceWith('KNIGHT');
+    });
+
+    it('meldet ✗ als Abbruch', async () => {
+      // ARRANGE
+      const { onPromote, onCancelPromotion, user } = setup();
+
+      // ACT
+      await user.click(screen.getByRole('button', { name: 'Umwandlung abbrechen' }));
+
+      // ASSERTIONS
+      expect(onCancelPromotion).toHaveBeenCalledTimes(1);
+      expect(onPromote).not.toHaveBeenCalled();
+    });
+
+    it('meldet Esc als Abbruch', async () => {
+      // ARRANGE
+      const { onPromote, onCancelPromotion, user } = setup();
+
+      // ACT
+      await user.keyboard('{Escape}');
+
+      // ASSERTIONS
+      expect(onCancelPromotion).toHaveBeenCalledTimes(1);
+      expect(onPromote).not.toHaveBeenCalled();
+    });
+
+    it('meldet einen Klick auf das Brett außerhalb der Spalte als Abbruch', async () => {
+      // ARRANGE
+      const { container, onPromote, onCancelPromotion, user } = setup();
+
+      // ACT
+      await user.click(square(container, 'a1'));
+
+      // ASSERTIONS
+      expect(onCancelPromotion).toHaveBeenCalledTimes(1);
+      expect(onPromote).not.toHaveBeenCalled();
+    });
+
+    it('meldet einen Klick außerhalb des Bretts als Abbruch', async () => {
+      // ARRANGE
+      const { onCancelPromotion, user } = setup();
+
+      // ACT
+      await user.click(document.body);
+
+      // ASSERTIONS
+      expect(onCancelPromotion).toHaveBeenCalledTimes(1);
+    });
+
+    it('nimmt während der Auswahl keine Geste an', async () => {
+      // ARRANGE
+      const { container, onMove, user } = setup();
+
+      // ACT
+      await user.pointer([
+        { keys: '[MouseLeft>]', target: square(container, 'e1') },
+        { target: square(container, 'e2') },
+        { keys: '[/MouseLeft]', target: square(container, 'e2') },
+      ]);
+
+      // ASSERTIONS
+      expect(onMove).not.toHaveBeenCalled();
+    });
+
+    it('klappt bei Weiß auf Reihe 8 nach unten auf', () => {
+      // ACT
+      setup();
+
+      // ASSERTIONS
+      expect(screen.getByRole('dialog')).toHaveAttribute('data-direction', 'down');
+    });
+
+    it('klappt bei Schwarz auf gedrehtem Brett zur Mitte auf', () => {
+      // ACT
+      setup({ board: BLACK_PROMO, sideToMove: 'b', orientation: 'b', promotion: { from: 'e2', to: 'e1' } });
+
+      // ASSERTIONS — gedreht steht Reihe 1 oben, die Mitte liegt darunter
+      expect(screen.getByRole('dialog')).toHaveAttribute('data-direction', 'down');
+    });
+
+    it('klappt bei Schwarz auf ungedrehtem Brett nach oben auf', () => {
+      // ACT
+      setup({ board: BLACK_PROMO, sideToMove: 'b', orientation: 'w', promotion: { from: 'e2', to: 'e1' } });
+
+      // ASSERTIONS
+      expect(screen.getByRole('dialog')).toHaveAttribute('data-direction', 'up');
+    });
+
+    it('zeigt die Vorschau in der Farbe des ziehenden Bauern', () => {
+      // ACT
+      const { container } = setup({ board: BLACK_PROMO, sideToMove: 'b', promotion: { from: 'e2', to: 'e1' } });
+
+      // ASSERTIONS
+      expect(square(container, 'e1').querySelector('[data-promotion-preview="bQ"]')).not.toBeNull();
+    });
+
+    it('zeigt beim Schlagzug die Vorschau statt der geschlagenen Figur und nach Abbruch wieder die Figur', () => {
+      // ARRANGE
+      const { container, rerender } = setup({ promotion: { from: 'e7', to: 'd8' } });
+      const during = square(container, 'd8').querySelector('[data-piece]');
+
+      // ACT
+      rerender(<Chessboard board={PROMO} sideToMove="w" promotion={null} />);
+
+      // ASSERTIONS
+      expect(during).toBeNull();
+      expect(square(container, 'd8').querySelector('[data-piece="bQ"]')).not.toBeNull();
+      expect(square(container, 'e7').querySelector('[data-piece="wP"]')).not.toBeNull();
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
+    it('startet nach erneutem Öffnen wieder mit der Dame', async () => {
+      // ARRANGE
+      const { user, rerender } = setup();
+      await user.click(screen.getByRole('button', { name: 'Turm' }));
+      rerender(<Chessboard board={PROMO} sideToMove="w" promotion={null} />);
+
+      // ACT
+      rerender(<Chessboard board={PROMO} sideToMove="w" promotion={E7E8} />);
+
+      // ASSERTIONS
+      expect(screen.getByRole('button', { name: 'Dame' })).toHaveAttribute('aria-pressed', 'true');
+    });
+  });
 });
