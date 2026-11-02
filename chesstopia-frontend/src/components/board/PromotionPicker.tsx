@@ -47,7 +47,9 @@ export function PromotionPicker({
     const toward = direction === 'down' ? 'ArrowUp' : 'ArrowDown';
     if (event.key === away) step(1);
     else if (event.key === toward) step(-1);
-    else if (event.key === 'Enter') onConfirm();
+    // Enter bestätigt nur auf der angewählten Figur. Auf ✓, ✗ und einer anderen
+    // Figur gilt der eigene Klick des Knopfes — sonst schickte Enter auf ✗ den Zug ab.
+    else if (event.key === 'Enter' && event.target === buttons.current[selected]) onConfirm();
     else if (event.key === 'Escape') onCancel();
     else return;
     event.preventDefault();

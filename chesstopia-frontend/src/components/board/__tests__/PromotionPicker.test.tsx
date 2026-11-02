@@ -117,6 +117,44 @@ describe('PromotionPicker', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
+  it('bricht mit Enter auf dem fokussierten ✗ ab, statt zu bestätigen', async () => {
+    // ARRANGE
+    const { onConfirm, onCancel } = renderPicker();
+    screen.getByRole('button', { name: 'Umwandlung abbrechen' }).focus();
+
+    // ACT
+    await userEvent.keyboard('{Enter}');
+
+    // ASSERTIONS
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('wählt mit Enter auf einer anderen fokussierten Figur diese an, statt zu bestätigen', async () => {
+    // ARRANGE
+    const { onConfirm, onSelect } = renderPicker();
+    screen.getByRole('button', { name: 'Turm' }).focus();
+
+    // ACT
+    await userEvent.keyboard('{Enter}');
+
+    // ASSERTIONS
+    expect(onSelect).toHaveBeenCalledWith('ROOK');
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('bestätigt mit Enter auf dem fokussierten ✓ genau einmal', async () => {
+    // ARRANGE
+    const { onConfirm } = renderPicker();
+    screen.getByRole('button', { name: 'Umwandlung bestätigen' }).focus();
+
+    // ACT
+    await userEvent.keyboard('{Enter}');
+
+    // ASSERTIONS
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
   it('bricht mit Esc ab', async () => {
     // ARRANGE
     const { onCancel } = renderPicker();
