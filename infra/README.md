@@ -83,6 +83,47 @@ host keys are public by design. The workflow pins against it with
 
 **3. Host** — GitHub → Settings → *Variables* → `PROD_HOST` = prod's public IP.
 
+## Accessing the prod database
+
+Postgres publishes its port on prod's **loopback only** (`127.0.0.1:5432`, see
+`roles/db/templates/docker-compose.yml.j2`). From outside it is reachable solely
+through an SSH tunnel as an admin user. Never widen that binding to `5432:5432`:
+Docker bypasses UFW, so the database would be open to the internet.
+
+Credentials — use the **read-only** login unless you mean to write to prod:
+
+| User                   | Rights                                   | Password (in `vault.yml`)           |
+|------------------------|------------------------------------------|-------------------------------------|
+| `chesstopia_readonly`  | `pg_read_all_data`, read-only sessions   | `vault_postgres_readonly_password`  |
+| `chesstopia`           | superuser (the app's own account)        | `vault_postgres_password`           |
+
+Database is `chesstopia`. Show the passwords with
+`ansible-vault view group_vars/prod/vault.yml`. The read-only role is converged by the
+`db` role on every `site.yml` run.
+
+**SSH tunnel** — local port 5433, so it doesn't collide with a local Postgres:
+
+```bash
+ssh -N -L 5433:localhost:5432 eyota@<prod-ip>
+```
+
+Then connect any client to `localhost:5433`, e.g.
+`psql -h localhost -p 5433 -U chesstopia_readonly chesstopia`.
+
+**IntelliJ** — no manual tunnel needed; the datasource opens it itself:
+
+1. *Database* tool window → `+` → *Data Source* → *PostgreSQL*.
+2. Tab *SSH/SSL* → *Use SSH tunnel* → `…` → new SSH configuration:
+   host = prod IP, port `22`, user = your admin account,
+   auth type *Key pair (OpenSSH)* or *OpenSSH config and authentication agent*.
+3. Tab *General*: host `localhost`, port `5432` (as seen **from prod**),
+   database `chesstopia`, user `chesstopia_readonly`, password from the vault.
+4. *Test Connection*. Mark the datasource read-only (*Options* → *Read-only*)
+   unless you mean to write to prod.
+
+For a quick look without any of this:
+`ssh -t eyota@<prod-ip> docker exec -it postgres psql -U chesstopia chesstopia`.
+
 ## What this does NOT do
 
 - It does **not** deploy the app — that's `.github/workflows/deploy.yml`.
