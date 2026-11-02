@@ -9,6 +9,11 @@ services:
       POSTGRES_DB: "${POSTGRES_DB}"
       POSTGRES_USER: "${POSTGRES_USER}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    # Loopback only: reachable from the host for an SSH tunnel
+    # (ssh -L 5433:localhost:5432 ...). Docker bypasses UFW, so a bare
+    # "5432:5432" would expose the database to the internet.
+    ports:
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

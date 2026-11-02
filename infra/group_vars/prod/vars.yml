@@ -13,6 +13,11 @@ app_dir: /opt/chesstopia
 
 # Ansible-managed persistent stacks (NOT touched by the pipeline).
 db_compose_dir: /opt/chesstopia-db
+
+# Read-only login for humans (IDE, psql via SSH tunnel). Member of pg_read_all_data:
+# SELECT on every table in every schema, including ones created later by Flyway.
+db_readonly_user: chesstopia_readonly
+db_readonly_password: "{{ vault_postgres_readonly_password }}"
 edge_compose_dir: /opt/chesstopia-edge
 
 # Rendered into {{ app_dir }}/.env by the deploy_target role.

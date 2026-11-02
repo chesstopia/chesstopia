@@ -30,3 +30,31 @@
   community.docker.docker_compose_v2:
     project_src: "{{ db_compose_dir }}"
     state: present
+    wait: true   # healthcheck green before the role below runs psql
+
+# The official image only runs init scripts on an EMPTY volume, so the read-only
+# role is converged here instead. psql runs inside the container over the local
+# socket as the superuser from POSTGRES_USER. The SQL goes in via stdin so the
+# password never shows up on a command line; no_log keeps it out of Ansible output.
+# Re-running is harmless (CREATE only if missing, password and grants re-asserted),
+# hence changed_when: false.
+- name: Ensure read-only database role
+  ansible.builtin.command:
+    cmd: >-
+      docker exec -i postgres
+      psql -v ON_ERROR_STOP=1 -U {{ app_env.POSTGRES_USER }} -d {{ app_env.POSTGRES_DB }}
+    stdin: |
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ db_readonly_user }}') THEN
+          CREATE ROLE {{ db_readonly_user }} LOGIN;
+        END IF;
+      END
+      $$;
+      ALTER ROLE {{ db_readonly_user }} WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE
+        PASSWORD '{{ db_readonly_password | replace("'", "''") }}';
+      ALTER ROLE {{ db_readonly_user }} SET default_transaction_read_only = on;
+      GRANT CONNECT ON DATABASE {{ app_env.POSTGRES_DB }} TO {{ db_readonly_user }};
+      GRANT pg_read_all_data TO {{ db_readonly_user }};
+  no_log: true
+  changed_when: false
