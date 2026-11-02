@@ -37,6 +37,17 @@ gruppe('parser', () => {
     expect(zeichne(fall.board)).toContain('  4  . . . . P . . .');
   });
 
+  pruefung('liest einen Umwandlungszug mit Suffix', () => {
+    // ARRANGE
+    const raw = VOLLSTAENDIG.replace('moves       = e2e4', 'moves       = e2e4 c7c8q');
+
+    // ACT
+    const fall = parseCase(raw, 'x.case');
+
+    // ASSERTIONS
+    expect(fall.moves[1]).toEqual({ von: 'c7', nach: 'c8', umwandlung: 'dame' });
+  });
+
   pruefung('liest eine Zugfolge in Reihenfolge', () => {
     // ARRANGE
     const raw = VOLLSTAENDIG.replace('moves       = e2e4', 'moves       = e2e4 e7e5 g1f3');

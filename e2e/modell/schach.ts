@@ -6,7 +6,10 @@ export type Farbe = 'weiss' | 'schwarz';
 export type Feld = `${'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h'}${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8}`;
 export type Figurart = 'koenig' | 'dame' | 'turm' | 'laeufer' | 'springer' | 'bauer';
 export type Figur = { farbe: Farbe; art: Figurart };
-export type Zug = { von: Feld; nach: Feld };
+/** Die Figur, in die ein Bauer auf der letzten Reihe umgewandelt wird. */
+export type Umwandlung = 'dame' | 'turm' | 'laeufer' | 'springer';
+/** `umwandlung` steht nur an Umwandlungszügen — im Korpus als Suffix `q`/`r`/`b`/`n` (`c7c8n`). */
+export type Zug = { von: Feld; nach: Feld; umwandlung?: Umwandlung };
 export type Stellung = Record<Feld, Figur | null>;
 export type Zuganzeige =
   | 'du-bist-am-zug'
@@ -26,6 +29,8 @@ export const FELDER: readonly Feld[] = REIHEN.flatMap((reihe) =>
   LINIEN.map((linie) => `${linie}${reihe}` as Feld),
 );
 
+const SUFFIX: Record<string, Umwandlung> = { q: 'dame', r: 'turm', b: 'laeufer', n: 'springer' };
+
 const FELDMENGE: ReadonlySet<string> = new Set(FELDER);
 
 export function istFeld(text: string): text is Feld {
@@ -39,11 +44,16 @@ export function zug(vonOderKurz: string, nach?: Feld): Zug {
     return { von: vonOderKurz as Feld, nach };
   }
   const von = vonOderKurz.slice(0, 2);
-  const ziel = vonOderKurz.slice(2);
-  if (vonOderKurz.length !== 4 || !istFeld(von) || !istFeld(ziel)) {
+  const ziel = vonOderKurz.slice(2, 4);
+  const suffix = vonOderKurz.slice(4);
+  // Ob der Zug tatsächlich umwandelt, weiß das Modell nicht — dafür müsste es die
+  // Stellung nachspielen, also Schachregeln kopieren (ADR-0001). Ein fehlendes
+  // oder überflüssiges Suffix fällt erst am Brett auf (`Brett.ziehe`).
+  const umwandlung = suffix === '' ? undefined : SUFFIX[suffix];
+  if (vonOderKurz.length > 5 || !istFeld(von) || !istFeld(ziel) || (suffix !== '' && umwandlung === undefined)) {
     throw new Error(`kein Feldpaar: ${vonOderKurz}`);
   }
-  return { von, nach: ziel };
+  return umwandlung === undefined ? { von, nach: ziel } : { von, nach: ziel, umwandlung };
 }
 
 export function figur(farbe: Farbe, art: Figurart): Figur {

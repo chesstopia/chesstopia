@@ -6,6 +6,9 @@ import type { Side } from './position';
 
 export type Role = Side | null;
 
+/** Ein Bauernzug auf die letzte Reihe, dessen Zielfigur noch gewählt wird. */
+export type PendingPromotion = { from: string; to: string };
+
 /**
  * Das zuletzt ausgelöste Feedback. `seq` zählt Übergänge (Ton), `attentionSeq`
  * nur die, nach denen der Spieler selbst am Zug ist (`●` im verborgenen Tab).
@@ -20,10 +23,12 @@ export type GameModel = {
   loaded: boolean;
   deleted: boolean;
   pending: boolean;
-  /** Ein Fehlerfeld: der letzte Schreiber gewinnt; geleert nur beim Start eines legalen Zugs und beim Löschen. */
+  /** Ein Fehlerfeld: der letzte Schreiber gewinnt; geleert nur beim Start eines legalen Zugs (auch beim Öffnen der Umwandlungsauswahl) und beim Löschen. */
   error: Error | null;
   moves: MoveRecord[];
   feedback: FeedbackState;
+  /** Offene Umwandlungsauswahl; `null`, solange keine aufgeklappt ist. */
+  promotion: PendingPromotion | null;
 };
 
 export type GameAction =
@@ -34,10 +39,12 @@ export type GameAction =
   | { type: 'failed'; error: Error }
   | { type: 'moveStarted' }
   | { type: 'moveSettled' }
-  | { type: 'historyLoaded'; moves: MoveRecord[] };
+  | { type: 'historyLoaded'; moves: MoveRecord[] }
+  | { type: 'promotionStarted'; from: string; to: string }
+  | { type: 'promotionCancelled' };
 
 export function initGameModel(role: Role): GameModel {
-  return { role, game: null, loaded: false, deleted: false, pending: false, error: null, moves: [], feedback: { event: null, seq: 0, attentionSeq: 0 } };
+  return { role, game: null, loaded: false, deleted: false, pending: false, error: null, moves: [], feedback: { event: null, seq: 0, attentionSeq: 0 }, promotion: null };
 }
 
 // Stale-Regel: Eine Stellung, die hinter dem gehaltenen `moveCount` zurückfällt, wird verworfen —
@@ -64,26 +71,37 @@ function nextFeedback(s: GameModel, game: GameResponse): FeedbackState {
   };
 }
 
+/** Eine beendete Partie lässt keine Umwandlung mehr zu — die offene Auswahl schließt ohne Senden. */
+function promotionAfter(s: GameModel, game: GameResponse): PendingPromotion | null {
+  return game.status === 'ONGOING' ? s.promotion : null;
+}
+
 /** Verworfene Aktionen geben dasselbe Objekt `s` zurück, damit React keinen Render auslöst. */
 export function gameReducer(s: GameModel, a: GameAction): GameModel {
   switch (a.type) {
     case 'loadSucceeded':
       if (isStale(s, a.game)) return s.loaded ? s : { ...s, loaded: true };
-      return { ...s, loaded: true, game: a.game, feedback: nextFeedback(s, a.game) };
+      return { ...s, loaded: true, game: a.game, feedback: nextFeedback(s, a.game), promotion: promotionAfter(s, a.game) };
     case 'loadFailed':
       return { ...s, loaded: true, error: a.error };
     case 'serverUpdate':
-      return isStale(s, a.game) ? s : { ...s, game: a.game, feedback: nextFeedback(s, a.game) };
+      return isStale(s, a.game)
+        ? s
+        : { ...s, game: a.game, feedback: nextFeedback(s, a.game), promotion: promotionAfter(s, a.game) };
     case 'deleted':
-      return { ...s, deleted: true, error: null, loaded: s.loaded || a.fromLoad };
+      return { ...s, deleted: true, error: null, loaded: s.loaded || a.fromLoad, promotion: null };
     case 'failed':
       return { ...s, error: a.error };
     case 'moveStarted':
-      return { ...s, pending: true, error: null };
+      return { ...s, pending: true, error: null, promotion: null };
     case 'moveSettled':
       return { ...s, pending: false };
     case 'historyLoaded':
       // Dieselbe Stale-Regel für die Historie: eine verspätete, kürzere Liste wirft keine längere zurück.
       return a.moves.length >= s.moves.length ? { ...s, moves: a.moves } : s;
+    case 'promotionStarted':
+      return { ...s, promotion: { from: a.from, to: a.to }, error: null };
+    case 'promotionCancelled':
+      return s.promotion === null ? s : { ...s, promotion: null };
   }
 }

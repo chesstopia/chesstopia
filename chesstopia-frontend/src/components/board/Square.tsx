@@ -18,6 +18,10 @@ type SquareProps = {
   /** Liniebuchstabe bzw. Reihenziffer; nur Randfelder tragen eine. */
   fileLabel?: string;
   rankLabel?: string;
+  /** Halbtransparente Umwandlungsfigur; ersetzt die Anzeige von `piece`. */
+  preview?: PieceCode | null;
+  /** Abgedunkelt, solange die Umwandlungsauswahl offen ist und dies nicht das Zielfeld ist. */
+  dimmed?: boolean;
   /** `size` ist die gemessene Feldkante, damit das Geisterbild gleich groß wird. */
   onPickUp: (square: string, x: number, y: number, size: number) => void;
   onHover: (square: string) => void;
@@ -25,7 +29,8 @@ type SquareProps = {
 };
 
 export function Square({
-  square, light, piece, draggable, dragging, hovered, lastMove, marker, animate, fileLabel, rankLabel, onPickUp, onHover, onDrop,
+  square, light, piece, draggable, dragging, hovered, lastMove, marker, animate, fileLabel, rankLabel,
+  preview = null, dimmed = false, onPickUp, onHover, onDrop,
 }: SquareProps) {
   const { colors, markers } = useBoardTheme();
   // Beschriftung in der Gegenfarbe des Feldes, damit sie auf beiden lesbar bleibt.
@@ -89,7 +94,9 @@ export function Square({
           {fileLabel}
         </span>
       )}
-      {piece &&
+      {preview !== null && <Piece code={preview} preview />}
+      {preview === null &&
+        piece &&
         (animate ? (
           <span className="motion-safe:animate-king-wiggle inline-flex">
             <Piece code={piece} dragging={dragging} />
@@ -97,6 +104,14 @@ export function Square({
         ) : (
           <Piece code={piece} dragging={dragging} />
         ))}
+      {dimmed && (
+        <span
+          aria-hidden
+          data-promotion-dim
+          className="absolute inset-0 pointer-events-none"
+          style={{ backgroundColor: colors.promotionDim }}
+        />
+      )}
     </div>
   );
 }

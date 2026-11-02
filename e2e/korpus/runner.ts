@@ -73,6 +73,12 @@ export async function runCase(
     await s.erwarteFehler(s === letzterZiehender ? testCase.error : null);
   }
 
+  // Ein abgelehnter Umwandlungszug öffnet keine Auswahl, und nach jedem
+  // angenommenen ist sie wieder zu — bei beiden Seiten.
+  for (const s of [weiss, schwarz]) {
+    await s.erwarteUmwandlungsauswahl(false);
+  }
+
   // Die Sperrgeste macht die Seite, die ohne Partieende jetzt am Zug wäre.
   // Bei der anderen Seite wäre die Prüfung wertlos: Die ist schon durch das
   // fehlende Zugrecht gesperrt und bliebe es auch ohne Partieende.

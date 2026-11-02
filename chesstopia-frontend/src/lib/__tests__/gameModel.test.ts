@@ -278,4 +278,96 @@ describe('gameModel', () => {
       expect(next.feedback).toEqual({ event: 'check-given', seq: 2, attentionSeq: 1 });
     });
   });
+  describe('Umwandlung', () => {
+    const open = { from: 'e7', to: 'e8' };
+
+    it('promotionStarted öffnet die Auswahl und leert den Fehler', () => {
+      // ARRANGE
+      const held = model({ game: game(0), error: new Error('alt') });
+
+      // ACT
+      const next = gameReducer(held, { type: 'promotionStarted', from: 'e7', to: 'e8' });
+
+      // ASSERTIONS
+      expect(next.promotion).toEqual(open);
+      expect(next.error).toBeNull();
+    });
+
+    it('promotionCancelled schließt die Auswahl', () => {
+      // ARRANGE
+      const held = model({ game: game(0), promotion: open });
+
+      // ACT
+      const next = gameReducer(held, { type: 'promotionCancelled' });
+
+      // ASSERTIONS
+      expect(next.promotion).toBeNull();
+    });
+
+    it('promotionCancelled ohne offene Auswahl gibt dasselbe Objekt zurück', () => {
+      // ARRANGE
+      const held = model({ game: game(0) });
+
+      // ACT
+      const next = gameReducer(held, { type: 'promotionCancelled' });
+
+      // ASSERTIONS
+      expect(next).toBe(held);
+    });
+
+    it('moveStarted schließt die Auswahl', () => {
+      // ARRANGE
+      const held = model({ game: game(0), promotion: open });
+
+      // ACT
+      const next = gameReducer(held, { type: 'moveStarted' });
+
+      // ASSERTIONS
+      expect(next.promotion).toBeNull();
+    });
+
+    it('schließt die Auswahl bei beendeter Partie', () => {
+      // ARRANGE
+      const held = model({ game: game(0), promotion: open });
+
+      // ACT
+      const next = gameReducer(held, { type: 'serverUpdate', game: game(0, 'NO_CHECK', 'WHITE_WON') });
+
+      // ASSERTIONS
+      expect(next.promotion).toBeNull();
+    });
+
+    it('schließt die Auswahl, wenn die geladene Partie beendet ist', () => {
+      // ARRANGE
+      const held = model({ promotion: open });
+
+      // ACT
+      const next = gameReducer(held, { type: 'loadSucceeded', game: game(0, 'NO_CHECK', 'DRAW') });
+
+      // ASSERTIONS
+      expect(next.promotion).toBeNull();
+    });
+
+    it('schließt die Auswahl beim Löschen', () => {
+      // ARRANGE
+      const held = model({ game: game(0), promotion: open });
+
+      // ACT
+      const next = gameReducer(held, { type: 'deleted', fromLoad: false });
+
+      // ASSERTIONS
+      expect(next.promotion).toBeNull();
+    });
+
+    it('serverUpdate einer laufenden Partie lässt die Auswahl offen', () => {
+      // ARRANGE
+      const held = model({ game: game(0), promotion: open });
+
+      // ACT
+      const next = gameReducer(held, { type: 'serverUpdate', game: game(0, 'CHECK_WHITE') });
+
+      // ASSERTIONS
+      expect(next.promotion).toEqual(open);
+    });
+  });
 });

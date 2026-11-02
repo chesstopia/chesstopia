@@ -32,6 +32,7 @@ export interface Spieler {
   erwarteErgebnis(text: string | null): Promise<void>;
   erwarteSchach(feld: Feld | null): Promise<void>;
   erwarteFehler(text: string | RegExp | null): Promise<void>;
+  erwarteUmwandlungsauswahl(offen: boolean): Promise<void>;
   erwartePartieGeloescht(): Promise<void>;
 }
 
@@ -111,19 +112,24 @@ export async function erzeugeSpieler(
         async () => ({
           anzeige: await partieseite.zugzeile.anzeige(),
           fehler: await partieseite.fehleranzeige.text(),
+          auswahl: await partieseite.brett.umwandlungsauswahlOffen(),
         }),
-        ({ anzeige, fehler }) =>
+        ({ anzeige, fehler, auswahl }) =>
+          auswahl ||
           (fehler !== null && fehler !== vorher) ||
           anzeige === 'gegner-ist-am-zug' ||
           anzeige === 'keine',
       );
+      if (await partieseite.brett.umwandlungsauswahlOffen()) {
+        throw new Error(`${farbe}: Zug ${z.von}-${z.nach} öffnet die Umwandlungsauswahl — Suffix q/r/b/n fehlt`);
+      }
       if (fehler !== null && fehler !== vorher) {
         throw new Error(`${farbe}: Zug ${z.von}-${z.nach} abgelehnt: ${fehler}`);
       }
     },
 
     async versucheZug(z) {
-      await partieseite.brett.ziehe(z);
+      await partieseite.brett.versucheZug(z);
     },
 
     async ladeNeu() {
@@ -146,6 +152,7 @@ export async function erzeugeSpieler(
     erwarteErgebnis: (text) => partieseite.ergebnis.erwarteText(text),
     erwarteSchach: (feld) => partieseite.brett.erwarteSchach(feld),
     erwarteFehler: (text) => partieseite.fehleranzeige.erwarte(text),
+    erwarteUmwandlungsauswahl: (offen) => partieseite.brett.erwarteUmwandlungsauswahl(offen),
     erwartePartieGeloescht: () => partieseite.loeschhinweis.erwarteSichtbar(),
   };
 

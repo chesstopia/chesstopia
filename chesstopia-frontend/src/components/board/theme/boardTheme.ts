@@ -23,6 +23,10 @@ export type BoardTheme = {
     lastMove: string;
     dragSource: string;
     dragTarget: string;
+    /** Abdunklung über dem Brett, solange die Umwandlungsauswahl offen ist. */
+    promotionDim: string;
+    /** Hintergrund der angewählten Figur in der Umwandlungsauswahl. */
+    promotionSelected: string;
   };
   /** Rahmen um das Königsfeld; `width` ist eine CSS-Länge. */
   markers: {
@@ -44,6 +48,8 @@ export const FLACH: BoardTheme = {
     // Gedeckte Ringe: die Quelle dunkel, das Ziel heller — beide lesen sich auf Grau und Creme.
     dragSource: 'rgba(28,25,23,.55)',
     dragTarget: 'rgba(28,25,23,.28)',
+    promotionDim: 'rgba(28,25,23,.45)',
+    promotionSelected: '#9aa5a0',
   },
   // Orange statt Rot: klar unterscheidbar vom gelben Letzter-Zug-Marker, aber kein Alarm.
   markers: {

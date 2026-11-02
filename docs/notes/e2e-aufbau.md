@@ -1,7 +1,7 @@
 ---
 type: note
 status: current
-updated: 2026-10-25
+updated: 2026-11-02
 verifies:
   - 'docker-compose.e2e.yml :: SITE_HOSTNAME'
   - 'docker-compose.e2e.yml :: infra/roles/edge/templates/Caddyfile'
@@ -10,6 +10,8 @@ verifies:
   - 'e2e/.env :: PLAYWRIGHT_BASE_URL=http://localhost:5173'
   - '.github/workflows/ci.yml :: PLAYWRIGHT_BASE_URL: http://localhost:8000'
   - 'e2e/package.json :: --project=mechanik'
+  - "e2e/modell/schach.ts :: q: 'dame', r: 'turm', b: 'laeufer', n: 'springer'"
+  - 'e2e/app/spieler.ts :: Suffix q/r/b/n fehlt'
   - 'e2e/korpus/runner.ts :: runCase'
   - 'e2e/app/intern/geste.ts :: ziehePerZeiger'
   - 'e2e/app/spieler.ts :: async versucheZug'
@@ -77,7 +79,7 @@ Das *Warum* der Schichten steht in [ADR-0030](../adr/0030-schichtung-der-e2e-tes
 
 Ein Test hat die Form `szenario('…', async ({ neuerSpieler }) => …)`; ohne Browser genügt `pruefung`. Gewartet wird nicht im Test.
 
-- `ziehe(zug)` wartet auf das eigene Zugrecht, führt die Geste aus und wartet auf die Annahme; wird der Zug abgelehnt, scheitert es sofort mit `<farbe>: Zug <von>-<nach> abgelehnt: <text>`. Gleicht der Text der Ablehnung einem bereits sichtbaren Fehler, fällt sie erst beim Timeout auf.
+- `ziehe(zug)` wartet auf das eigene Zugrecht, führt die Geste aus und wartet auf die Annahme; wird der Zug abgelehnt, scheitert es sofort mit `<farbe>: Zug <von>-<nach> abgelehnt: <text>`. Gleicht der Text der Ablehnung einem bereits sichtbaren Fehler, fällt sie erst beim Timeout auf. Trägt der Zug eine `umwandlung`, wählt `ziehe` nach der Geste die Figur und bestätigt; öffnet sich die Umwandlungsauswahl bei einem Zug ohne `umwandlung`, scheitert es mit `Suffix q/r/b/n fehlt`.
 - `versucheZug(zug)` führt nur die Geste aus und wartet auf nichts. Das ist die Wahl für Züge außer der Reihe, gegen Sperren und gegen einen künstlichen Serverfehler.
 - `erwarte…` wiederholt bis zum Timeout; `stellung()` und `zuganzeige()` sind Momentaufnahmen.
 
@@ -96,6 +98,8 @@ Die Sperrgeste macht der Läufer bei der Seite, die ohne Partieende am Zug wäre
 Schachsituationen stehen als Dateien unter `e2e/testcases/<kategorie>/<name>.case` — eine Situation je Datei, eine Zeile je Datei im Report. Das *Warum* steht in [ADR-0029](../adr/0029-datei-getriebener-e2e-korpus.md); hier steht, wie man damit arbeitet.
 
 Eine neue Datei hinlegen genügt. `e2e/tests/korpus.spec.ts` liest das Verzeichnis beim Laden rekursiv und erzeugt je `.case` ein `test()`. Es gibt keinen Codegen und keinen Sync-Schritt — anders als beim Engine-Korpus ([ADR-0022](../adr/0022-datei-getriebener-engine-testkorpus.md)), wo `commonTest` keinen Laufzeit-Dateizugriff hat.
+
+Ein Umwandlungszug trägt in `moves` (und `locked`) ein Suffix direkt hinter dem Zielfeld: `c7c8q`, `c7c8r`, `c7c8b`, `c7c8n` für Dame, Turm, Läufer, Springer — nur dort, alle anderen Züge bleiben vierstellig. Der Parser prüft nur die Schreibweise; ob der Zug wirklich umwandelt, wüsste er erst nach Nachspielen der Stellung, also mit kopierten Schachregeln (ADR-0001). Ein fehlendes Suffix fällt deshalb erst im Lauf auf, an der aufklappenden Auswahl; ein überflüssiges daran, dass sie ausbleibt.
 
 Die Prüfmechanik — Brettleser, Parser, Driftwächter unter `e2e/korpus/` — läuft als eigenes Playwright-Projekt `mechanik`; das Skript `test` startet beide Projekte. Ohne den zweiten Eintrag liefe sie in CI nicht mit, und eine Mechanik, die nie rot war, prüft nichts. Browser und Stack braucht sie nicht; sie kostet im E2E-Job trotzdem nichts, weil der Stack dort ohnehin schon steht, bevor Playwright startet.
 

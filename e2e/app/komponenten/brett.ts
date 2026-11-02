@@ -1,9 +1,12 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 import { figurVon, zeichne } from '../../modell/brettbild';
-import { leereStellung, type Ausrichtung, type Farbe, type Feld, type Figur, type Stellung, type Zug } from '../../modell/schach';
+import { leereStellung, type Ausrichtung, type Farbe, type Feld, type Figur, type Stellung, type Umwandlung, type Zug } from '../../modell/schach';
 import { ziehePerZeiger } from '../intern/geste';
 import { warteAufWert } from '../intern/warten';
+
+/** Werte von `data-promotion-choice` — die Figurnamen des API-Kontrakts. */
+const WAHL: Record<Umwandlung, string> = { dame: 'QUEEN', turm: 'ROOK', laeufer: 'BISHOP', springer: 'KNIGHT' };
 
 /** Das Schachbrett: 64 Felder mit `data-square`, Figuren als `data-piece` (z. B. `wK`). */
 export class Brett {
@@ -16,9 +19,44 @@ export class Brett {
     await expect(this.page.locator('[data-square]'), `${this.farbe}: Brett nicht gerendert`).toHaveCount(64);
   }
 
-  /** Nur die Geste — was danach geschieht, entscheidet der Aufrufer. */
+  /**
+   * Die Geste, bei einem Umwandlungszug zusätzlich Wahl und Bestätigung. Ob der
+   * Zug danach angenommen wird, entscheidet der Aufrufer. Trägt der Zug ein
+   * Suffix, muss die Auswahl aufklappen — sonst ist der Testfall falsch.
+   */
   async ziehe(zug: Zug): Promise<void> {
     await ziehePerZeiger(this.page, zug.von, zug.nach);
+    if (zug.umwandlung === undefined) return;
+    await expect(
+      this.auswahl(),
+      `${this.farbe}: Zug ${zug.von}-${zug.nach} (${zug.umwandlung}): Umwandlungsauswahl erwartet, aber nicht geöffnet`,
+    ).toBeVisible();
+    await this.waehleUmwandlung(zug.umwandlung);
+  }
+
+  /** Nur die Geste, ohne Auswahl — für Züge, die abgelehnt werden sollen. */
+  async versucheZug(zug: Zug): Promise<void> {
+    await ziehePerZeiger(this.page, zug.von, zug.nach);
+  }
+
+  async umwandlungsauswahlOffen(): Promise<boolean> {
+    return this.auswahl().isVisible();
+  }
+
+  async erwarteUmwandlungsauswahl(offen: boolean): Promise<void> {
+    const meldung = `${this.farbe}: Umwandlungsauswahl ${offen ? 'erwartet' : 'unerwartet offen'}`;
+    if (offen) await expect(this.auswahl(), meldung).toBeVisible();
+    else await expect(this.auswahl(), meldung).toBeHidden();
+  }
+
+  /** Figur anwählen, dann mit ✓ bestätigen. */
+  async waehleUmwandlung(umwandlung: Umwandlung): Promise<void> {
+    await this.page.locator(`[data-promotion-choice="${WAHL[umwandlung]}"]`).click();
+    await this.page.locator('[data-promotion-confirm]').click();
+  }
+
+  private auswahl() {
+    return this.page.locator('[data-promotion-picker]');
   }
 
   /** Vergleicht die Bildschirmlage von a1 und a8; die DOM-Reihenfolge zählt nicht. */
