@@ -1,32 +1,50 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { GameApi } from '@chesstopia/openapi-client';
-import type { GameResponse, MoveRecord, MoveRequest, Position } from '@chesstopia/openapi-client';
-import { apiConfig, isNotFound } from '@/lib/api';
+import { useCallback, useEffect, useReducer, useState } from 'react';
+import type { GameResponse, MoveRecord } from '@chesstopia/openapi-client';
+import { asError, gameApi, isNotFound } from '@/lib/api';
 import { isLegalMove } from '@/lib/engine';
-import { formatSquare, parseSquare, sideOf, toBoard } from '@/lib/position';
+import { gameReducer, initGameModel } from '@/lib/gameModel';
+import type { FeedbackState, Role } from '@/lib/gameModel';
+import { toMoveRequest } from '@/lib/moveRequest';
+import { formatSquare, sideOf, toBoard } from '@/lib/position';
 import type { Board, Side } from '@/lib/position';
-import { fromSquare } from '@/lib/squares';
-import { addInvitedGame, findGame, removeGame } from '@/lib/gameStorage';
+import { addInvitedGame, findGame, inviteTokenOf, playerSideOf, playerTokenOf, removeGame } from '@/lib/gameStorage';
 import type { StoredGame } from '@/lib/gameStorage';
 import { subscribeToGame } from '@/lib/stomp';
 
-const gameApi = new GameApi(apiConfig);
+/** Die geladene Partie, wie die Seite sie braucht: Brett statt Stellungsobjekt, Seite am Zug als `Side`. */
+export type LoadedGame = {
+  board: Board;
+  sideToMove: Side;
+  status: GameResponse['status'];
+  endReason: NonNullable<GameResponse['endReason']> | null;
+  checkState: GameResponse['checkState'];
+  moveCount: number;
+};
 
-function asError(err: unknown): Error {
-  return err instanceof Error ? err : new Error(String(err));
-}
-
-export type Role = Side | null;
+export type GameState = {
+  /** `null`, solange die Partie nicht geladen ist. */
+  game: LoadedGame | null;
+  role: Role;
+  /** Nur der Ersteller kennt den Einladungstoken. */
+  inviteToken: string | null;
+  loading: boolean;
+  deleted: boolean;
+  error: Error | null;
+  pending: boolean;
+  playMove: (from: string, to: string) => Promise<void>;
+  moves: MoveRecord[];
+  lastMove: { from: string; to: string } | null;
+  feedback: FeedbackState;
+};
 
 /**
- * Lädt eine bestehende Partie (kein createGame mehr — die Startseite hat sie
- * angelegt), löst die eigene Rolle über `chesstopia.games` auf und hält den
- * State über zwei Quellen aktuell: die eigene HTTP-Antwort und den WS-
- * Broadcast. Beide werden nur übernommen, wenn ihr `moveCount` nicht hinter
- * dem bereits gehaltenen zurückfällt — sonst könnte eine verspätete Antwort
- * eine zwischenzeitlich über WS eingetroffene neuere Stellung zurückwerfen.
+ * IO-Hülle um `gameReducer`: lädt eine bestehende Partie (kein createGame mehr —
+ * die Startseite hat sie angelegt), löst die eigene Rolle über `chesstopia.games`
+ * auf und speist die eigene HTTP-Antwort und den WS-Broadcast als Aktionen ein.
+ * Zustandsregeln (Stale-Regel, Fehlerfeld, Feedback-Übergang) stehen in `lib/gameModel.ts`.
+ * Ein Mount gehört genau einer Partie (`GamePage` rendert mit `key={gameId}`).
  */
-export function useGameState(gameId: string, inviteTokenFromUrl: string | null) {
+export function useGameState(gameId: string, inviteTokenFromUrl: string | null): GameState {
   // Lazy-Initializer statt Effekt: `findGame`/`addInvitedGame` lesen/schreiben
   // `chesstopia.games` genau einmal beim Mount. Ein Effekt, der hier `setEntry`
   // synchron aufruft, verletzt `react-hooks/set-state-in-effect` (Teil des
@@ -35,114 +53,102 @@ export function useGameState(gameId: string, inviteTokenFromUrl: string | null) 
   const [entry] = useState<StoredGame | undefined>(
     () => findGame(gameId) ?? (inviteTokenFromUrl ? addInvitedGame(gameId, inviteTokenFromUrl) : undefined),
   );
-  const [position, setPosition] = useState<Position | null>(null);
-  const [error, setError] = useState<Error | null>(null);
-  const [loadedFor, setLoadedFor] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-  const [status, setStatus] = useState<GameResponse['status']>('ONGOING');
-  const [endReason, setEndReason] = useState<GameResponse['endReason'] | null>(null);
-  const [deleted, setDeleted] = useState(false);
-  const [moveCount, setMoveCount] = useState(0);
-  const [moves, setMoves] = useState<MoveRecord[]>([]);
-  const moveCountRef = useRef(-1);
+  const playerToken = playerTokenOf(entry);
+  const [model, dispatch] = useReducer(gameReducer, playerSideOf(entry), initGameModel);
+  const { game, deleted, moves } = model;
 
-  // Aus `loadedFor` abgeleitet statt eines eigenen `loading`-States: Ein
-  // Effekt, der bei jeder `gameId`-Änderung `setLoading(true)` synchron
-  // aufruft, wäre derselbe Lint-Verstoß wie oben. So ist "lädt" automatisch
-  // wahr, bis die Antwort für genau diese `gameId` eingetroffen ist.
-  const loading = loadedFor !== gameId;
+  const markDeleted = useCallback(
+    (fromLoad: boolean) => {
+      dispatch({ type: 'deleted', fromLoad });
+      removeGame(gameId);
+    },
+    [gameId],
+  );
 
-  const role: Role = entry?.role === 'OWNER' ? 'w' : entry?.role === 'INVITED' ? 'b' : null;
-  const playerToken = entry?.role === 'OWNER' ? entry.ownerToken : entry?.role === 'INVITED' ? entry.inviteToken : undefined;
-
-  const applyResponse = useCallback((data: GameResponse) => {
-    if (data.moveCount < moveCountRef.current) return;
-    moveCountRef.current = data.moveCount;
-    setMoveCount(data.moveCount);
-    setPosition(data.position);
-    setStatus(data.status);
-    setEndReason(data.endReason ?? null);
-  }, []);
-
-  const markDeleted = useCallback(() => {
-    setDeleted(true);
-    setError(null);
-    removeGame(gameId);
-  }, [gameId]);
-
+  // Dispatches stehen nur in Promise- und STOMP-Callbacks, nie synchron im Effekt
+  // (`react-hooks/set-state-in-effect`).
   useEffect(() => {
     gameApi
       .getGame(gameId)
-      .then((res) => applyResponse(res.data))
+      .then((res) => dispatch({ type: 'loadSucceeded', game: res.data }))
       .catch((err: unknown) => {
-        if (isNotFound(err)) markDeleted();
-        else setError(asError(err));
-      })
-      .finally(() => setLoadedFor(gameId));
-  }, [gameId, applyResponse, markDeleted]);
+        if (isNotFound(err)) markDeleted(true);
+        else dispatch({ type: 'loadFailed', error: asError(err) });
+      });
+  }, [gameId, markDeleted]);
 
   useEffect(() => {
     return subscribeToGame(gameId, {
-      onUpdate: (raw) => applyResponse(JSON.parse(raw) as GameResponse),
-      onDeleted: markDeleted,
+      onUpdate: (raw) => dispatch({ type: 'serverUpdate', game: JSON.parse(raw) as GameResponse }),
+      onDeleted: () => markDeleted(false),
     });
-  }, [gameId, applyResponse, markDeleted]);
+  }, [gameId, markDeleted]);
 
-  // Die Historie wird nachgeladen, sobald `moveCount` der gehaltenen Liste
-  // voraus ist. Eine Antwort gilt nur, wenn sie mindestens so lang ist wie die
-  // gehaltene Liste — dieselbe Stale-Regel wie bei `moveCountRef`: eine
-  // verspätete, kürzere Antwort darf keine neuere Liste zurückwerfen.
-  // `setMoves` steht im Promise-Callback, nicht synchron im Effekt
-  // (`react-hooks/set-state-in-effect`).
+  const heldMoveCount = game?.moveCount ?? 0;
+
+  // Die Historie wird nachgeladen, sobald `moveCount` der gehaltenen Liste voraus ist.
   useEffect(() => {
-    if (moveCount <= moves.length) return;
+    if (heldMoveCount <= moves.length) return;
     gameApi
       .listMoves(gameId)
-      .then((res) => setMoves((held) => (res.data.moves.length >= held.length ? res.data.moves : held)))
-      .catch((err: unknown) => setError(asError(err)));
-  }, [gameId, moveCount, moves.length]);
+      .then((res) => dispatch({ type: 'historyLoaded', moves: res.data.moves }))
+      .catch((err: unknown) => dispatch({ type: 'failed', error: asError(err) }));
+  }, [gameId, heldMoveCount, moves.length]);
 
   const last = moves.length > 0 ? moves[moves.length - 1].move : null;
   const lastMove = last === null ? null : { from: formatSquare(last.from), to: formatSquare(last.to) };
 
-  const board: Board | null = position === null ? null : toBoard(position);
-  const sideToMove: Side | null = position === null ? null : sideOf(position);
+  const loaded: LoadedGame | null =
+    game === null
+      ? null
+      : {
+          board: toBoard(game.position),
+          sideToMove: sideOf(game.position),
+          status: game.status,
+          endReason: game.endReason ?? null,
+          checkState: game.checkState,
+          moveCount: game.moveCount,
+        };
 
   const playMove = useCallback(
     async (from: string, to: string) => {
-      if (deleted || position === null || status !== 'ONGOING' || !playerToken) return;
+      if (deleted || game === null || game.status !== 'ONGOING' || !playerToken) return;
 
-      const origin = fromSquare(from);
-      const isPawn = toBoard(position)[origin.rankIdx][origin.fileIdx]?.[1] === 'P';
-      const promotes = to[1] === '8' || to[1] === '1';
-      const move: MoveRequest = {
-        from: parseSquare(from),
-        to: parseSquare(to),
-        promotion: isPawn && promotes ? 'QUEEN' : undefined,
-      };
+      const move = toMoveRequest(toBoard(game.position), from, to);
 
-      if (!isLegalMove(position, move)) {
-        setError(new Error('Dieser Zug ist nicht legal.'));
+      if (!isLegalMove(game.position, move)) {
+        dispatch({ type: 'failed', error: new Error('Dieser Zug ist nicht legal.') });
         return;
       }
 
-      setPending(true);
-      setError(null);
+      dispatch({ type: 'moveStarted' });
       try {
         // `X-Player-Token` ist im Kontrakt ein Header-Parameter
         // (`components/parameters/PlayerToken`) — der generierte Client bildet
         // das auf ein eigenes drittes Argument ab, nicht auf `options.headers`.
         const res = await gameApi.playMove(gameId, move, playerToken);
-        applyResponse(res.data);
+        dispatch({ type: 'serverUpdate', game: res.data });
       } catch (err: unknown) {
-        if (isNotFound(err)) markDeleted();
-        else setError(asError(err));
+        if (isNotFound(err)) markDeleted(false);
+        else dispatch({ type: 'failed', error: asError(err) });
       } finally {
-        setPending(false);
+        dispatch({ type: 'moveSettled' });
       }
     },
-    [gameId, position, status, playerToken, deleted, applyResponse, markDeleted],
+    [gameId, game, playerToken, deleted, markDeleted],
   );
 
-  return { board, position, sideToMove, status, endReason, error, loading, pending, role, entry, deleted, moves, lastMove, playMove };
+  return {
+    game: loaded,
+    role: model.role,
+    inviteToken: inviteTokenOf(entry),
+    loading: !model.loaded,
+    deleted,
+    error: model.error,
+    pending: model.pending,
+    playMove,
+    moves,
+    lastMove,
+    feedback: model.feedback,
+  };
 }

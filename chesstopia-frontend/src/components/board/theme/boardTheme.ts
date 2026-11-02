@@ -24,6 +24,13 @@ export type BoardTheme = {
     dragSource: string;
     dragTarget: string;
   };
+  /** Rahmen um das Königsfeld; `width` ist eine CSS-Länge. */
+  markers: {
+    check: { color: string; width: string };
+    mate: { color: string; width: string };
+  };
+  /** Dämpfung des ganzen Bretts, sobald die Partie beendet ist. */
+  ended: { opacity: number; saturate: number };
 };
 
 export const FLACH: BoardTheme = {
@@ -38,4 +45,10 @@ export const FLACH: BoardTheme = {
     dragSource: 'rgba(28,25,23,.55)',
     dragTarget: 'rgba(28,25,23,.28)',
   },
+  // Orange statt Rot: klar unterscheidbar vom gelben Letzter-Zug-Marker, aber kein Alarm.
+  markers: {
+    check: { color: '#ea580c', width: '4px' },
+    mate: { color: '#ea580c', width: '4px' },
+  },
+  ended: { opacity: 0.8, saturate: 0.7 },
 };

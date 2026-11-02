@@ -68,4 +68,21 @@ export class Brett {
       text(figur),
     );
   }
+
+  /** Das Feld mit Schach-Rahmen (`data-check`, Wert `check` oder `mate`); `null`, wenn keines markiert ist. */
+  async schachfeld(): Promise<Feld | null> {
+    const felder = await this.page.locator('[data-check]').evaluateAll((elemente) =>
+      elemente.map((element) => element.getAttribute('data-square')),
+    );
+    if (felder.length > 1) throw new Error(`${this.farbe}: mehrere Schachfelder markiert: ${felder.join(', ')}`);
+    return (felder[0] as Feld | undefined) ?? null;
+  }
+
+  async erwarteSchach(feld: Feld | null): Promise<void> {
+    await warteAufWert(
+      `${this.farbe}: Schach-Rahmen erwartet ${feld ?? 'auf keinem Feld'}`,
+      () => this.schachfeld(),
+      feld,
+    );
+  }
 }

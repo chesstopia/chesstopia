@@ -1,7 +1,7 @@
 ---
 type: note
 status: current
-updated: 2026-09-04
+updated: 2026-10-31
 verifies:
   - "chesstopia-frontend/src/lib/engine.ts :: validateMove"
   - "chesstopia-frontend/src/hooks/useGameState.ts :: isLegalMove"
@@ -17,7 +17,7 @@ Das Frontend prüft vor dem Senden gegen dieselbe Engine, gegen die auch das Bac
 
 ## `src/lib/engine.ts`
 
-Das TypeScript-Pendant zum `EngineMapper`: Es übersetzt die openapi-client-Typen (String-Enums) in die `@JsExport`-Objekte der Engine. Exportiert ist bislang nur `isLegalMove` — `getLegalMoves` ist an der `@JsExport`-Grenze noch `TODO`.
+Das TypeScript-Pendant zum `EngineMapper`: Es übersetzt die openapi-client-Typen (String-Enums) in die `@JsExport`-Objekte der Engine. Exportiert ist bislang nur `isLegalMove` — `getLegalMoves` ist an der `@JsExport`-Grenze noch `TODO`. Den Schachzustand liest das Frontend nicht aus der Engine, sondern als `checkState` aus der Antwort ([ADR-0033](../adr/0033-schachzustand-am-partiezustand.md)).
 
 ## Tests
 

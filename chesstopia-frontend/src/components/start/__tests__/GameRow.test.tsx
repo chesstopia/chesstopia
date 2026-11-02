@@ -84,19 +84,40 @@ describe('GameRow', () => {
   });
 
   it.each([
-    ['WHITE_WON', 'OWNER', 'won', 'bg-green-100'],
-    ['BLACK_WON', 'OWNER', 'lost', 'bg-red-100'],
-    ['DRAW', 'OWNER', 'draw', null],
-    ['BLACK_WON', 'INVITED', 'won', 'bg-green-100'],
-  ] as const)('beendet %s als %s: Ausgang %s am Badge', (status, role, kind, colorClass) => {
+    ['WHITE_WON', 'OWNER', 'won'],
+    ['BLACK_WON', 'OWNER', 'lost'],
+    ['DRAW', 'OWNER', 'draw'],
+    ['BLACK_WON', 'INVITED', 'won'],
+  ] as const)('beendet %s als %s: Ausgang %s am Badge', (status, role, kind) => {
     // ACT
     renderRow({ role, game: response({ status, endReason: status === 'DRAW' ? 'STALEMATE' : 'CHECKMATE' }) });
 
     // ASSERTIONS
-    const badge = document.querySelector('[data-status-badge]') as HTMLElement;
-    expect(badge).toHaveAttribute('data-outcome', kind);
-    if (colorClass) expect(badge.className).toContain(colorClass);
-    else expect(badge.className).not.toMatch(/bg-(green|red)-100/);
+    expect(document.querySelector('[data-status-badge]')).toHaveAttribute('data-outcome', kind);
+  });
+
+  it('Sieg: Badge in Gold', () => {
+    // ACT
+    renderRow({ game: response({ status: 'WHITE_WON', endReason: 'CHECKMATE' }) });
+
+    // ASSERTIONS
+    expect((document.querySelector('[data-status-badge]') as HTMLElement).className).toContain('bg-amber-100');
+  });
+
+  it('Niederlage: Badge in Schiefergrau', () => {
+    // ACT
+    renderRow({ game: response({ status: 'BLACK_WON', endReason: 'CHECKMATE' }) });
+
+    // ASSERTIONS
+    expect((document.querySelector('[data-status-badge]') as HTMLElement).className).toContain('bg-slate-200');
+  });
+
+  it.each([['WHITE_WON'], ['BLACK_WON'], ['DRAW']] as const)('beendet %s: keine Klasse mit red oder green', (status) => {
+    // ACT
+    renderRow({ game: response({ status, endReason: status === 'DRAW' ? 'STALEMATE' : 'CHECKMATE' }) });
+
+    // ASSERTIONS
+    expect((document.querySelector('[data-status-badge]') as HTMLElement).className).not.toMatch(/red|green/);
   });
 
   it('laufend: kein data-outcome am Badge', () => {

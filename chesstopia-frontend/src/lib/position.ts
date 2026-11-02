@@ -1,4 +1,5 @@
-import type { Position, Square } from '@chesstopia/openapi-client';
+import type { GameResponse, Position, Square } from '@chesstopia/openapi-client';
+import { toSquare } from './squares';
 
 export type PieceCode =
   | 'wK' | 'wQ' | 'wR' | 'wB' | 'wN' | 'wP'
@@ -7,6 +8,9 @@ export type PieceCode =
 /** board[rank][file], rank 0 = Reihe 8, file 0 = a-Linie. */
 export type Board = (PieceCode | null)[][];
 export type Side = 'w' | 'b';
+
+/** Der König, der einen Rahmen bekommt: im Schach oder mattgesetzt. */
+export type KingMarker = { square: string; kind: 'check' | 'mate' };
 
 const RANKS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT'];
 const FILES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
@@ -30,8 +34,22 @@ export function toBoard(position: Position): Board {
   return board;
 }
 
+/** Feldname des Königs von `side` (z. B. `"e1"`); `null`, wenn er nicht auf dem Brett steht. */
+export function kingSquare(board: Board, side: Side): string | null {
+  for (let rank = 0; rank < 8; rank++) {
+    const file = board[rank].indexOf(`${side}K`);
+    if (file >= 0) return toSquare(rank, file);
+  }
+  return null;
+}
+
 export function sideOf(position: Position): Side {
   return position.sideToMove === 'BLACK' ? 'b' : 'w';
+}
+
+/** Wer im Schach steht, sagt allein `checkState` (ADR-0033); `null` ohne Schach. */
+export function checkedSide(checkState: GameResponse['checkState']): Side | null {
+  return checkState === 'CHECK_WHITE' ? 'w' : checkState === 'CHECK_BLACK' ? 'b' : null;
 }
 
 const FILE_BY_LETTER: Record<string, Square['file']> = {

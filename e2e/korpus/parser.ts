@@ -1,5 +1,5 @@
 import { liesReihen } from '../modell/brettbild';
-import { zug, type Stellung, type Zug } from '../modell/schach';
+import { istFeld, zug, type Feld, type Stellung, type Zug } from '../modell/schach';
 
 export type CorpusCase = {
   description: string;
@@ -8,10 +8,12 @@ export type CorpusCase = {
   banner: string | null;
   error: string | null;
   locked: Zug | null;
+  /** Feld des Königs im Schach (auch im Matt); `null` = kein Feld markiert. */
+  check: Feld | null;
   board: Stellung;
 };
 
-const SCHLUESSEL = ['description', 'moves', 'turn', 'banner', 'error', 'locked'];
+const SCHLUESSEL = ['description', 'moves', 'turn', 'banner', 'error', 'locked', 'check'];
 
 /**
  * Liest eine `.case`-Datei des E2E-Korpus.
@@ -71,6 +73,9 @@ export function parseCase(raw: string, name: string): CorpusCase {
   const locked =
     lockedRoh === null ? null : zerlege(lockedRoh.replace(/\s+/g, ''), scheitern);
 
+  const check = kopf.get('check') ?? null;
+  if (check !== null && !istFeld(check)) scheitern(`check ist kein Feld: ${check}`);
+
   return {
     description,
     moves,
@@ -78,6 +83,7 @@ export function parseCase(raw: string, name: string): CorpusCase {
     banner,
     error: kopf.get('error') ?? null,
     locked,
+    check: check as Feld | null,
     board,
   };
 }

@@ -67,6 +67,7 @@ class GameServiceTest {
         when(chessEngine.initialPosition(RuleSet.standard())).thenReturn(start);
         when(chessEngine.outcome(any(), eq(RuleSet.standard())))
             .thenReturn(new GameConclusion(GameStatus.ONGOING, null));
+        when(chessEngine.checkState(any())).thenReturn(CheckState.NO_CHECK);
         when(gamesRepository.save(any())).then(returnsFirstArg());
 
         // ACT
@@ -91,6 +92,7 @@ class GameServiceTest {
         when(chessEngine.initialPosition(RuleSet.standard())).thenReturn(start);
         when(chessEngine.outcome(any(), eq(RuleSet.standard())))
             .thenReturn(new GameConclusion(GameStatus.ONGOING, null));
+        when(chessEngine.checkState(any())).thenReturn(CheckState.NO_CHECK);
         when(gamesRepository.save(any())).then(returnsFirstArg());
 
         // ACT
@@ -149,6 +151,7 @@ class GameServiceTest {
         when(chessEngine.initialPosition(RuleSet.standard())).thenReturn(start);
         when(chessEngine.outcome(any(), any()))
             .thenReturn(new GameConclusion(GameStatus.WHITE_WON, EndReason.CHECKMATE));
+        when(chessEngine.checkState(any())).thenReturn(CheckState.NO_CHECK);
         when(gamesRepository.save(any())).then(returnsFirstArg());
 
         // ACT
@@ -169,6 +172,7 @@ class GameServiceTest {
         when(chessEngine.initialPosition(RuleSet.standard())).thenReturn(start);
         when(chessEngine.outcome(any(), any()))
             .thenReturn(new GameConclusion(GameStatus.DRAW, EndReason.THREEFOLD_REPETITION));
+        when(chessEngine.checkState(any())).thenReturn(CheckState.NO_CHECK);
         when(gamesRepository.save(any())).then(returnsFirstArg());
 
         // ACT
@@ -183,7 +187,7 @@ class GameServiceTest {
     void playAufBereitsBeendeterPartieWirftIllegalArgumentStattIllegalState() {
         // ARRANGE
         Game finished = new Game(ID, PlayerToken.newToken(), PlayerToken.newToken(), RuleSet.standard(), start,
-            List.of(), GameStatus.DRAW, EndReason.FIFTY_MOVE_RULE, T0, T0);
+            List.of(), GameStatus.DRAW, EndReason.FIFTY_MOVE_RULE, CheckState.NO_CHECK, T0, T0);
         when(gamesRepository.findById(ID)).thenReturn(Optional.of(finished));
 
         // ACT & ASSERTIONS
@@ -278,7 +282,7 @@ class GameServiceTest {
     void deleteAufBeendeterPartieLoeschtAuch() {
         // ARRANGE
         Game finished = Game.start(ID, RuleSet.standard(), start, T0)
-            .play(e2e4, afterMove, new GameConclusion(GameStatus.WHITE_WON, EndReason.CHECKMATE), T0.plusMinutes(1));
+            .play(e2e4, afterMove, new GameConclusion(GameStatus.WHITE_WON, EndReason.CHECKMATE), CheckState.NO_CHECK, T0.plusMinutes(1));
         when(gamesRepository.findById(ID)).thenReturn(Optional.of(finished));
 
         // ACT
@@ -286,5 +290,39 @@ class GameServiceTest {
 
         // ASSERTIONS
         verify(gamesRepository).delete(ID);
+    }
+
+    @Test
+    void startBeginntOhneSchach() {
+        // ARRANGE
+        when(chessEngine.initialPosition(RuleSet.standard())).thenReturn(start);
+        when(gamesRepository.save(any())).then(returnsFirstArg());
+
+        // ACT
+        Game game = service.start(RuleSet.standard());
+
+        // ASSERTIONS
+        assertThat(game.checkState()).isEqualTo(CheckState.NO_CHECK);
+    }
+
+    @Test
+    void playUebernimmtDenSchachzustandDerEngineFuerDieNeueStellung() {
+        // ARRANGE
+        Game existing = Game.start(ID, RuleSet.standard(), start, T0);
+        when(gamesRepository.findById(ID)).thenReturn(Optional.of(existing));
+        when(chessEngine.isLegal(start, e2e4, RuleSet.standard())).thenReturn(true);
+        when(chessEngine.apply(start, e2e4, RuleSet.standard())).thenReturn(afterMove);
+        when(chessEngine.initialPosition(RuleSet.standard())).thenReturn(start);
+        when(chessEngine.outcome(any(), eq(RuleSet.standard())))
+            .thenReturn(new GameConclusion(GameStatus.ONGOING, null));
+        when(chessEngine.checkState(afterMove)).thenReturn(CheckState.CHECK_BLACK);
+        when(gamesRepository.save(any())).then(returnsFirstArg());
+
+        // ACT
+        Game result = service.play(ID, e2e4, existing.ownerToken());
+
+        // ASSERTIONS
+        assertThat(result.checkState()).isEqualTo(CheckState.CHECK_BLACK);
+        verify(gamesRepository).save(result);
     }
 }

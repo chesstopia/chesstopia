@@ -1,5 +1,6 @@
 package io.chesstopia.backend.game.application.port.out;
 
+import io.chesstopia.backend.game.domain.CheckState;
 import io.chesstopia.backend.game.domain.GameConclusion;
 import io.chesstopia.backend.game.domain.Move;
 import io.chesstopia.backend.game.domain.Position;
@@ -16,4 +17,7 @@ public interface ChessEngine {
 
     /** Zustand der Partie nach der letzten Stellung in {@code history} (erstes Element = Anfangsstellung). */
     GameConclusion outcome(List<Position> history, RuleSet ruleSet);
+
+    /** Welche Seite in {@code position} im Schach steht; im Matt die mattgesetzte. */
+    CheckState checkState(Position position);
 }

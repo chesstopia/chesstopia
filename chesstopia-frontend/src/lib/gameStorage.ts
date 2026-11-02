@@ -1,3 +1,5 @@
+import type { Side } from '@/lib/position';
+
 export type GameRole = 'OWNER' | 'INVITED';
 
 export type StoredGame = {
@@ -51,4 +53,39 @@ export function myGames(): StoredGame[] {
 /** Alle gemerkten Partien, eigene und eingeladene, in Einfügereihenfolge. */
 export function allGames(): StoredGame[] {
   return loadGames();
+}
+
+/**
+ * Farbe (`Side`), die eine Rolle (`GameRole`) spielt: Der Besitzer legt die Partie
+ * an und spielt Weiß, der Eingeladene spielt Schwarz. `GameRole` ist die Beziehung
+ * zur Partie, `Side` die Farbe auf dem Brett.
+ */
+export function sideOfGameRole(role: GameRole): Side {
+  return role === 'OWNER' ? 'w' : 'b';
+}
+
+/**
+ * Farbe (`Side`), die der gemerkte Eintrag spielt; `null`, wenn die Partie nicht
+ * gemerkt ist (Zuschauer ohne Rolle).
+ */
+export function playerSideOf(entry: StoredGame | undefined): Side | null {
+  return entry ? sideOfGameRole(entry.role) : null;
+}
+
+/**
+ * Token, mit dem der Eintrag Züge macht (`X-Player-Token`): beim `OWNER` der
+ * `ownerToken`, beim `INVITED` der `inviteToken`. `undefined` ohne Eintrag.
+ */
+export function playerTokenOf(entry: StoredGame | undefined): string | undefined {
+  if (entry?.role === 'OWNER') return entry.ownerToken;
+  if (entry?.role === 'INVITED') return entry.inviteToken;
+  return undefined;
+}
+
+/**
+ * Token zum Weitergeben der Einladung: nur der `OWNER` hat ihn zum Teilen; ein
+ * `INVITED` oder fehlender Eintrag liefert `null`.
+ */
+export function inviteTokenOf(entry: StoredGame | undefined): string | null {
+  return entry?.role === 'OWNER' ? (entry.inviteToken ?? null) : null;
 }

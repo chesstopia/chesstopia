@@ -113,4 +113,28 @@ gruppe('parser', () => {
     // ACT & ASSERTIONS
     expect(() => parseCase(raw, 'x.case')).toThrow(/ruleset/);
   });
+
+  pruefung('liest das Schachfeld', () => {
+    // ARRANGE
+    const raw = VOLLSTAENDIG.replace('turn        = black', 'turn        = black\ncheck       = e8');
+
+    // ACT
+    const fall = parseCase(raw, 'x.case');
+
+    // ASSERTIONS
+    expect(fall.check).toBe('e8');
+  });
+
+  pruefung('hat ohne check-Schlüssel kein Schachfeld', () => {
+    // ACT & ASSERTIONS
+    expect(parseCase(VOLLSTAENDIG, 'x.case').check).toBeNull();
+  });
+
+  pruefung('lehnt ein Schachfeld ab, das kein Feld ist, und nennt die Datei', () => {
+    // ARRANGE
+    const raw = VOLLSTAENDIG.replace('turn        = black', 'turn        = black\ncheck       = z9');
+
+    // ACT & ASSERTIONS
+    expect(() => parseCase(raw, 'schach/x.case')).toThrow(/schach\/x\.case.*z9/);
+  });
 });

@@ -27,4 +27,24 @@ describe('PlayerRow', () => {
     expect(screen.getByText('Gegner')).toBeInTheDocument();
     expect(screen.getByText('wartet auf Gegner')).toBeInTheDocument();
   });
+
+  it('zeigt bei Schach die Marke in einer Live-Region', () => {
+    // ACT
+    render(<PlayerRow side="w" label="Du · Weiß" active check />);
+
+    // ASSERTIONS
+    const badge = screen.getByText('Schach');
+    expect(badge).toHaveAttribute('data-check-badge');
+    expect(badge.closest('[aria-live="polite"]')).not.toBeNull();
+  });
+
+  it('hält die Live-Region auch ohne Schach bereit, aber leer', () => {
+    // ACT
+    const { container } = render(<PlayerRow side="w" label="Du · Weiß" active />);
+
+    // ASSERTIONS
+    expect(screen.queryByText('Schach')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-check-badge]')).toBeNull();
+    expect(container.querySelector('[aria-live="polite"]')).not.toBeNull();
+  });
 });

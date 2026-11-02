@@ -11,6 +11,10 @@ type SquareProps = {
   dragging: boolean;
   hovered: boolean;
   lastMove: boolean;
+  /** Rahmen am König im Schach bzw. im Matt. */
+  marker: 'check' | 'mate' | null;
+  /** Der König wackelt einmal — nur beim Eintreffen des Schachs. */
+  animate: boolean;
   /** Liniebuchstabe bzw. Reihenziffer; nur Randfelder tragen eine. */
   fileLabel?: string;
   rankLabel?: string;
@@ -21,12 +25,19 @@ type SquareProps = {
 };
 
 export function Square({
-  square, light, piece, draggable, dragging, hovered, lastMove, fileLabel, rankLabel, onPickUp, onHover, onDrop,
+  square, light, piece, draggable, dragging, hovered, lastMove, marker, animate, fileLabel, rankLabel, onPickUp, onHover, onDrop,
 }: SquareProps) {
-  const { colors } = useBoardTheme();
+  const { colors, markers } = useBoardTheme();
   // Beschriftung in der Gegenfarbe des Feldes, damit sie auf beiden lesbar bleibt.
   const labelColor = light ? colors.darkSquare : colors.lightSquare;
   const ring = dragging ? colors.dragSource : hovered ? colors.dragTarget : null;
+  // Der Drag-Ring gewinnt: Wer den König im Schach greift, soll sehen, was er hält.
+  const markerStyle = marker === null ? null : markers[marker];
+  const boxShadow = ring
+    ? `inset 0 0 0 4px ${ring}`
+    : markerStyle
+      ? `inset 0 0 0 ${markerStyle.width} ${markerStyle.color}`
+      : undefined;
 
   return (
     <div
@@ -35,6 +46,7 @@ export function Square({
       aria-label={square}
       data-square={square}
       data-last-move={lastMove || undefined}
+      data-check={marker ?? undefined}
       className={`relative flex items-center justify-center w-full aspect-square ${
         draggable ? 'cursor-grab' : ''
       }`}
@@ -47,7 +59,7 @@ export function Square({
         backgroundImage: lastMove
           ? `linear-gradient(${colors.lastMove}, ${colors.lastMove})`
           : undefined,
-        boxShadow: ring ? `inset 0 0 0 4px ${ring}` : undefined,
+        boxShadow,
       }}
       onPointerDown={(event) => {
         if (!draggable) return;
@@ -77,7 +89,14 @@ export function Square({
           {fileLabel}
         </span>
       )}
-      {piece && <Piece code={piece} dragging={dragging} />}
+      {piece &&
+        (animate ? (
+          <span className="motion-safe:animate-king-wiggle inline-flex">
+            <Piece code={piece} dragging={dragging} />
+          </span>
+        ) : (
+          <Piece code={piece} dragging={dragging} />
+        ))}
     </div>
   );
 }

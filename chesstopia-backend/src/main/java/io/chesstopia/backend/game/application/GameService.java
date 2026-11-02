@@ -9,6 +9,7 @@ import io.chesstopia.backend.game.application.port.in.ViewGame;
 import io.chesstopia.backend.game.application.port.out.ChessEngine;
 import io.chesstopia.backend.game.application.port.out.GameEvents;
 import io.chesstopia.backend.game.application.port.out.GamesRepository;
+import io.chesstopia.backend.game.domain.CheckState;
 import io.chesstopia.backend.game.domain.Color;
 import io.chesstopia.backend.game.domain.Game;
 import io.chesstopia.backend.game.domain.GameConclusion;
@@ -80,7 +81,9 @@ class GameService implements StartGame, PlayMove, ViewGame, DeleteGame {
         positions.add(resulting);
         GameConclusion conclusion = chessEngine.outcome(positions, game.ruleSet());
 
-        Game saved = gamesRepository.save(game.play(move, resulting, conclusion, OffsetDateTime.now()));
+        CheckState checkState = chessEngine.checkState(resulting);
+
+        Game saved = gamesRepository.save(game.play(move, resulting, conclusion, checkState, OffsetDateTime.now()));
         gameEvents.moveWasPlayed(saved);
         return saved;
     }

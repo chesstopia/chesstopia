@@ -30,7 +30,7 @@ class GameTest {
     void playHaengtEinenLueckenlosNummeriertenPlyAn() {
         // ACT
         Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0)
-                     .play(move, afterOne, inProgress, T0.plusMinutes(1));
+                     .play(move, afterOne, inProgress, CheckState.NO_CHECK, T0.plusMinutes(1));
 
         // ASSERTIONS
         assertThat(g.history()).singleElement().satisfies(p -> {
@@ -46,7 +46,7 @@ class GameTest {
     void aufeinanderfolgendePlysZaehlenHoch() {
         // ACT
         Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0)
-                     .play(move, afterOne, inProgress, T0).play(move, start, inProgress, T0);
+                     .play(move, afterOne, inProgress, CheckState.NO_CHECK, T0).play(move, start, inProgress, CheckState.NO_CHECK, T0);
 
         // ASSERTIONS
         assertThat(g.history()).extracting(Ply::number).containsExactly(1, 2);
@@ -55,7 +55,7 @@ class GameTest {
     @Test
     void dieHistorieIstNachAussenUnveraenderlich() {
         // ARRANGE
-        Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0).play(move, afterOne, inProgress, T0);
+        Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0).play(move, afterOne, inProgress, CheckState.NO_CHECK, T0);
 
         // ACT & ASSERTIONS
         assertThatThrownBy(() -> g.history().clear()).isInstanceOf(UnsupportedOperationException.class);
@@ -68,7 +68,7 @@ class GameTest {
 
         // ACT
         Game g = Game.start(GameId.newId(), RuleSet.standard(), start, T0)
-                     .play(move, afterOne, blackWon, T0.plusMinutes(1));
+                     .play(move, afterOne, blackWon, CheckState.NO_CHECK, T0.plusMinutes(1));
 
         // ASSERTIONS
         assertThat(g.status()).isEqualTo(GameStatus.BLACK_WON);
@@ -80,10 +80,10 @@ class GameTest {
         // ARRANGE
         Game done = new Game(GameId.newId(), PlayerToken.newToken(), PlayerToken.newToken(),
                              RuleSet.standard(), start, java.util.List.of(),
-                             GameStatus.DRAW, EndReason.STALEMATE, T0, T0);
+                             GameStatus.DRAW, EndReason.STALEMATE, CheckState.NO_CHECK, T0, T0);
 
         // ACT & ASSERTIONS
-        assertThatThrownBy(() -> done.play(move, afterOne, inProgress, T0)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> done.play(move, afterOne, inProgress, CheckState.NO_CHECK, T0)).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -107,5 +107,24 @@ class GameTest {
         assertThat(g.ownerToken()).isNotNull();
         assertThat(g.inviteToken()).isNotNull();
         assertThat(g.ownerToken()).isNotEqualTo(g.inviteToken());
+    }
+
+    @Test
+    void startBeginntOhneSchachUndPlayUebernimmtDenGegebenenSchachzustand() {
+        // ACT
+        Game started = Game.start(GameId.newId(), RuleSet.standard(), start, T0);
+        Game played = started.play(move, afterOne, inProgress, CheckState.CHECK_BLACK, T0);
+
+        // ASSERTIONS
+        assertThat(started.checkState()).isEqualTo(CheckState.NO_CHECK);
+        assertThat(played.checkState()).isEqualTo(CheckState.CHECK_BLACK);
+    }
+
+    @Test
+    void einePartieOhneSchachzustandIstUngueltig() {
+        // ACT & ASSERTIONS
+        assertThatThrownBy(() -> new Game(GameId.newId(), PlayerToken.newToken(), PlayerToken.newToken(),
+            RuleSet.standard(), start, java.util.List.of(), GameStatus.ONGOING, null, null, T0, T0))
+            .isInstanceOf(NullPointerException.class);
     }
 }

@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { Trash2, X } from 'lucide-react';
 import type { GameResponse } from '@chesstopia/openapi-client';
-import type { GameRole } from '@/lib/gameStorage';
+import { sideOfGameRole, type GameRole } from '@/lib/gameStorage';
 import { formatEndedAt, formatLastPlayed } from '@/lib/lastPlayed';
 import { outcomeBadge, outcomeKind, type OutcomeKind } from '@/lib/outcome';
 import { sideOf, type Side } from '@/lib/position';
@@ -24,14 +24,14 @@ interface GameRowProps {
 }
 
 const OUTCOME_CLASS: Record<OutcomeKind, string> = {
-  won: 'border-green-200 bg-green-100 text-green-800',
-  lost: 'border-red-200 bg-red-100 text-red-800',
+  won: 'border-amber-300 bg-amber-100 text-amber-900',
+  lost: 'border-slate-300 bg-slate-200 text-slate-800',
   draw: '',
 };
 
 export function GameRow({ gameId, role, game, now, disabled = false, error, onDelete, onRemove }: GameRowProps) {
   const invited = role === 'INVITED';
-  const side: Side = invited ? 'b' : 'w';
+  const side: Side = sideOfGameRole(role);
   const ongoing = game?.status === 'ONGOING';
   const myTurn = game !== null && ongoing && sideOf(game.position) === side;
 

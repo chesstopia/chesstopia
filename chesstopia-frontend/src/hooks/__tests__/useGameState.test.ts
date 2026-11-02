@@ -55,8 +55,8 @@ const moveRecord = (n: number, from: [string, string], to: [string, string]) => 
 const E2E4 = moveRecord(1, ['E', 'TWO'], ['E', 'FOUR']);
 const E7E5 = moveRecord(2, ['E', 'SEVEN'], ['E', 'FIVE']);
 const E1E2 = moveRecord(3, ['E', 'ONE'], ['E', 'TWO']);
-const gameResponse = (position: Position, moveCount = 0) => ({
-  data: { id: 'g-1', position, status: 'ONGOING', endReason: null, moveCount },
+const gameResponse = (position: Position, moveCount = 0, checkState = 'NO_CHECK') => ({
+  data: { id: 'g-1', position, status: 'ONGOING', endReason: null, checkState, moveCount },
 });
 
 describe('useGameState', () => {
@@ -82,7 +82,7 @@ describe('useGameState', () => {
 
     // ASSERTIONS
     expect(getGame).toHaveBeenCalledWith('g-1');
-    expect(result.current.board?.[6][4]).toBe('wP');
+    expect(result.current.game?.board[6][4]).toBe('wP');
   });
 
   it('erkennt den Ersteller anhand des Owner-Eintrags als Weiß', async () => {
@@ -95,6 +95,7 @@ describe('useGameState', () => {
 
     // ASSERTIONS
     expect(result.current.role).toBe('w');
+    expect(result.current.inviteToken).toBe('invite-tok');
   });
 
   it('erkennt eine unbekannte Partie mit Invite-Parameter als Schwarz und merkt es sich', async () => {
@@ -104,7 +105,8 @@ describe('useGameState', () => {
 
     // ASSERTIONS
     expect(result.current.role).toBe('b');
-    expect(result.current.entry).toEqual({ gameId: 'g-2', role: 'INVITED', inviteToken: 'invite-tok' });
+    expect(result.current.inviteToken).toBeNull();
+    expect(findGame('g-2')).toEqual({ gameId: 'g-2', role: 'INVITED', inviteToken: 'invite-tok' });
   });
 
   it('überschreibt einen bestehenden Owner-Eintrag nicht mit einem fremden Invite-Parameter aus der URL', async () => {
@@ -197,7 +199,7 @@ describe('useGameState', () => {
     // ASSERTIONS
     expect(result.current.error?.message).toBe('Der Zug ist nicht ausführbar');
     expect(result.current.pending).toBe(false);
-    expect(result.current.board?.[6][4]).toBe('wP');
+    expect(result.current.game?.board[6][4]).toBe('wP');
   });
 
   it('spielt keinen Zug ohne eigenes Token (Zuschauer)', async () => {
@@ -239,7 +241,7 @@ describe('useGameState', () => {
     act(() => receiveMessage(JSON.stringify(gameResponse(neuer, 1).data)));
 
     // ASSERTIONS
-    await waitFor(() => expect(result.current.sideToMove).toBe('b'));
+    await waitFor(() => expect(result.current.game?.sideToMove).toBe('b'));
   });
 
   it('verwirft eine veraltete WS-Nachricht, die nach einer neueren eintrifft', async () => {
@@ -251,11 +253,11 @@ describe('useGameState', () => {
 
     // ACT — neuere Nachricht zuerst, dann eine ältere hinterher
     act(() => receiveMessage(JSON.stringify(gameResponse(neuer, 2).data)));
-    await waitFor(() => expect(result.current.sideToMove).toBe('b'));
+    await waitFor(() => expect(result.current.game?.sideToMove).toBe('b'));
     act(() => receiveMessage(JSON.stringify(gameResponse(START, 1).data)));
 
     // ASSERTIONS
-    expect(result.current.sideToMove).toBe('b');
+    expect(result.current.game?.sideToMove).toBe('b');
   });
 
   it('trennt die WS-Verbindung beim Unmount', async () => {
@@ -347,6 +349,22 @@ describe('useGameState', () => {
     expect(findGame('g-1')).toBeDefined();
   });
 
+  it('ein Ladefehler bleibt stehen, wenn danach eine WS-Stellung kommt', async () => {
+    // ARRANGE
+    getGame.mockRejectedValue({ response: { status: 500 } });
+    const { result } = renderHook(() => useGameState('g-1', null));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    const loadError = result.current.error;
+
+    // ACT
+    act(() => receiveMessage(JSON.stringify(gameResponse(START, 0).data)));
+    await waitFor(() => expect(result.current.game).not.toBeNull());
+
+    // ASSERTIONS
+    expect(loadError).not.toBeNull();
+    expect(result.current.error).toBe(loadError);
+  });
+
   it('lädt die Zughistorie beim Öffnen', async () => {
     // ARRANGE
     getGame.mockResolvedValue(gameResponse(START, 2));
@@ -406,5 +424,43 @@ describe('useGameState', () => {
     // ASSERTIONS
     expect(result.current.moves).toHaveLength(3);
     expect(result.current.lastMove).toEqual({ from: 'e1', to: 'e2' });
+  });
+
+  it('übernimmt checkState und moveCount aus der geladenen Partie', async () => {
+    // ARRANGE
+    getGame.mockResolvedValue(gameResponse(START, 7, 'CHECK_WHITE'));
+
+    // ACT
+    const { result } = renderHook(() => useGameState('g-1', null));
+
+    // ASSERTIONS
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.game?.checkState).toBe('CHECK_WHITE');
+    expect(result.current.game?.moveCount).toBe(7);
+  });
+
+  it('übernimmt checkState aus einer WS-Nachricht', async () => {
+    // ARRANGE
+    const { result } = renderHook(() => useGameState('g-1', null));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // ACT
+    act(() => receiveMessage(JSON.stringify(gameResponse({ ...START, sideToMove: 'BLACK' }, 1, 'CHECK_BLACK').data)));
+
+    // ASSERTIONS
+    await waitFor(() => expect(result.current.game?.checkState).toBe('CHECK_BLACK'));
+  });
+
+  it('übernimmt bei gleichem moveCount die neuere Nachricht', async () => {
+    // ARRANGE
+    getGame.mockResolvedValue(gameResponse(START, 0));
+    const { result } = renderHook(() => useGameState('g-1', null));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // ACT
+    act(() => receiveMessage(JSON.stringify(gameResponse(START, 0, 'CHECK_WHITE').data)));
+
+    // ASSERTIONS
+    await waitFor(() => expect(result.current.game?.checkState).toBe('CHECK_WHITE'));
   });
 });

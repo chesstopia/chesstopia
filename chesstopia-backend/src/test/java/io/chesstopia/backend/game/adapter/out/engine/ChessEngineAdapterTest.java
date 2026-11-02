@@ -115,4 +115,23 @@ class ChessEngineAdapterTest {
         assertThat(p.halfmoveClock()).isZero();
         assertThat(p.fullmoveNumber()).isEqualTo(1);
     }
+
+    @Test
+    void checkStateNenntDenMattgesetztenWeissenKoenigImNarrenmatt() {
+        // ARRANGE
+        Position p0 = adapter.initialPosition(rules);
+        Position p1 = adapter.apply(p0, move(File.F, Rank.TWO, File.F, Rank.THREE), rules);
+        Position p2 = adapter.apply(p1, move(File.E, Rank.SEVEN, File.E, Rank.FIVE), rules);
+        Position p3 = adapter.apply(p2, move(File.G, Rank.TWO, File.G, Rank.FOUR), rules);
+        Position p4 = adapter.apply(p3, move(File.D, Rank.EIGHT, File.H, Rank.FOUR), rules);
+
+        // ACT & ASSERTIONS
+        assertThat(adapter.checkState(p4)).isEqualTo(CheckState.CHECK_WHITE);
+    }
+
+    @Test
+    void checkStateIstInDerAnfangsstellungNoCheck() {
+        // ACT & ASSERTIONS
+        assertThat(adapter.checkState(adapter.initialPosition(rules))).isEqualTo(CheckState.NO_CHECK);
+    }
 }

@@ -75,4 +75,17 @@ describe('GameResultBanner', () => {
     expect(screen.queryByText(/Du hast/)).not.toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('Schachmatt — Weiß gewinnt');
   });
+
+  it.each([
+    ['WHITE_WON', 'w', 'won'],
+    ['WHITE_WON', 'b', 'lost'],
+    ['DRAW', 'w', 'draw'],
+    ['BLACK_WON', null, 'draw'],
+  ] as const)('färbt %s aus Sicht %s als %s', (status, role, outcome) => {
+    // ACT
+    const { container } = render(<GameResultBanner status={status} endReason="CHECKMATE" role={role} />);
+
+    // ASSERTIONS
+    expect(container.querySelector('[data-outcome]')).toHaveAttribute('data-outcome', outcome);
+  });
 });

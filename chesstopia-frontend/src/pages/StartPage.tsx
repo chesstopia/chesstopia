@@ -1,16 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Plus } from 'lucide-react';
-import { GameApi } from '@chesstopia/openapi-client';
 import type { GameResponse } from '@chesstopia/openapi-client';
-import { apiConfig, isNotFound } from '@/lib/api';
+import { asError, gameApi, isNotFound } from '@/lib/api';
 import { addOwnedGame, allGames, myGames, removeGame, type GameRole } from '@/lib/gameStorage';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { GameRow } from '@/components/start/GameRow';
-
-const gameApi = new GameApi(apiConfig);
 
 type Row = {
   gameId: string;
@@ -64,7 +61,7 @@ export function StartPage() {
       addOwnedGame(res.data.id, res.data.ownerToken, res.data.inviteToken);
       navigate(`/game/${res.data.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Partie konnte nicht angelegt werden'));
+      setError(asError(err, 'Partie konnte nicht angelegt werden'));
     } finally {
       setCreating(false);
     }
@@ -95,7 +92,7 @@ export function StartPage() {
         removeGame(gameId);
         setRows((current) => current.filter((r) => r.gameId !== gameId));
       } else {
-        const message = err instanceof Error ? err.message : 'Partie konnte nicht gelöscht werden';
+        const message = asError(err, 'Partie konnte nicht gelöscht werden').message;
         setRows((current) => current.map((r) => (r.gameId === gameId ? { ...r, deleteError: message } : r)));
       }
     } finally {

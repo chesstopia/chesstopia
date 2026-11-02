@@ -1,4 +1,4 @@
-import { Configuration } from '@chesstopia/openapi-client';
+import { Configuration, GameApi } from '@chesstopia/openapi-client';
 
 /**
  * Zentrale Client-Konfiguration.
@@ -13,6 +13,14 @@ import { Configuration } from '@chesstopia/openapi-client';
  * `server.proxy`-Eintrag in `vite.config.ts`.
  */
 export const apiConfig = new Configuration({ basePath: '' });
+
+/** Der eine, geteilte Client für die Partie-API. */
+export const gameApi = new GameApi(apiConfig);
+
+/** Ein `Error` kommt unverändert zurück, alles andere wird zu einem `Error` mit `fallback` bzw. `String(err)`. */
+export function asError(err: unknown, fallback?: string): Error {
+  return err instanceof Error ? err : new Error(fallback ?? String(err));
+}
 
 /**
  * Erkennt einen 404-Fehler des generierten Axios-Clients. axios ist keine direkte

@@ -86,6 +86,21 @@ fun gameOutcome(history: Array<Position>, ruleSet: RuleSet): GameOutcome {
     }
 }
 
+/** Welche Seite im Schach steht. Im Matt ist es die mattgesetzte; im Patt keine. */
+@JsExport
+enum class CheckState { NO_CHECK, CHECK_WHITE, CHECK_BLACK }
+
+/**
+ * Der Schachzustand der Stellung. Nur die Seite am Zug kann im Schach stehen,
+ * die Engine nennt sie direkt — kein Aufrufer muss das interpretieren.
+ */
+@JsExport
+fun checkState(position: Position): CheckState = when {
+    !position.isCheck() -> CheckState.NO_CHECK
+    position.sideToMove == Color.WHITE -> CheckState.CHECK_WHITE
+    else -> CheckState.CHECK_BLACK
+}
+
 /** Ob der Zug in dieser Stellung nach den Regeln legal ist (Gangart, Weg, Fesselung, Schach). */
 @JsExport
 fun validateMove(position: Position, move: Move, ruleSet: RuleSet): Boolean =

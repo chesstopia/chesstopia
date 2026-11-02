@@ -34,6 +34,7 @@ public interface WebMapper {
     @Mapping(target = "position", source = "game.currentPosition")
     @Mapping(target = "status", source = "game.status")
     @Mapping(target = "endReason", source = "game.endReason")
+    @Mapping(target = "checkState", source = "game.checkState")
     @Mapping(target = "moveCount", source = "moveCount")
     @Mapping(target = "lastActivityAt", source = "game.updatedAt")
     io.chesstopia.backend.api.model.GameResponse toResponse(Game game, int moveCount);
@@ -42,6 +43,7 @@ public interface WebMapper {
     @Mapping(target = "position", source = "game.currentPosition")
     @Mapping(target = "status", source = "game.status")
     @Mapping(target = "endReason", source = "game.endReason")
+    @Mapping(target = "checkState", source = "game.checkState")
     @Mapping(target = "moveCount", source = "moveCount")
     @Mapping(target = "lastActivityAt", source = "game.updatedAt")
     @Mapping(target = "ownerToken", source = "game.ownerToken.value")

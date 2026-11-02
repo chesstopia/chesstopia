@@ -1,7 +1,7 @@
 ---
 type: note
 status: current
-updated: 2026-09-03
+updated: 2026-10-31
 verifies:
   - "chesstopia-frontend/src/lib/api.ts :: basePath: ''"
   - 'chesstopia-frontend/vite.config.ts :: "/api": "http://localhost:8080"'
@@ -21,11 +21,12 @@ Der `typescript-axios`-Generator backt `servers[0].url` aus `openapi.yaml` als a
 Deshalb wird der Client **nie ohne Konfiguration** instanziiert:
 
 ```ts
-// src/lib/api.ts — eine Instanz, überall wiederverwendet
+// src/lib/api.ts — ein geteilter Client, überall wiederverwendet
 export const apiConfig = new Configuration({ basePath: '' });
+export const gameApi = new GameApi(apiConfig);
 
-// im Hook / Service
-const gameApi = new GameApi(apiConfig);
+// im Hook / Service: importieren, nicht neu instanziieren
+import { gameApi } from '@/lib/api';
 ```
 
 `basePath: ''` erzwingt relative Requests (`/api/v1/…`) gegen dieselbe Origin, unter der das Frontend ausgeliefert wird. Das Frontend-Image bleibt damit hostname-frei — die Domain ist eine reine Ansible-Änderung (`SITE_HOSTNAME`), kein Neubau.
@@ -53,6 +54,6 @@ Der Caddyfile ist Ansible-verwaltet (`infra/roles/edge/`) und wird **nicht** von
 
 ## Tests
 
-Wer `@chesstopia/openapi-client` in einem Vitest-`vi.mock` ersetzt, muss `Configuration` mitmocken — `src/lib/api.ts` importiert es beim Modulladen (`useGameState.test.ts` zeigt das Muster).
+Wer `@chesstopia/openapi-client` in einem Vitest-`vi.mock` ersetzt, muss `Configuration` **und `GameApi`** mitmocken — `src/lib/api.ts` importiert beide beim Modulladen und legt `gameApi` an (`useGameState.test.ts` zeigt das Muster).
 
 Eine Komponente/Hook, die `@chesstopia/chess-engine` (direkt oder über `src/lib/engine.ts`) zieht, mockt im Vitest entweder `@/lib/engine` oder braucht das gebaute JS-Artefakt (`./gradlew buildAll`).

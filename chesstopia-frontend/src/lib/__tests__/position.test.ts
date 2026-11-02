@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toBoard, sideOf, parseSquare } from '../position';
+import { toBoard, sideOf, checkedSide, parseSquare, kingSquare } from '../position';
 import type { Position } from '@chesstopia/openapi-client';
 
 const startish: Position = {
@@ -42,6 +42,19 @@ describe('position', () => {
     });
   });
 
+  describe('checkedSide', () => {
+    it('liefert null ohne Schach', () => {
+      // ACT & ASSERTIONS
+      expect(checkedSide('NO_CHECK')).toBeNull();
+    });
+
+    it('liefert die Seite, die im Schach steht', () => {
+      // ACT & ASSERTIONS
+      expect(checkedSide('CHECK_WHITE')).toBe('w');
+      expect(checkedSide('CHECK_BLACK')).toBe('b');
+    });
+  });
+
   describe('parseSquare', () => {
     it('übersetzt einen Feldnamen in die strukturierte Form', () => {
       // ACT & ASSERTIONS
@@ -53,6 +66,29 @@ describe('position', () => {
       // ACT & ASSERTIONS
       expect(() => parseSquare('x9')).toThrow(RangeError);
       expect(() => parseSquare('e')).toThrow(RangeError);
+    });
+  });
+
+  describe('kingSquare', () => {
+    it('findet den weißen König', () => {
+      // ACT & ASSERTIONS
+      expect(kingSquare(toBoard(startish), 'w')).toBe('e1');
+    });
+
+    it('findet den schwarzen König', () => {
+      // ARRANGE
+      const board = toBoard({
+        ...startish,
+        board: [{ square: { file: 'G', rank: 'EIGHT' }, piece: { type: 'KING', color: 'BLACK' } }],
+      });
+
+      // ACT & ASSERTIONS
+      expect(kingSquare(board, 'b')).toBe('g8');
+    });
+
+    it('liefert null ohne König der Seite', () => {
+      // ACT & ASSERTIONS
+      expect(kingSquare(toBoard(startish), 'b')).toBeNull();
     });
   });
 });

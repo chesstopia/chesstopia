@@ -107,6 +107,7 @@ class GameControllerIT {
         assertThat(response.getOwnerToken()).isNotNull();
         assertThat(response.getInviteToken()).isNotNull();
         assertThat(response.getOwnerToken()).isNotEqualTo(response.getInviteToken());
+        assertThat(response.getCheckState()).isEqualTo(GameCreatedResponse.CheckStateEnum.NO_CHECK);
     }
 
     @Test
@@ -355,6 +356,8 @@ class GameControllerIT {
         // ASSERTIONS
         assertThat(afterMate.getStatus()).isEqualTo(GameResponse.StatusEnum.BLACK_WON);
         assertThat(afterMate.getEndReason()).isEqualTo(GameResponse.EndReasonEnum.CHECKMATE);
+        assertThat(afterMate.getCheckState()).isEqualTo(GameResponse.CheckStateEnum.CHECK_WHITE);
+        assertThat(getGame(created.getId()).getCheckState()).isEqualTo(GameResponse.CheckStateEnum.CHECK_WHITE);
     }
 
     @Test

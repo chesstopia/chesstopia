@@ -6,82 +6,80 @@ import { GameResultBanner } from '@/components/GameResultBanner';
 import { InviteButtons } from '@/components/game/InviteButtons';
 import { MoveList } from '@/components/game/MoveList';
 import { PlayerRow } from '@/components/game/PlayerRow';
+import { SoundToggle } from '@/components/sound/SoundToggle';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useGameState } from '@/hooks/useGameState';
-import type { Side } from '@/lib/position';
-
-const SIDE_NAME: Record<Side, string> = { w: 'Weiß', b: 'Schwarz' };
+import { useMoveSound } from '@/hooks/useMoveSound';
+import { useTabTitle } from '@/hooks/useTabTitle';
+import { BASE_TITLE, gameTitle } from '@/lib/gameTitle';
+import { deriveGameView } from '@/lib/gameView';
 
 export function GamePage() {
   const { gameId } = useParams() as { gameId: string };
   const [searchParams] = useSearchParams();
-  const inviteTokenFromUrl = searchParams.get('invite');
+  // `key`: Eine andere Partie mountet die Seite neu, damit kein Zustand der vorigen stehen bleibt.
+  return <LoadedGamePage key={gameId} gameId={gameId} inviteTokenFromUrl={searchParams.get('invite')} />;
+}
 
-  const {
-    board, sideToMove, status, endReason, error, loading, pending, role, entry, deleted, playMove, moves, lastMove,
-  } = useGameState(gameId, inviteTokenFromUrl);
+function LoadedGamePage({ gameId, inviteTokenFromUrl }: { gameId: string; inviteTokenFromUrl: string | null }) {
+  const { game, error, loading, pending, role, inviteToken, deleted, playMove, moves, lastMove, feedback } = useGameState(
+    gameId,
+    inviteTokenFromUrl,
+  );
+  useMoveSound(feedback.event, feedback.seq);
+  useTabTitle(game ? gameTitle(game, role) : BASE_TITLE, feedback.attentionSeq);
   // Zuschauer wählen die Ansicht selbst; sie wird nicht gespeichert.
   const [spectatorFlipped, setSpectatorFlipped] = useState(false);
+  const view = game
+    ? deriveGameView({ game, role, pending, deleted, spectatorFlipped, feedbackEvent: feedback.event })
+    : null;
 
-  const over = status !== 'ONGOING';
-  const myTurn = role !== null && role === sideToMove;
-  const orientation: Side = role ?? (spectatorFlipped ? 'b' : 'w');
-  const opponentSide: Side = orientation === 'w' ? 'b' : 'w';
-  const showTurn = board && !over && !deleted;
-
-  const inviteLink =
-    entry?.role === 'OWNER' ? `${location.origin}/game/${gameId}?invite=${entry.inviteToken}` : null;
+  const inviteLink = inviteToken ? `${location.origin}/game/${gameId}?invite=${inviteToken}` : null;
   const spectatorLink = `${location.origin}/game/${gameId}`;
 
-  const label = (side: Side) =>
-    role === null ? SIDE_NAME[side] : `${side === role ? 'Du' : 'Gegner'} · ${SIDE_NAME[side]}`;
-  const turnState = role === null ? 'zuschauer' : pending ? 'zug-wird-gespielt' : myTurn ? 'du-bist-am-zug' : 'gegner-ist-am-zug';
-  // Hinweis in der eigenen Zeile; beim Zug des Gegners spricht dessen hervorgehobene Zeile.
-  const ownNote = { zuschauer: undefined, 'zug-wird-gespielt': 'Zug wird gespielt…', 'du-bist-am-zug': 'Du bist am Zug', 'gegner-ist-am-zug': undefined }[turnState];
-
   return (
-    <main key={gameId} className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
+    <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
         <Link to="/" className="text-sm text-muted-foreground underline">
           ← Meine Partien
         </Link>
+        <SoundToggle />
       </div>
       {loading && <p className="text-muted-foreground">Lade Brett…</p>}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        {board && (
+        {game && view && (
           // `--board-size`: Brett und Spielerzeilen teilen sich die Breite. 11rem ist der Platz für
           // Kopfzeile, zwei Spielerzeilen und Abstände, den das Brett von 100dvh abzieht.
           <div
+            data-board-column
             className="flex min-w-0 flex-col gap-2"
-            style={{ '--board-size': 'clamp(280px, min(100%, calc(100dvh - 11rem)), 720px)' } as React.CSSProperties}
+            // Bei beendeter Partie zieht das Brett zusätzlich die Höhe des Ergebnisbanners ab, damit es sichtbar bleibt.
+            style={{ '--board-size': `clamp(280px, min(100%, calc(100dvh - ${view.over ? '17rem' : '11rem'})), 720px)` } as React.CSSProperties}
           >
             <div className="w-[var(--board-size)] max-w-full">
-              <PlayerRow side={opponentSide} label={label(opponentSide)} active={!over && sideToMove === opponentSide} />
+              <PlayerRow {...view.top} />
             </div>
             <Chessboard
-              board={board}
-              sideToMove={sideToMove ?? 'w'}
+              board={game.board}
+              sideToMove={game.sideToMove}
               onMove={playMove}
-              disabled={deleted || pending || over || !myTurn}
-              orientation={orientation}
+              disabled={view.boardDisabled}
+              orientation={view.orientation}
               lastMove={lastMove}
+              kingMarker={view.kingMarker}
+              animateCheck={view.animateCheck}
+              ended={view.over}
             />
-            <div
-              data-turn-indicator={showTurn ? turnState : undefined}
-              className="w-[var(--board-size)] max-w-full"
-            >
-              <PlayerRow
-                side={orientation}
-                label={label(orientation)}
-                active={!over && sideToMove === orientation}
-                note={showTurn ? ownNote : undefined}
-              />
+            <div data-turn-indicator={view.turnIndicator} className="w-[var(--board-size)] max-w-full">
+              <PlayerRow {...view.bottom} />
+            </div>
+            <div className="w-[var(--board-size)] max-w-full">
+              <GameResultBanner status={game.status} endReason={game.endReason} role={role} />
             </div>
           </div>
         )}
         <aside className="flex flex-col gap-4">
-          <GameResultBanner status={status} endReason={endReason} role={role} />
           {deleted && (
             <Alert className="flex flex-col gap-1">
               <p>Diese Partie wurde gelöscht.</p>
@@ -97,7 +95,7 @@ export function GamePage() {
           )}
           <MoveList moves={moves} />
           {inviteLink && <InviteButtons inviteLink={inviteLink} spectatorLink={spectatorLink} />}
-          {board && role === null && (
+          {game && role === null && (
             <Button variant="outline" onClick={() => setSpectatorFlipped((f) => !f)}>
               <RefreshCw /> Brett drehen
             </Button>
